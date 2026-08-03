@@ -4,6 +4,7 @@ import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import DeleteListingButton from "@/components/DeleteListingButton";
 import {
+  Listing,
   PROPERTY_TYPE_LABELS,
   STATUS_LABELS,
   STATUS_COLORS,
@@ -32,7 +33,7 @@ export default async function ListingDetailPage({
     .from("listings")
     .select("*")
     .eq("id", id)
-    .single();
+    .single<Listing>();
 
   if (!listing) notFound();
 

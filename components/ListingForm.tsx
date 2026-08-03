@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import PhotoUploader from "@/components/PhotoUploader";
 import {
   Listing,
   PROPERTY_TYPE_LABELS,
@@ -14,7 +13,6 @@ import {
 interface Props {
   userId: string;
   listing?: Listing;
-  initialPhotoUrls?: { path: string; url: string }[];
 }
 
 function boolToStr(value: boolean | null | undefined): string {
@@ -29,15 +27,10 @@ function strToBool(value: string): boolean | null {
   return null;
 }
 
-export default function ListingForm({
-  userId,
-  listing,
-  initialPhotoUrls = [],
-}: Props) {
+export default function ListingForm({ userId, listing }: Props) {
   const router = useRouter();
   const isEditing = Boolean(listing);
 
-  const [title, setTitle] = useState(listing?.title ?? "");
   const [address, setAddress] = useState(listing?.address ?? "");
   const [neighborhood, setNeighborhood] = useState(listing?.neighborhood ?? "");
   const [city, setCity] = useState(listing?.city ?? "");
@@ -56,7 +49,6 @@ export default function ListingForm({
   const [expenses, setExpenses] = useState(listing?.expenses?.toString() ?? "");
   const [petsAllowed, setPetsAllowed] = useState(boolToStr(listing?.pets_allowed));
   const [furnished, setFurnished] = useState(boolToStr(listing?.furnished));
-  const [photos, setPhotos] = useState<string[]>(listing?.photos ?? []);
 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -65,8 +57,8 @@ export default function ListingForm({
     e.preventDefault();
     setError(null);
 
-    if (!title.trim()) {
-      setError("El título es obligatorio.");
+    if (!address.trim()) {
+      setError("La dirección es obligatoria.");
       return;
     }
 
@@ -74,8 +66,8 @@ export default function ListingForm({
     const supabase = createClient();
 
     const payload = {
-      title: title.trim(),
-      address: address.trim() || null,
+      title: address.trim(),
+      address: address.trim(),
       neighborhood: neighborhood.trim() || null,
       city: city.trim() || null,
       price: price ? Number(price) : null,
@@ -91,7 +83,6 @@ export default function ListingForm({
       expenses: expenses ? Number(expenses) : null,
       pets_allowed: strToBool(petsAllowed),
       furnished: strToBool(furnished),
-      photos,
     };
 
     if (isEditing && listing) {
@@ -129,24 +120,13 @@ export default function ListingForm({
     <form onSubmit={handleSubmit} className="space-y-5 pb-10">
       <div>
         <label className="mb-1 block text-sm font-medium text-slate-700">
-          Fotos
-        </label>
-        <PhotoUploader
-          userId={userId}
-          initialPhotos={initialPhotoUrls}
-          onChange={setPhotos}
-        />
-      </div>
-
-      <div>
-        <label className="mb-1 block text-sm font-medium text-slate-700">
-          Título *
+          Dirección *
         </label>
         <input
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
+          value={address}
+          onChange={(e) => setAddress(e.target.value)}
           required
-          placeholder="Depto 2 amb. con balcón"
+          placeholder="Av. Siempre Viva 123"
           className="w-full rounded-xl border border-slate-300 px-4 py-3 text-base focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-100"
         />
       </div>
@@ -184,18 +164,6 @@ export default function ListingForm({
             ))}
           </select>
         </div>
-      </div>
-
-      <div>
-        <label className="mb-1 block text-sm font-medium text-slate-700">
-          Dirección
-        </label>
-        <input
-          value={address}
-          onChange={(e) => setAddress(e.target.value)}
-          placeholder="Av. Siempre Viva 123"
-          className="w-full rounded-xl border border-slate-300 px-4 py-3 text-base"
-        />
       </div>
 
       <div className="grid grid-cols-2 gap-3">

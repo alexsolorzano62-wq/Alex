@@ -1,10 +1,13 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { getRole } from "@/lib/supabase/profile";
 import AppHeader from "@/components/AppHeader";
 import ListingCard from "@/components/ListingCard";
 import { PROPERTY_TYPE_LABELS, STATUS_LABELS } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
+
+const BEDROOM_OPTIONS = [1, 2, 3, 4, 5];
 
 export default async function ListingsPage({
   searchParams,
@@ -13,6 +16,7 @@ export default async function ListingsPage({
     tipo?: string;
     estado?: string;
     zona?: string;
+    dorm?: string;
     q?: string;
   }>;
 }) {
@@ -23,6 +27,8 @@ export default async function ListingsPage({
     data: { user },
   } = await supabase.auth.getUser();
 
+  const role = user ? await getRole(supabase, user.id) : "agent";
+
   let query = supabase
     .from("listings")
     .select("*")
@@ -31,6 +37,7 @@ export default async function ListingsPage({
   if (resolvedSearchParams.tipo) query = query.eq("property_type", resolvedSearchParams.tipo);
   if (resolvedSearchParams.estado) query = query.eq("status", resolvedSearchParams.estado);
   if (resolvedSearchParams.zona) query = query.ilike("neighborhood", `%${resolvedSearchParams.zona}%`);
+  if (resolvedSearchParams.dorm) query = query.gte("bedrooms", Number(resolvedSearchParams.dorm));
 
   const searchTerm = resolvedSearchParams.q?.trim().replace(/[,()%]/g, "");
   if (searchTerm) {
@@ -41,30 +48,17 @@ export default async function ListingsPage({
 
   const { data: listings, error } = await query;
 
-  const thumbnailPaths = (listings ?? [])
-    .map((l) => l.photos?.[0])
-    .filter((p): p is string => Boolean(p));
-
-  const signedUrlMap: Record<string, string> = {};
-  if (thumbnailPaths.length > 0) {
-    const { data: signed } = await supabase.storage
-      .from("listing-photos")
-      .createSignedUrls(thumbnailPaths, 60 * 60);
-    signed?.forEach((s) => {
-      if (s.signedUrl && s.path) signedUrlMap[s.path] = s.signedUrl;
-    });
-  }
-
   const hasFilters = Boolean(
     resolvedSearchParams.tipo ||
       resolvedSearchParams.estado ||
       resolvedSearchParams.zona ||
+      resolvedSearchParams.dorm ||
       resolvedSearchParams.q
   );
 
   return (
     <div className="min-h-dvh pb-28">
-      <AppHeader userEmail={user?.email ?? ""} />
+      <AppHeader userEmail={user?.email ?? ""} role={role} />
 
       <main className="mx-auto max-w-2xl px-4 pt-4">
         <form method="get" className="mb-4 space-y-2">
@@ -72,59 +66,72 @@ export default async function ListingsPage({
             type="text"
             name="q"
             defaultValue={resolvedSearchParams.q ?? ""}
-            placeholder="Buscar por título, dirección o descripción"
+            placeholder="Buscar por dirección o descripción"
             className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm placeholder:text-slate-400"
           />
 
-          <div className="grid grid-cols-3 gap-2">
-          <select
-            name="tipo"
-            defaultValue={resolvedSearchParams.tipo ?? ""}
-            className="rounded-xl border border-slate-300 bg-white px-2 py-2 text-xs"
-          >
-            <option value="">Tipo</option>
-            {Object.entries(PROPERTY_TYPE_LABELS).map(([value, label]) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
-            ))}
-          </select>
-
-          <select
-            name="estado"
-            defaultValue={resolvedSearchParams.estado ?? ""}
-            className="rounded-xl border border-slate-300 bg-white px-2 py-2 text-xs"
-          >
-            <option value="">Estado</option>
-            {Object.entries(STATUS_LABELS).map(([value, label]) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
-            ))}
-          </select>
-
-          <input
-            type="text"
-            name="zona"
-            defaultValue={resolvedSearchParams.zona ?? ""}
-            placeholder="Zona"
-            className="rounded-xl border border-slate-300 bg-white px-2 py-2 text-xs placeholder:text-slate-400"
-          />
-
-          <button
-            type="submit"
-            className="col-span-2 rounded-xl bg-slate-900 px-3 py-2 text-xs font-semibold text-white active:bg-slate-700"
-          >
-            Filtrar
-          </button>
-          {hasFilters && (
-            <Link
-              href="/listings"
-              className="flex items-center justify-center rounded-xl border border-slate-300 px-3 py-2 text-xs font-medium text-slate-500 active:bg-slate-100"
+          <div className="grid grid-cols-2 gap-2">
+            <select
+              name="tipo"
+              defaultValue={resolvedSearchParams.tipo ?? ""}
+              className="rounded-xl border border-slate-300 bg-white px-2 py-2 text-xs"
             >
-              Limpiar
-            </Link>
-          )}
+              <option value="">Tipo</option>
+              {Object.entries(PROPERTY_TYPE_LABELS).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
+
+            <select
+              name="estado"
+              defaultValue={resolvedSearchParams.estado ?? ""}
+              className="rounded-xl border border-slate-300 bg-white px-2 py-2 text-xs"
+            >
+              <option value="">Estado</option>
+              {Object.entries(STATUS_LABELS).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
+
+            <input
+              type="text"
+              name="zona"
+              defaultValue={resolvedSearchParams.zona ?? ""}
+              placeholder="Zona"
+              className="rounded-xl border border-slate-300 bg-white px-2 py-2 text-xs placeholder:text-slate-400"
+            />
+
+            <select
+              name="dorm"
+              defaultValue={resolvedSearchParams.dorm ?? ""}
+              className="rounded-xl border border-slate-300 bg-white px-2 py-2 text-xs"
+            >
+              <option value="">Dormitorios</option>
+              {BEDROOM_OPTIONS.map((n) => (
+                <option key={n} value={n}>
+                  {n}+ dorm.
+                </option>
+              ))}
+            </select>
+
+            <button
+              type="submit"
+              className="col-span-2 rounded-xl bg-slate-900 px-3 py-2 text-xs font-semibold text-white active:bg-slate-700"
+            >
+              Filtrar
+            </button>
+            {hasFilters && (
+              <Link
+                href="/listings"
+                className="col-span-2 flex items-center justify-center rounded-xl border border-slate-300 px-3 py-2 text-xs font-medium text-slate-500 active:bg-slate-100"
+              >
+                Limpiar filtros
+              </Link>
+            )}
           </div>
         </form>
 
@@ -144,15 +151,7 @@ export default async function ListingsPage({
 
         <div className="grid grid-cols-1 gap-3">
           {listings?.map((listing) => (
-            <ListingCard
-              key={listing.id}
-              listing={listing}
-              thumbnailUrl={
-                listing.photos?.[0]
-                  ? signedUrlMap[listing.photos[0]]
-                  : undefined
-              }
-            />
+            <ListingCard key={listing.id} listing={listing} />
           ))}
         </div>
       </main>

@@ -6,10 +6,8 @@ import { createClient } from "@/lib/supabase/client";
 
 export default function DeleteListingButton({
   listingId,
-  photos,
 }: {
   listingId: string;
-  photos: string[];
 }) {
   const router = useRouter();
   const [confirming, setConfirming] = useState(false);
@@ -18,10 +16,6 @@ export default function DeleteListingButton({
   async function handleDelete() {
     setDeleting(true);
     const supabase = createClient();
-
-    if (photos.length > 0) {
-      await supabase.storage.from("listing-photos").remove(photos);
-    }
 
     const { error } = await supabase
       .from("listings")

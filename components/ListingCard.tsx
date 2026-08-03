@@ -1,5 +1,4 @@
 import Link from "next/link";
-import Image from "next/image";
 import {
   Listing,
   PROPERTY_TYPE_LABELS,
@@ -13,32 +12,14 @@ function formatPrice(price: number | null, currency: string) {
   return `${symbol} ${price.toLocaleString("es-AR")}`;
 }
 
-export default function ListingCard({
-  listing,
-  thumbnailUrl,
-}: {
-  listing: Listing;
-  thumbnailUrl?: string;
-}) {
+export default function ListingCard({ listing }: { listing: Listing }) {
   return (
     <Link
       href={`/listings/${listing.id}`}
       className="flex gap-3 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm transition active:scale-[0.99] active:bg-slate-50"
     >
-      <div className="relative h-20 w-20 flex-shrink-0 overflow-hidden rounded-xl bg-slate-100">
-        {thumbnailUrl ? (
-          <Image
-            src={thumbnailUrl}
-            alt={listing.title}
-            fill
-            sizes="80px"
-            className="object-cover"
-          />
-        ) : (
-          <div className="flex h-full w-full items-center justify-center text-2xl text-slate-300">
-            🏠
-          </div>
-        )}
+      <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-brand-50 text-xl text-brand-600">
+        🏠
       </div>
 
       <div className="min-w-0 flex-1">
@@ -62,6 +43,7 @@ export default function ListingCard({
         <p className="text-[11px] text-slate-400">
           {PROPERTY_TYPE_LABELS[listing.property_type]}
           {listing.rooms ? ` · ${listing.rooms} amb.` : ""}
+          {listing.bedrooms ? ` · ${listing.bedrooms} dorm.` : ""}
         </p>
       </div>
     </Link>

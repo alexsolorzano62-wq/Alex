@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getRole } from "@/lib/supabase/profile";
 import ListingForm from "@/components/ListingForm";
 
 export default async function EditListingPage({
@@ -23,16 +24,10 @@ export default async function EditListingPage({
     .single();
 
   if (!listing) notFound();
-  if (listing.created_by !== user.id) redirect(`/listings/${listing.id}`);
 
-  let initialPhotoUrls: { path: string; url: string }[] = [];
-  if (listing.photos?.length) {
-    const { data: signed } = await supabase.storage
-      .from("listing-photos")
-      .createSignedUrls(listing.photos, 60 * 60);
-    initialPhotoUrls = (signed ?? [])
-      .filter((s) => s.signedUrl)
-      .map((s) => ({ path: s.path ?? "", url: s.signedUrl! }));
+  const role = await getRole(supabase, user.id);
+  if (listing.created_by !== user.id && role !== "admin") {
+    redirect(`/listings/${listing.id}`);
   }
 
   return (
@@ -49,11 +44,7 @@ export default async function EditListingPage({
       </header>
 
       <main className="mx-auto max-w-2xl px-4 pt-4">
-        <ListingForm
-          userId={user.id}
-          listing={listing}
-          initialPhotoUrls={initialPhotoUrls}
-        />
+        <ListingForm userId={user.id} listing={listing} />
       </main>
     </div>
   );

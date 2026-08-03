@@ -1,7 +1,7 @@
 import Link from "next/link";
-import Image from "next/image";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getRole } from "@/lib/supabase/profile";
 import DeleteListingButton from "@/components/DeleteListingButton";
 import {
   Listing,
@@ -37,15 +37,9 @@ export default async function ListingDetailPage({
 
   if (!listing) notFound();
 
-  let photoUrls: string[] = [];
-  if (listing.photos?.length) {
-    const { data: signed } = await supabase.storage
-      .from("listing-photos")
-      .createSignedUrls(listing.photos, 60 * 60);
-    photoUrls = signed?.map((s) => s.signedUrl).filter(Boolean) as string[];
-  }
-
   const isOwner = listing.created_by === user.id;
+  const role = await getRole(supabase, user.id);
+  const canManage = isOwner || role === "admin";
 
   return (
     <div className="min-h-dvh pb-10">
@@ -63,38 +57,14 @@ export default async function ListingDetailPage({
       </header>
 
       <main className="mx-auto max-w-2xl px-4 pt-4">
-        {photoUrls.length > 0 ? (
-          <div className="mb-4 flex snap-x gap-2 overflow-x-auto">
-            {photoUrls.map((url, i) => (
-              <div
-                key={i}
-                className="relative h-56 w-full flex-shrink-0 snap-center overflow-hidden rounded-2xl bg-slate-100"
-              >
-                <Image
-                  src={url}
-                  alt={`Foto ${i + 1}`}
-                  fill
-                  sizes="500px"
-                  className="object-cover"
-                />
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="mb-4 flex h-40 items-center justify-center rounded-2xl bg-slate-100 text-4xl text-slate-300">
-            🏠
-          </div>
-        )}
-
         <div className="mb-3 flex items-start justify-between gap-2">
           <div>
             <h2 className="text-lg font-bold text-slate-900">
               {listing.title}
             </h2>
             <p className="text-sm text-slate-500">
-              {[listing.address, listing.neighborhood, listing.city]
-                .filter(Boolean)
-                .join(", ") || "Ubicación sin especificar"}
+              {[listing.neighborhood, listing.city].filter(Boolean).join(", ") ||
+                "Zona sin especificar"}
             </p>
           </div>
           <span
@@ -175,7 +145,7 @@ export default async function ListingDetailPage({
           </a>
         )}
 
-        {isOwner && (
+        {canManage && (
           <div className="mt-6 space-y-2 border-t border-slate-200 pt-4">
             <Link
               href={`/listings/${listing.id}/edit`}
@@ -183,10 +153,7 @@ export default async function ListingDetailPage({
             >
               Editar alquiler
             </Link>
-            <DeleteListingButton
-              listingId={listing.id}
-              photos={listing.photos ?? []}
-            />
+            <DeleteListingButton listingId={listing.id} />
           </div>
         )}
       </main>

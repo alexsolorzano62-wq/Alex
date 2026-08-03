@@ -1,9 +1,10 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import { BRAND_FULL } from "@/lib/brand";
 
 export const metadata: Metadata = {
-  title: "Alquileres | Inmobiliaria",
-  description: "Carga y consulta de alquileres disponibles",
+  title: `Alquileres | ${BRAND_FULL}`,
+  description: `Carga y consulta de alquileres disponibles - ${BRAND_FULL}`,
 };
 
 export const viewport: Viewport = {

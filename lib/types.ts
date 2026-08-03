@@ -27,6 +27,9 @@ export interface Listing {
   description: string | null;
   status: ListingStatus;
   contact_phone: string | null;
+  pets_allowed: boolean | null;
+  furnished: boolean | null;
+  expenses: number | null;
   photos: string[];
   created_at: string;
   updated_at: string;

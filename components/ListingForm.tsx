@@ -17,6 +17,18 @@ interface Props {
   initialPhotoUrls?: { path: string; url: string }[];
 }
 
+function boolToStr(value: boolean | null | undefined): string {
+  if (value === true) return "true";
+  if (value === false) return "false";
+  return "";
+}
+
+function strToBool(value: string): boolean | null {
+  if (value === "true") return true;
+  if (value === "false") return false;
+  return null;
+}
+
 export default function ListingForm({
   userId,
   listing,
@@ -41,6 +53,9 @@ export default function ListingForm({
   const [description, setDescription] = useState(listing?.description ?? "");
   const [status, setStatus] = useState(listing?.status ?? "disponible");
   const [contactPhone, setContactPhone] = useState(listing?.contact_phone ?? "");
+  const [expenses, setExpenses] = useState(listing?.expenses?.toString() ?? "");
+  const [petsAllowed, setPetsAllowed] = useState(boolToStr(listing?.pets_allowed));
+  const [furnished, setFurnished] = useState(boolToStr(listing?.furnished));
   const [photos, setPhotos] = useState<string[]>(listing?.photos ?? []);
 
   const [saving, setSaving] = useState(false);
@@ -73,6 +88,9 @@ export default function ListingForm({
       description: description.trim() || null,
       status,
       contact_phone: contactPhone.trim() || null,
+      expenses: expenses ? Number(expenses) : null,
+      pets_allowed: strToBool(petsAllowed),
+      furnished: strToBool(furnished),
       photos,
     };
 
@@ -284,6 +302,51 @@ export default function ListingForm({
           onChange={(e) => setAreaM2(e.target.value)}
           className="w-full rounded-xl border border-slate-300 px-4 py-3 text-base"
         />
+      </div>
+
+      <div>
+        <label className="mb-1 block text-sm font-medium text-slate-700">
+          Expensas
+        </label>
+        <input
+          type="number"
+          inputMode="numeric"
+          value={expenses}
+          onChange={(e) => setExpenses(e.target.value)}
+          placeholder="Opcional"
+          className="w-full rounded-xl border border-slate-300 px-4 py-3 text-base"
+        />
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="mb-1 block text-sm font-medium text-slate-700">
+            Mascotas
+          </label>
+          <select
+            value={petsAllowed}
+            onChange={(e) => setPetsAllowed(e.target.value)}
+            className="w-full rounded-xl border border-slate-300 px-3 py-3 text-base"
+          >
+            <option value="">Sin especificar</option>
+            <option value="true">Se permiten</option>
+            <option value="false">No se permiten</option>
+          </select>
+        </div>
+        <div>
+          <label className="mb-1 block text-sm font-medium text-slate-700">
+            Amoblado
+          </label>
+          <select
+            value={furnished}
+            onChange={(e) => setFurnished(e.target.value)}
+            className="w-full rounded-xl border border-slate-300 px-3 py-3 text-base"
+          >
+            <option value="">Sin especificar</option>
+            <option value="true">Amoblado</option>
+            <option value="false">Sin amoblar</option>
+          </select>
+        </div>
       </div>
 
       <div>

@@ -9,7 +9,12 @@ export const dynamic = "force-dynamic";
 export default async function ListingsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ tipo?: string; estado?: string; zona?: string }>;
+  searchParams: Promise<{
+    tipo?: string;
+    estado?: string;
+    zona?: string;
+    q?: string;
+  }>;
 }) {
   const resolvedSearchParams = await searchParams;
   const supabase = await createClient();
@@ -26,6 +31,13 @@ export default async function ListingsPage({
   if (resolvedSearchParams.tipo) query = query.eq("property_type", resolvedSearchParams.tipo);
   if (resolvedSearchParams.estado) query = query.eq("status", resolvedSearchParams.estado);
   if (resolvedSearchParams.zona) query = query.ilike("neighborhood", `%${resolvedSearchParams.zona}%`);
+
+  const searchTerm = resolvedSearchParams.q?.trim().replace(/[,()%]/g, "");
+  if (searchTerm) {
+    query = query.or(
+      `title.ilike.%${searchTerm}%,address.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%`
+    );
+  }
 
   const { data: listings, error } = await query;
 
@@ -44,7 +56,10 @@ export default async function ListingsPage({
   }
 
   const hasFilters = Boolean(
-    resolvedSearchParams.tipo || resolvedSearchParams.estado || resolvedSearchParams.zona
+    resolvedSearchParams.tipo ||
+      resolvedSearchParams.estado ||
+      resolvedSearchParams.zona ||
+      resolvedSearchParams.q
   );
 
   return (
@@ -52,7 +67,16 @@ export default async function ListingsPage({
       <AppHeader userEmail={user?.email ?? ""} />
 
       <main className="mx-auto max-w-2xl px-4 pt-4">
-        <form method="get" className="mb-4 grid grid-cols-3 gap-2">
+        <form method="get" className="mb-4 space-y-2">
+          <input
+            type="text"
+            name="q"
+            defaultValue={resolvedSearchParams.q ?? ""}
+            placeholder="Buscar por título, dirección o descripción"
+            className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm placeholder:text-slate-400"
+          />
+
+          <div className="grid grid-cols-3 gap-2">
           <select
             name="tipo"
             defaultValue={resolvedSearchParams.tipo ?? ""}
@@ -101,6 +125,7 @@ export default async function ListingsPage({
               Limpiar
             </Link>
           )}
+          </div>
         </form>
 
         {error && (

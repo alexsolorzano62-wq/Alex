@@ -33,6 +33,9 @@ desde el celular. Acceso privado con usuario y contraseña por agente.
    - la tabla `listings` (los alquileres)
    - las reglas de seguridad (RLS): todos ven todo, cada uno edita solo lo suyo
    - el bucket privado `listing-photos` para las fotos
+4. Repetí el mismo paso con [`supabase/migrations/0002_extra_fields.sql`](./supabase/migrations/0002_extra_fields.sql)
+   (agrega los campos de mascotas, amoblado y expensas). Si agregás más migraciones a futuro,
+   se corren siempre en orden numérico.
 
 ## 3. Dar de alta a los agentes (manual, sin registro público)
 

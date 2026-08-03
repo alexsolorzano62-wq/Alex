@@ -133,6 +133,28 @@ export default async function ListingDetailPage({
           </div>
         </div>
 
+        {(listing.expenses != null ||
+          listing.pets_allowed != null ||
+          listing.furnished != null) && (
+          <div className="mb-4 flex flex-wrap gap-2 text-xs">
+            {listing.expenses != null && (
+              <span className="rounded-full bg-slate-100 px-3 py-1 font-medium text-slate-700">
+                Expensas: ${listing.expenses.toLocaleString("es-AR")}
+              </span>
+            )}
+            {listing.pets_allowed != null && (
+              <span className="rounded-full bg-slate-100 px-3 py-1 font-medium text-slate-700">
+                {listing.pets_allowed ? "Acepta mascotas" : "No acepta mascotas"}
+              </span>
+            )}
+            {listing.furnished != null && (
+              <span className="rounded-full bg-slate-100 px-3 py-1 font-medium text-slate-700">
+                {listing.furnished ? "Amoblado" : "Sin amoblar"}
+              </span>
+            )}
+          </div>
+        )}
+
         {listing.description && (
           <div className="mb-4">
             <h3 className="mb-1 text-sm font-semibold text-slate-700">

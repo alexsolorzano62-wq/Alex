@@ -55,6 +55,19 @@ export interface Listing {
   updated_at: string;
 }
 
+export type ActivityKind = "creada" | "precio" | "estado";
+
+export interface Activity {
+  id: string;
+  listing_id: string | null;
+  listing_title: string;
+  changed_by: string | null;
+  kind: ActivityKind;
+  old_value: string | null;
+  new_value: string | null;
+  created_at: string;
+}
+
 export interface Suggestion {
   id: string;
   listing_id: string;

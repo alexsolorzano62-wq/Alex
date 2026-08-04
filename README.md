@@ -44,6 +44,8 @@ contenido completo de cada archivo de `supabase/migrations/`:
    prioritario) y el sistema de sugerencias de corrección entre agentes.
 6. `0006_geolocation.sql` — coordenadas de cada propiedad, para el mapa y el botón
    "Cómo llegar".
+7. `0007_activity_feed.sql` — panel de novedades: registra automáticamente los cambios de
+   precio y de estado, y las altas nuevas, para que los vea todo el equipo.
 
 Si agregás más migraciones a futuro, corrélas siempre en orden numérico.
 

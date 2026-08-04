@@ -1,9 +1,11 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getRole } from "@/lib/supabase/profile";
+import { getPendingSuggestionsCount } from "@/lib/supabase/suggestions";
 import { createAdminClient } from "@/lib/supabase/admin";
 import AddAgentForm from "@/components/AddAgentForm";
+import AppHeader from "@/components/AppHeader";
+import BottomNav from "@/components/BottomNav";
 
 export const dynamic = "force-dynamic";
 
@@ -17,6 +19,12 @@ export default async function AdminAgentsPage() {
 
   const role = await getRole(supabase, user.id);
   if (role !== "admin") redirect("/listings");
+
+  const pendingSuggestions = await getPendingSuggestionsCount(
+    supabase,
+    user.id,
+    role
+  );
 
   const adminClient = createAdminClient();
 
@@ -37,19 +45,11 @@ export default async function AdminAgentsPage() {
     .sort((a, b) => a.email.localeCompare(b.email));
 
   return (
-    <div className="min-h-dvh pb-10">
-      <header className="sticky top-0 z-10 flex items-center gap-3 border-b border-slate-200 bg-white/90 px-4 py-3 backdrop-blur">
-        <Link
-          href="/listings"
-          className="rounded-lg px-2 py-1 text-xl text-slate-500 active:bg-slate-100"
-          aria-label="Volver"
-        >
-          ←
-        </Link>
-        <h1 className="text-base font-bold text-slate-900">Agentes</h1>
-      </header>
+    <div className="min-h-dvh pb-32">
+      <AppHeader userEmail={user.email ?? ""} />
 
       <main className="mx-auto max-w-2xl px-4 pt-4">
+        <h1 className="mb-4 text-lg font-bold text-slate-900">Agentes</h1>
         <AddAgentForm />
 
         <h2 className="mb-2 mt-8 text-sm font-semibold text-slate-700">
@@ -80,6 +80,8 @@ export default async function AdminAgentsPage() {
           ))}
         </div>
       </main>
+
+      <BottomNav role={role} pendingSuggestions={pendingSuggestions} />
     </div>
   );
 }

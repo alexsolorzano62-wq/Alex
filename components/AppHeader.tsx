@@ -1,19 +1,11 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { LogoMark } from "@/components/Logo";
 import { BRAND_NAME } from "@/lib/brand";
-import type { UserRole } from "@/lib/types";
 
-export default function AppHeader({
-  userEmail,
-  role = "agent",
-}: {
-  userEmail: string;
-  role?: UserRole;
-}) {
+export default function AppHeader({ userEmail }: { userEmail: string }) {
   const router = useRouter();
 
   async function handleLogout() {
@@ -34,22 +26,12 @@ export default function AppHeader({
           <p className="truncate text-xs text-slate-500">{userEmail}</p>
         </div>
       </div>
-      <div className="flex items-center gap-1">
-        {role === "admin" && (
-          <Link
-            href="/admin/agents"
-            className="rounded-lg px-3 py-2 text-sm font-medium text-slate-500 active:bg-slate-100"
-          >
-            Agentes
-          </Link>
-        )}
-        <button
-          onClick={handleLogout}
-          className="rounded-lg px-3 py-2 text-sm font-medium text-slate-500 active:bg-slate-100"
-        >
-          Salir
-        </button>
-      </div>
+      <button
+        onClick={handleLogout}
+        className="rounded-lg px-3 py-2 text-sm font-medium text-slate-500 active:bg-slate-100"
+      >
+        Salir
+      </button>
     </header>
   );
 }

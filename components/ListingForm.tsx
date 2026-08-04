@@ -7,7 +7,11 @@ import {
   Listing,
   PROPERTY_TYPE_LABELS,
   STATUS_LABELS,
+  RENTAL_PURPOSE_LABELS,
+  CONTRACT_MONTHS_OPTIONS,
   Currency,
+  AdjustmentIndex,
+  RentalPurpose,
 } from "@/lib/types";
 
 interface Props {
@@ -27,6 +31,12 @@ function strToBool(value: string): boolean | null {
   return null;
 }
 
+const inputClass =
+  "w-full rounded-xl border border-slate-300 px-4 py-3 text-base focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-100";
+const selectClass =
+  "w-full rounded-xl border border-slate-300 bg-white px-3 py-3 text-base";
+const labelClass = "mb-1 block text-sm font-medium text-slate-700";
+
 export default function ListingForm({ userId, listing }: Props) {
   const router = useRouter();
   const isEditing = Boolean(listing);
@@ -39,19 +49,49 @@ export default function ListingForm({ userId, listing }: Props) {
   const [propertyType, setPropertyType] = useState(
     listing?.property_type ?? "departamento"
   );
-  const [rooms, setRooms] = useState(listing?.rooms?.toString() ?? "");
+  const [status, setStatus] = useState(listing?.status ?? "disponible");
   const [bedrooms, setBedrooms] = useState(listing?.bedrooms?.toString() ?? "");
   const [bathrooms, setBathrooms] = useState(listing?.bathrooms?.toString() ?? "");
   const [areaM2, setAreaM2] = useState(listing?.area_m2?.toString() ?? "");
-  const [description, setDescription] = useState(listing?.description ?? "");
-  const [status, setStatus] = useState(listing?.status ?? "disponible");
-  const [contactPhone, setContactPhone] = useState(listing?.contact_phone ?? "");
+  const [purpose, setPurpose] = useState<RentalPurpose | "">(
+    listing?.rental_purpose ?? ""
+  );
+
+  const knownMonths = CONTRACT_MONTHS_OPTIONS.map(String);
+  const initialMonths = listing?.contract_months?.toString() ?? "";
+  const [contractOption, setContractOption] = useState(
+    initialMonths === "" ? "" : knownMonths.includes(initialMonths) ? initialMonths : "otro"
+  );
+  const [contractCustom, setContractCustom] = useState(
+    initialMonths !== "" && !knownMonths.includes(initialMonths) ? initialMonths : ""
+  );
+
+  const knownFreqs = ["trimestral", "cuatrimestral"];
+  const initialFreq = listing?.adjustment_frequency ?? "";
+  const [freqOption, setFreqOption] = useState(
+    initialFreq === "" ? "" : knownFreqs.includes(initialFreq) ? initialFreq : "otro"
+  );
+  const [freqCustom, setFreqCustom] = useState(
+    initialFreq !== "" && !knownFreqs.includes(initialFreq) ? initialFreq : ""
+  );
+
+  const [adjIndex, setAdjIndex] = useState<AdjustmentIndex | "">(
+    listing?.adjustment_index ?? ""
+  );
+  const [fixedPct, setFixedPct] = useState(
+    listing?.adjustment_fixed_pct?.toString() ?? ""
+  );
+
   const [expenses, setExpenses] = useState(listing?.expenses?.toString() ?? "");
   const [petsAllowed, setPetsAllowed] = useState(boolToStr(listing?.pets_allowed));
   const [furnished, setFurnished] = useState(boolToStr(listing?.furnished));
+  const [priorityNote, setPriorityNote] = useState(listing?.priority_note ?? "");
+  const [description, setDescription] = useState(listing?.description ?? "");
 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const isLocal = propertyType === "local";
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -61,6 +101,18 @@ export default function ListingForm({ userId, listing }: Props) {
       setError("La dirección es obligatoria.");
       return;
     }
+
+    const contractMonths =
+      contractOption === "otro"
+        ? contractCustom
+          ? Number(contractCustom)
+          : null
+        : contractOption
+          ? Number(contractOption)
+          : null;
+
+    const adjustmentFrequency =
+      freqOption === "otro" ? freqCustom.trim() || null : freqOption || null;
 
     setSaving(true);
     const supabase = createClient();
@@ -73,16 +125,20 @@ export default function ListingForm({ userId, listing }: Props) {
       price: price ? Number(price) : null,
       currency,
       property_type: propertyType,
-      rooms: rooms ? Number(rooms) : null,
+      status,
       bedrooms: bedrooms ? Number(bedrooms) : null,
       bathrooms: bathrooms ? Number(bathrooms) : null,
-      area_m2: areaM2 ? Number(areaM2) : null,
-      description: description.trim() || null,
-      status,
-      contact_phone: contactPhone.trim() || null,
+      area_m2: isLocal && areaM2 ? Number(areaM2) : null,
+      rental_purpose: purpose || null,
+      contract_months: contractMonths,
+      adjustment_frequency: adjustmentFrequency,
+      adjustment_index: adjIndex || null,
+      adjustment_fixed_pct: adjIndex === "fijo" && fixedPct ? Number(fixedPct) : null,
       expenses: expenses ? Number(expenses) : null,
       pets_allowed: strToBool(petsAllowed),
       furnished: strToBool(furnished),
+      priority_note: priorityNote.trim() || null,
+      description: description.trim() || null,
     };
 
     if (isEditing && listing) {
@@ -119,27 +175,23 @@ export default function ListingForm({ userId, listing }: Props) {
   return (
     <form onSubmit={handleSubmit} className="space-y-5 pb-10">
       <div>
-        <label className="mb-1 block text-sm font-medium text-slate-700">
-          Dirección *
-        </label>
+        <label className={labelClass}>Dirección *</label>
         <input
           value={address}
           onChange={(e) => setAddress(e.target.value)}
           required
           placeholder="Av. Siempre Viva 123"
-          className="w-full rounded-xl border border-slate-300 px-4 py-3 text-base focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-100"
+          className={inputClass}
         />
       </div>
 
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="mb-1 block text-sm font-medium text-slate-700">
-            Tipo
-          </label>
+          <label className={labelClass}>Tipo</label>
           <select
             value={propertyType}
             onChange={(e) => setPropertyType(e.target.value as typeof propertyType)}
-            className="w-full rounded-xl border border-slate-300 px-3 py-3 text-base"
+            className={selectClass}
           >
             {Object.entries(PROPERTY_TYPE_LABELS).map(([value, label]) => (
               <option key={value} value={value}>
@@ -149,13 +201,11 @@ export default function ListingForm({ userId, listing }: Props) {
           </select>
         </div>
         <div>
-          <label className="mb-1 block text-sm font-medium text-slate-700">
-            Estado
-          </label>
+          <label className={labelClass}>Estado</label>
           <select
             value={status}
             onChange={(e) => setStatus(e.target.value as typeof status)}
-            className="w-full rounded-xl border border-slate-300 px-3 py-3 text-base"
+            className={selectClass}
           >
             {Object.entries(STATUS_LABELS).map(([value, label]) => (
               <option key={value} value={value}>
@@ -168,51 +218,43 @@ export default function ListingForm({ userId, listing }: Props) {
 
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="mb-1 block text-sm font-medium text-slate-700">
-            Barrio / Zona
-          </label>
+          <label className={labelClass}>Barrio / Zona</label>
           <input
             value={neighborhood}
             onChange={(e) => setNeighborhood(e.target.value)}
             placeholder="Palermo"
-            className="w-full rounded-xl border border-slate-300 px-4 py-3 text-base"
+            className={inputClass}
           />
         </div>
         <div>
-          <label className="mb-1 block text-sm font-medium text-slate-700">
-            Ciudad
-          </label>
+          <label className={labelClass}>Ciudad</label>
           <input
             value={city}
             onChange={(e) => setCity(e.target.value)}
             placeholder="Buenos Aires"
-            className="w-full rounded-xl border border-slate-300 px-4 py-3 text-base"
+            className={inputClass}
           />
         </div>
       </div>
 
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="mb-1 block text-sm font-medium text-slate-700">
-            Precio
-          </label>
+          <label className={labelClass}>Precio</label>
           <input
             type="number"
             inputMode="numeric"
             value={price}
             onChange={(e) => setPrice(e.target.value)}
             placeholder="250000"
-            className="w-full rounded-xl border border-slate-300 px-4 py-3 text-base"
+            className={inputClass}
           />
         </div>
         <div>
-          <label className="mb-1 block text-sm font-medium text-slate-700">
-            Moneda
-          </label>
+          <label className={labelClass}>Moneda</label>
           <select
             value={currency}
             onChange={(e) => setCurrency(e.target.value as Currency)}
-            className="w-full rounded-xl border border-slate-300 px-3 py-3 text-base"
+            className={selectClass}
           >
             <option value="ARS">ARS</option>
             <option value="USD">USD</option>
@@ -220,81 +262,155 @@ export default function ListingForm({ userId, listing }: Props) {
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="mb-1 block text-sm font-medium text-slate-700">
-            Ambientes
-          </label>
+          <label className={labelClass}>Dormitorios</label>
           <input
             type="number"
             inputMode="numeric"
-            value={rooms}
-            onChange={(e) => setRooms(e.target.value)}
-            className="w-full rounded-xl border border-slate-300 px-3 py-3 text-base"
-          />
-        </div>
-        <div>
-          <label className="mb-1 block text-sm font-medium text-slate-700">
-            Dorm.
-          </label>
-          <input
-            type="number"
-            inputMode="numeric"
+            min={0}
             value={bedrooms}
             onChange={(e) => setBedrooms(e.target.value)}
-            className="w-full rounded-xl border border-slate-300 px-3 py-3 text-base"
+            className={inputClass}
           />
         </div>
         <div>
-          <label className="mb-1 block text-sm font-medium text-slate-700">
-            Baños
-          </label>
+          <label className={labelClass}>Baños</label>
           <input
             type="number"
             inputMode="numeric"
+            min={0}
             value={bathrooms}
             onChange={(e) => setBathrooms(e.target.value)}
-            className="w-full rounded-xl border border-slate-300 px-3 py-3 text-base"
+            className={inputClass}
           />
         </div>
       </div>
 
+      {isLocal && (
+        <div>
+          <label className={labelClass}>Superficie (m²)</label>
+          <input
+            type="number"
+            inputMode="numeric"
+            value={areaM2}
+            onChange={(e) => setAreaM2(e.target.value)}
+            className={inputClass}
+          />
+        </div>
+      )}
+
       <div>
-        <label className="mb-1 block text-sm font-medium text-slate-700">
-          Superficie (m²)
-        </label>
-        <input
-          type="number"
-          inputMode="numeric"
-          value={areaM2}
-          onChange={(e) => setAreaM2(e.target.value)}
-          className="w-full rounded-xl border border-slate-300 px-4 py-3 text-base"
-        />
+        <label className={labelClass}>Destino del alquiler</label>
+        <select
+          value={purpose}
+          onChange={(e) => setPurpose(e.target.value as RentalPurpose | "")}
+          className={selectClass}
+        >
+          <option value="">Sin especificar</option>
+          {Object.entries(RENTAL_PURPOSE_LABELS).map(([value, label]) => (
+            <option key={value} value={value}>
+              {label}
+            </option>
+          ))}
+        </select>
       </div>
 
       <div>
-        <label className="mb-1 block text-sm font-medium text-slate-700">
-          Expensas
-        </label>
+        <label className={labelClass}>Plazo de contrato</label>
+        <select
+          value={contractOption}
+          onChange={(e) => setContractOption(e.target.value)}
+          className={selectClass}
+        >
+          <option value="">Sin especificar</option>
+          {CONTRACT_MONTHS_OPTIONS.map((m) => (
+            <option key={m} value={m}>
+              {m} meses
+            </option>
+          ))}
+          <option value="otro">Otro</option>
+        </select>
+        {contractOption === "otro" && (
+          <input
+            type="number"
+            inputMode="numeric"
+            min={1}
+            value={contractCustom}
+            onChange={(e) => setContractCustom(e.target.value)}
+            placeholder="Cantidad de meses"
+            className={`${inputClass} mt-2`}
+          />
+        )}
+      </div>
+
+      <div>
+        <label className={labelClass}>Ajuste</label>
+        <select
+          value={freqOption}
+          onChange={(e) => setFreqOption(e.target.value)}
+          className={selectClass}
+        >
+          <option value="">Sin especificar</option>
+          <option value="trimestral">Trimestral</option>
+          <option value="cuatrimestral">Cuatrimestral</option>
+          <option value="otro">Otro</option>
+        </select>
+        {freqOption === "otro" && (
+          <input
+            value={freqCustom}
+            onChange={(e) => setFreqCustom(e.target.value)}
+            placeholder="Ej: semestral, anual"
+            className={`${inputClass} mt-2`}
+          />
+        )}
+      </div>
+
+      <div>
+        <label className={labelClass}>Índice de ajuste</label>
+        <select
+          value={adjIndex}
+          onChange={(e) => setAdjIndex(e.target.value as AdjustmentIndex | "")}
+          className={selectClass}
+        >
+          <option value="">Sin especificar</option>
+          <option value="icl">ICL</option>
+          <option value="ipc">IPC</option>
+          <option value="fijo">Fijo (%)</option>
+        </select>
+        {adjIndex === "fijo" && (
+          <input
+            type="number"
+            inputMode="decimal"
+            step="0.1"
+            min={0}
+            value={fixedPct}
+            onChange={(e) => setFixedPct(e.target.value)}
+            placeholder="Porcentaje, ej: 7"
+            className={`${inputClass} mt-2`}
+          />
+        )}
+      </div>
+
+      <div>
+        <label className={labelClass}>Expensas</label>
         <input
           type="number"
           inputMode="numeric"
           value={expenses}
           onChange={(e) => setExpenses(e.target.value)}
           placeholder="Opcional"
-          className="w-full rounded-xl border border-slate-300 px-4 py-3 text-base"
+          className={inputClass}
         />
       </div>
 
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="mb-1 block text-sm font-medium text-slate-700">
-            Mascotas
-          </label>
+          <label className={labelClass}>Mascotas</label>
           <select
             value={petsAllowed}
             onChange={(e) => setPetsAllowed(e.target.value)}
-            className="w-full rounded-xl border border-slate-300 px-3 py-3 text-base"
+            className={selectClass}
           >
             <option value="">Sin especificar</option>
             <option value="true">Se permiten</option>
@@ -302,13 +418,11 @@ export default function ListingForm({ userId, listing }: Props) {
           </select>
         </div>
         <div>
-          <label className="mb-1 block text-sm font-medium text-slate-700">
-            Amoblado
-          </label>
+          <label className={labelClass}>Amoblado</label>
           <select
             value={furnished}
             onChange={(e) => setFurnished(e.target.value)}
-            className="w-full rounded-xl border border-slate-300 px-3 py-3 text-base"
+            className={selectClass}
           >
             <option value="">Sin especificar</option>
             <option value="true">Amoblado</option>
@@ -318,28 +432,26 @@ export default function ListingForm({ userId, listing }: Props) {
       </div>
 
       <div>
-        <label className="mb-1 block text-sm font-medium text-slate-700">
-          Teléfono de contacto
+        <label className={labelClass}>
+          Detalle importante <span className="text-amber-600">(prioridad)</span>
         </label>
-        <input
-          type="tel"
-          value={contactPhone}
-          onChange={(e) => setContactPhone(e.target.value)}
-          placeholder="11 2345 6789"
-          className="w-full rounded-xl border border-slate-300 px-4 py-3 text-base"
+        <textarea
+          value={priorityNote}
+          onChange={(e) => setPriorityNote(e.target.value)}
+          rows={2}
+          placeholder="Lo primero que hay que saber de esta propiedad"
+          className="w-full rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-base placeholder:text-amber-400 focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-100"
         />
       </div>
 
       <div>
-        <label className="mb-1 block text-sm font-medium text-slate-700">
-          Descripción
-        </label>
+        <label className={labelClass}>Descripción</label>
         <textarea
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           rows={4}
-          placeholder="Detalles del alquiler, requisitos, expensas, etc."
-          className="w-full rounded-xl border border-slate-300 px-4 py-3 text-base"
+          placeholder="Más información: requisitos, garantías, detalles del inmueble, etc."
+          className={inputClass}
         />
       </div>
 

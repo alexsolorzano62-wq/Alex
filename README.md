@@ -38,8 +38,10 @@ contenido completo de cada archivo de `supabase/migrations/`:
 3. `0003_roles.sql` — agrega el rol (`agent`/`admin`) a `profiles`; los administradores pueden
    editar/eliminar los alquileres de cualquier agente.
 4. `0004_property_types_status.sql` — ajusta los tipos de propiedad (monoambiente, dúplex,
-   galpón, estacionamiento, etc.) y los estados (`disponible` / `reservado` / `no_disponible`)
-   al uso real de la inmobiliaria.
+   galpón, estacionamiento, etc.) y los estados al uso real de la inmobiliaria.
+5. `0005_contract_fields_suggestions.sql` — estados finales (`disponible` / `reservado` /
+   `proximamente` / `pausado`), campos de contrato (plazo, ajuste, índice, destino, detalle
+   prioritario) y el sistema de sugerencias de corrección entre agentes.
 
 Si agregás más migraciones a futuro, corrélas siempre en orden numérico.
 
@@ -83,13 +85,15 @@ Abrí [http://localhost:3000](http://localhost:3000) — te va a redirigir a `/l
 ```
 app/
   login/               Pantalla de login
-  listings/            Feed de alquileres (home), filtros por tipo/estado/zona/dormitorios
+  dashboard/           Pantalla principal: totales por estado y por tipo (clickeables)
+  listings/            Listado con búsqueda, filtros y orden por precio
   listings/new/        Formulario de carga
-  listings/[id]/       Detalle de un alquiler
-  listings/[id]/edit/  Edición (dueño del alquiler o administrador)
+  listings/[id]/       Detalle de un alquiler + sugerencias de corrección
+  listings/[id]/edit/  Edición (agente responsable o administrador)
+  suggestions/         Bandeja de sugerencias (para revisar / enviadas)
   admin/agents/        Panel para agregar agentes/administradores (solo admins)
   api/admin/agents/    Endpoint que crea usuarios (usa la Secret key, solo servidor)
-components/            ListingForm, ListingCard, AddAgentForm, etc.
+components/            ListingForm, ListingCard, BottomNav, SuggestionForm, etc.
 lib/supabase/          Helpers de conexión a Supabase (cliente, servidor y admin)
 supabase/migrations/   Esquema SQL: tablas, seguridad (RLS) y roles
 ```

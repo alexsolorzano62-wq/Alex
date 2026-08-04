@@ -42,6 +42,8 @@ contenido completo de cada archivo de `supabase/migrations/`:
 5. `0005_contract_fields_suggestions.sql` — estados finales (`disponible` / `reservado` /
    `proximamente` / `pausado`), campos de contrato (plazo, ajuste, índice, destino, detalle
    prioritario) y el sistema de sugerencias de corrección entre agentes.
+6. `0006_geolocation.sql` — coordenadas de cada propiedad, para el mapa y el botón
+   "Cómo llegar".
 
 Si agregás más migraciones a futuro, corrélas siempre en orden numérico.
 

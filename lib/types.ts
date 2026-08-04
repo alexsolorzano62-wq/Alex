@@ -49,6 +49,8 @@ export interface Listing {
   adjustment_fixed_pct: number | null;
   rental_purpose: RentalPurpose | null;
   priority_note: string | null;
+  latitude: number | null;
+  longitude: number | null;
   created_at: string;
   updated_at: string;
 }

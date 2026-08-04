@@ -35,7 +35,11 @@ export async function proxy(request: NextRequest) {
     request.nextUrl.pathname.startsWith(path)
   );
 
-  if (!user && !isPublicPath) {
+  // Las rutas de API hacen su propio control y responden JSON: redirigirlas
+  // al login rompería el `fetch` del navegador, que espera JSON.
+  const isApiPath = request.nextUrl.pathname.startsWith("/api/");
+
+  if (!user && !isPublicPath && !isApiPath) {
     const loginUrl = new URL("/login", request.url);
     loginUrl.searchParams.set("redirectTo", request.nextUrl.pathname);
     return NextResponse.redirect(loginUrl);

@@ -3,6 +3,9 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import AddressAutocomplete, {
+  type AddressValue,
+} from "@/components/AddressAutocomplete";
 import {
   Listing,
   PROPERTY_TYPE_LABELS,
@@ -41,7 +44,12 @@ export default function ListingForm({ userId, listing }: Props) {
   const router = useRouter();
   const isEditing = Boolean(listing);
 
-  const [address, setAddress] = useState(listing?.address ?? "");
+  const [addressValue, setAddressValue] = useState<AddressValue>({
+    address: listing?.address ?? "",
+    city: listing?.city ?? null,
+    latitude: listing?.latitude ?? null,
+    longitude: listing?.longitude ?? null,
+  });
   const [neighborhood, setNeighborhood] = useState(listing?.neighborhood ?? "");
   const [city, setCity] = useState(listing?.city ?? "");
   const [price, setPrice] = useState(listing?.price?.toString() ?? "");
@@ -97,7 +105,8 @@ export default function ListingForm({ userId, listing }: Props) {
     e.preventDefault();
     setError(null);
 
-    if (!address.trim()) {
+    const address = addressValue.address.trim();
+    if (!address) {
       setError("La dirección es obligatoria.");
       return;
     }
@@ -118,8 +127,10 @@ export default function ListingForm({ userId, listing }: Props) {
     const supabase = createClient();
 
     const payload = {
-      title: address.trim(),
-      address: address.trim(),
+      title: address,
+      address,
+      latitude: addressValue.latitude,
+      longitude: addressValue.longitude,
       neighborhood: neighborhood.trim() || null,
       city: city.trim() || null,
       price: price ? Number(price) : null,
@@ -174,16 +185,14 @@ export default function ListingForm({ userId, listing }: Props) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5 pb-10">
-      <div>
-        <label className={labelClass}>Dirección *</label>
-        <input
-          value={address}
-          onChange={(e) => setAddress(e.target.value)}
-          required
-          placeholder="Av. Siempre Viva 123"
-          className={inputClass}
-        />
-      </div>
+      <AddressAutocomplete
+        value={addressValue}
+        onChange={(next) => {
+          setAddressValue(next);
+          // Al elegir una sugerencia se completa la ciudad si estaba vacía.
+          if (next.city && !city.trim()) setCity(next.city);
+        }}
+      />
 
       <div className="grid grid-cols-2 gap-3">
         <div>

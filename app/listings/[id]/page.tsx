@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getRole } from "@/lib/supabase/profile";
 import DeleteListingButton from "@/components/DeleteListingButton";
+import LocationMap from "@/components/LocationMap";
 import SuggestionForm from "@/components/SuggestionForm";
 import SuggestionActions from "@/components/SuggestionActions";
 import {
@@ -188,6 +189,14 @@ export default async function ListingDetailPage({
               </span>
             ))}
           </div>
+        )}
+
+        {listing.latitude != null && listing.longitude != null && (
+          <LocationMap
+            latitude={listing.latitude}
+            longitude={listing.longitude}
+            address={listing.title}
+          />
         )}
 
         {listing.description && (

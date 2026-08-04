@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import {
@@ -113,8 +114,8 @@ export default function NewsPanel() {
     <>
       <button
         onClick={handleOpen}
-        aria-label="Novedades"
-        className="relative rounded-lg px-3 py-2 text-sm font-medium text-slate-500 active:bg-slate-100"
+        aria-label="Notificaciones"
+        className="relative flex items-center gap-1.5 rounded-full bg-brand-600 px-3.5 py-2.5 text-sm font-bold text-white shadow-sm active:bg-brand-700"
       >
         <svg
           viewBox="0 0 24 24"
@@ -124,20 +125,24 @@ export default function NewsPanel() {
           className="h-5 w-5"
         >
           <path
-            d="M3 11v2a1 1 0 0 0 1 1h2l5 4V6L6 10H4a1 1 0 0 0-1 1Z"
+            d="M18 8a6 6 0 1 0-12 0c0 7-2.5 8-2.5 8h17S18 15 18 8"
+            strokeLinecap="round"
             strokeLinejoin="round"
           />
-          <path d="M16 9a4 4 0 0 1 0 6M19 6.5a8 8 0 0 1 0 11" strokeLinecap="round" />
+          <path d="M10.3 21a2 2 0 0 0 3.4 0" strokeLinecap="round" />
         </svg>
+        Notificaciones
         {unread > 0 && (
-          <span className="absolute right-0 top-0 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white ring-2 ring-white">
+          <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[11px] font-bold text-white ring-2 ring-white">
             {unread > 9 ? "9+" : unread}
           </span>
         )}
       </button>
 
-      {open && (
-        <div className="fixed inset-0 z-40">
+      {/* Se monta con un portal en <body>: dentro del encabezado quedaría
+          atrapado por su efecto de desenfoque y no ocuparía la pantalla. */}
+      {open && createPortal(
+        <div className="fixed inset-0 z-50">
           <button
             aria-label="Cerrar novedades"
             onClick={() => setOpen(false)}
@@ -229,7 +234,8 @@ export default function NewsPanel() {
               </ul>
             </div>
           </aside>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );

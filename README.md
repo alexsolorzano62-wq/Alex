@@ -84,6 +84,20 @@ Abrí [http://localhost:3000](http://localhost:3000) — te va a redirigir a `/l
 4. Deploy. Vercel te da una URL pública (ej. `https://alquileres-tuinmobiliaria.vercel.app`)
    que los agentes pueden abrir desde el celular y, si quieren, agregar a la pantalla de inicio.
 
+## Pausar la app (modo mantenimiento)
+
+Para que los agentes no puedan usar el sistema por un rato, en Vercel →
+**Settings → Environment Variables** agregá:
+
+- `MAINTENANCE_MODE` = `true`
+- `MAINTENANCE_ALLOW_EMAILS` = tu email (para poder seguir entrando vos)
+
+Guardá y hacé **Redeploy**. Los agentes van a ver la pantalla de
+`/mantenimiento` en lugar de la app; los datos quedan intactos.
+
+Para reactivarla: poné `MAINTENANCE_MODE` en `false` (o borrá la variable) y
+volvé a hacer Redeploy.
+
 ## Estructura del proyecto
 
 ```

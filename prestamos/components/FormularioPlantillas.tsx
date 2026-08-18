@@ -8,11 +8,12 @@ import {
   ETIQUETAS,
   PLANTILLA_ESTADO_CUENTA,
   PLANTILLA_PRESTAMO_NUEVO,
+  PLANTILLA_COMPROBANTE,
 } from "@/lib/plantillas";
 import type { Ajustes } from "@/lib/types";
 
 type Editor = {
-  campo: "plantilla_estado_cuenta" | "plantilla_prestamo_nuevo";
+  campo: "plantilla_estado_cuenta" | "plantilla_prestamo_nuevo" | "plantilla_comprobante";
   titulo: string;
   ayuda: string;
   porDefecto: string;
@@ -31,6 +32,12 @@ const EDITORES: Editor[] = [
     ayuda: "El aviso que sale cuando le cargás un préstamo recién hecho.",
     porDefecto: PLANTILLA_PRESTAMO_NUEVO,
   },
+  {
+    campo: "plantilla_comprobante",
+    titulo: "Comprobante de pago",
+    ayuda: "El recibo que le mandás cuando te paga, con el saldo y lo que le queda.",
+    porDefecto: PLANTILLA_COMPROBANTE,
+  },
 ];
 
 export default function FormularioPlantillas({ ajustes }: { ajustes: Ajustes | null }) {
@@ -42,6 +49,7 @@ export default function FormularioPlantillas({ ajustes }: { ajustes: Ajustes | n
       ajustes?.plantilla_estado_cuenta ?? PLANTILLA_ESTADO_CUENTA,
     plantilla_prestamo_nuevo:
       ajustes?.plantilla_prestamo_nuevo ?? PLANTILLA_PRESTAMO_NUEVO,
+    plantilla_comprobante: ajustes?.plantilla_comprobante ?? PLANTILLA_COMPROBANTE,
   });
 
   const [ejemplo, setEjemplo] = useState(0);

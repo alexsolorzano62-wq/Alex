@@ -276,6 +276,8 @@ export async function guardarPlantillas(
       String(datos.get("plantilla_estado_cuenta") ?? "").trim() || null,
     plantilla_prestamo_nuevo:
       String(datos.get("plantilla_prestamo_nuevo") ?? "").trim() || null,
+    plantilla_comprobante:
+      String(datos.get("plantilla_comprobante") ?? "").trim() || null,
     actualizado_at: new Date().toISOString(),
   });
 

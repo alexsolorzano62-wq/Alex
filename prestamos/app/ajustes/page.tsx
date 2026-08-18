@@ -20,7 +20,9 @@ export default async function AjustesPage() {
         <h1 className="mt-2 text-lg font-bold">Mensajes de WhatsApp</h1>
         <p className="mb-6 mt-1 text-sm text-slate-500">
           Escribilos a tu manera. Lo que está entre llaves se reemplaza solo por los
-          datos de cada cliente cuando mandás el mensaje.
+          datos de cada cliente cuando mandás el mensaje. Si una etiqueta no aplica
+          (las cuotas en un préstamo con interés mensual, por ejemplo), su renglón
+          desaparece solo.
         </p>
 
         <FormularioPlantillas ajustes={ajustes} />

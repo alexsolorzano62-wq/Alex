@@ -3,9 +3,10 @@ import {
   variablesDePrestamo,
   PLANTILLA_ESTADO_CUENTA,
   PLANTILLA_PRESTAMO_NUEVO,
+  PLANTILLA_COMPROBANTE,
 } from "@/lib/plantillas";
 import type { ResumenPrestamo } from "@/lib/calc";
-import type { Prestamo } from "@/lib/types";
+import type { Pago, Prestamo } from "@/lib/types";
 
 /**
  * Deja el telefono como lo quiere wa.me: 549 + area + numero, sin el 0 ni el 15.
@@ -57,12 +58,13 @@ function armar(
   prestamo: Prestamo,
   datos: ResumenPrestamo,
   nombreCliente: string,
-  hoy: string
+  hoy: string,
+  pago?: Pago | null
 ): string {
   const plantilla = plantillaGuardada?.trim() || plantillaPorDefecto;
   return aplicarPlantilla(
     plantilla,
-    variablesDePrestamo(prestamo, datos, nombreCliente, hoy)
+    variablesDePrestamo(prestamo, datos, nombreCliente, hoy, pago)
   );
 }
 
@@ -84,4 +86,16 @@ export function mensajePrestamoNuevo(
   plantilla?: string | null
 ): string {
   return armar(plantilla, PLANTILLA_PRESTAMO_NUEVO, prestamo, datos, nombreCliente, hoy);
+}
+
+/** El comprobante de un pago, con el saldo y lo que le queda por delante. */
+export function mensajeComprobante(
+  prestamo: Prestamo,
+  datos: ResumenPrestamo,
+  nombreCliente: string,
+  hoy: string,
+  pago: Pago,
+  plantilla?: string | null
+): string {
+  return armar(plantilla, PLANTILLA_COMPROBANTE, prestamo, datos, nombreCliente, hoy, pago);
 }

@@ -31,8 +31,15 @@ todo y, si querés, les mandás el estado de cuenta por WhatsApp.
   texto ya escrito. Si el cliente tiene teléfono cargado, abre su chat directo;
   si no, te deja elegir el contacto o copiar el texto.
 - **Mensajes a tu manera**: en *Ajustes* (el engranaje del encabezado) escribís vos
-  el texto de los dos mensajes, con etiquetas como `{cliente}`, `{total}` o
-  `{vence}` que se reemplazan solas. Hay vista previa en vivo.
+  el texto de los tres mensajes —préstamo nuevo, estado de cuenta y comprobante de
+  pago— con etiquetas como `{cliente}`, `{forma_pago}` o `{saldo}` que se reemplazan
+  solas. Hay vista previa en vivo.
+- **Comprobante de pago**: cada vez que registrás un cobro podés mandarle el recibo,
+  con el saldo, cuántas cuotas le quedan y cuándo vence la próxima.
+- Los mensajes al cliente **no muestran la tasa ni el total a devolver**: eso es
+  información tuya. El cliente ve cuánto pidió, cómo lo paga y cuándo vence. Si una
+  etiqueta no aplica (las cuotas en un préstamo con interés mensual), su renglón
+  desaparece solo.
 - **La planilla de siempre**: en pantalla grande los préstamos se ven como tabla,
   con la fila de totales abajo.
 
@@ -61,6 +68,7 @@ contenido completo de cada archivo de `supabase/migrations/`:
    de fila: cada fila queda atada a tu usuario y nadie más puede leerla.
 2. `0002_plantillas.sql` — guarda los textos de WhatsApp que editás en *Ajustes*.
 3. `0003_planes_semanales.sql` — habilita la modalidad de cuotas semanales.
+4. `0004_comprobante.sql` — agrega la plantilla del comprobante de pago.
 
 Si agregás más migraciones a futuro, corrélas siempre en orden numérico.
 

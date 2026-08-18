@@ -12,6 +12,7 @@ import { formatFecha, hoyISO } from "@/lib/fechas";
 import { descripcionPlan, plata, tasaMostrada, textoVencimiento } from "@/lib/format";
 import {
   linkWhatsApp,
+  mensajeComprobante,
   mensajeEstadoDeCuenta,
   mensajePrestamoNuevo,
 } from "@/lib/whatsapp";
@@ -60,6 +61,20 @@ export default async function PrestamoPage({
         hoy,
         ajustes?.plantilla_estado_cuenta
       );
+
+  // El historial viene del más nuevo al más viejo, así que el último cobro
+  // es el primero de la lista.
+  const ultimoPago = prestamo.pagos[0] ?? null;
+  const comprobante = ultimoPago
+    ? mensajeComprobante(
+        prestamo,
+        datos,
+        nombre,
+        hoy,
+        ultimoPago,
+        ajustes?.plantilla_comprobante
+      )
+    : null;
 
   return (
     <>
@@ -181,6 +196,19 @@ export default async function PrestamoPage({
                 </BotonConfirmar>
               </form>
             )}
+          </section>
+        )}
+
+        {comprobante && (
+          <section className="mt-6">
+            <h2 className="mb-2 text-sm font-bold text-slate-900">
+              Comprobante del último cobro
+            </h2>
+            <BotonesWhatsApp
+              mensaje={comprobante}
+              link={linkWhatsApp(telefono, comprobante)}
+              etiqueta={telefono ? "Mandar comprobante" : "Elegir contacto"}
+            />
           </section>
         )}
 

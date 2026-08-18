@@ -1,7 +1,7 @@
 import { calcularPlan, resumen, tasaImplicita, capitalizar, renovar } from "@/lib/calc";
 import { sumarMeses, diasEntre } from "@/lib/fechas";
 import { normalizarTelefono, mensajeEstadoDeCuenta } from "@/lib/whatsapp";
-import { aplicarPlantilla, EJEMPLOS, PLANTILLA_ESTADO_CUENTA, PLANTILLA_PRESTAMO_NUEVO } from "@/lib/plantillas";
+import { aplicarPlantilla, variablesDePrestamo, EJEMPLOS, PLANTILLA_ESTADO_CUENTA, PLANTILLA_PRESTAMO_NUEVO, PLANTILLA_COMPROBANTE } from "@/lib/plantillas";
 import { parsearPesos, parsearTasa } from "@/lib/parseo";
 import { cuotaSemanal, planesPara, PLANES_SEMANALES, SEMANAS_CON_PLAN } from "@/lib/planes";
 import { sumarSemanas } from "@/lib/fechas";
@@ -97,41 +97,52 @@ chequear("basura", normalizarTelefono("no tiene"), null);
 console.log("--- Plantillas de WhatsApp ---");
 const muestra = EJEMPLOS[0].variables;
 chequear("reemplaza una etiqueta", aplicarPlantilla("Hola {cliente}", muestra), "Hola Miriam Marquez");
-chequear("reemplaza varias", aplicarPlantilla("{cliente} debe {total}", muestra), "Miriam Marquez debe $260.000");
-chequear("etiqueta repetida", aplicarPlantilla("{total} y {total}", muestra), "$260.000 y $260.000");
+chequear("reemplaza varias", aplicarPlantilla("{cliente} debe {total}", muestra), "Miriam Marquez debe $418.500");
+chequear("etiqueta repetida", aplicarPlantilla("{total} y {total}", muestra), "$418.500 y $418.500");
 chequear("etiqueta inventada queda a la vista", aplicarPlantilla("Hola {nocxiste}", muestra), "Hola {nocxiste}");
-chequear("etiqueta vacia no deja renglon en blanco", aplicarPlantilla("Uno\n{cuota}\n\nDos", muestra), "Uno\n\nDos");
+chequear("una etiqueta vacia se lleva su renglon", aplicarPlantilla("Uno\nCuota: {noexiste_vacio}\nDos", { ...muestra, noexiste_vacio: "" }), "Uno\nDos");
 chequear("texto sin etiquetas queda igual", aplicarPlantilla("Pasa el jueves", muestra), "Pasa el jueves");
 chequear("plantilla vacia no rompe", aplicarPlantilla("", muestra), "");
 chequear(
-  "estado de cuenta por defecto: sale entero y respeta el renglon en blanco del medio",
+  "estado de cuenta por defecto (plan semanal)",
   aplicarPlantilla(PLANTILLA_ESTADO_CUENTA, muestra),
-  "Hola Miriam Marquez 👋\nTu estado de cuenta al 18/08/2026:\n\nMonto: $200.000\n\n*Total a devolver: $260.000*\nVencimiento: 06/09/2026 (faltan 19 días)"
+  "Hola Miriam Marquez 👋\nTu estado de cuenta al 25/08/2026:\n\nMonto: $200.000\nForma de pago: 16 cuotas semanales de $27.900\nAbonadas: 1 de 16\nPróximo vencimiento: 01/09/2026 (faltan 7 días)"
 );
 chequear(
   "prestamo nuevo por defecto",
   aplicarPlantilla(PLANTILLA_PRESTAMO_NUEVO, muestra),
-  "Hola Miriam Marquez 👋\nPrestamo confirmado ✅:\n\nImporte: $200.000\n*Monto a devolver: $260.000*\nFecha de vencimiento: 06/09/2026"
-);
-chequear("un renglon en blanco a proposito se respeta", aplicarPlantilla("A\n\nB", muestra), "A\n\nB");
-chequear("dos renglones en blanco seguidos se juntan en uno", aplicarPlantilla("A\n\n\nB", muestra), "A\n\nB");
-chequear(
-  "sin plantilla guardada usa la de por defecto",
-  mensajeEstadoDeCuenta(base, resumen(base, [], "2026-08-18"), "Miriam Marquez", "2026-08-18", null).split("\n")[0],
-  "Hola Miriam Marquez 👋"
+  "Hola Miriam Marquez 👋\nPrestamo confirmado ✅:\n\nImporte: $200.000\nForma de pago: 16 cuotas semanales de $27.900\nPrimer vencimiento: 01/09/2026"
 );
 chequear(
-  "con plantilla propia usa la del usuario",
-  mensajeEstadoDeCuenta(base, resumen(base, [], "2026-08-18"), "Miriam Marquez", "2026-08-18", "Buenas {cliente}, son {total}"),
-  "Buenas Miriam Marquez, son $260.000"
+  "comprobante por defecto",
+  aplicarPlantilla(PLANTILLA_COMPROBANTE, muestra),
+  "Hola Miriam Marquez 👋\nRecibimos tu pago ✅\n\nImporte abonado: $27.900\nFecha: 25/08/2026\nTe quedan 15 cuotas de $27.900\nSaldo: $418.500\nPróximo vencimiento: 01/09/2026"
 );
+
+console.log("--- Lo que es tuyo no sale en el mensaje ---");
+for (const [nombre, plantilla] of [
+  ["estado de cuenta", PLANTILLA_ESTADO_CUENTA],
+  ["prestamo nuevo", PLANTILLA_PRESTAMO_NUEVO],
+] as const) {
+  const texto = aplicarPlantilla(plantilla, muestra);
+  chequear(`${nombre}: no dice la tasa`, texto.includes("%"), false);
+  chequear(`${nombre}: no dice el total a devolver`, texto.includes("$446.400"), false);
+  chequear(`${nombre}: no dice el interes`, texto.includes("$246.400"), false);
+}
+
+console.log("--- Un prestamo mensual no habla de cuotas ---");
+const mensual = EJEMPLOS[1].variables;
 chequear(
-  "una plantilla en blanco vuelve a la de por defecto",
-  mensajeEstadoDeCuenta(base, resumen(base, [], "2026-08-18"), "Miriam Marquez", "2026-08-18", "   ").split("\n")[0],
-  "Hola Miriam Marquez 👋"
+  "el renglon de cuotas desaparece entero",
+  aplicarPlantilla(PLANTILLA_ESTADO_CUENTA, mensual),
+  "Hola Willy Marquez 👋\nTu estado de cuenta al 18/08/2026:\n\nMonto: $500.000\nForma de pago: $125.000 por mes\nPróximo vencimiento: 15/09/2026 (faltan 28 días)"
 );
-chequear("el ejemplo en cuotas es un prestamo nuevo, sin cuotas pagas", `${EJEMPLOS[1].variables.cuotas_pagadas}/${EJEMPLOS[1].variables.total}`, "0/$256.110");
-chequear("los dos ejemplos tienen las mismas etiquetas", Object.keys(EJEMPLOS[0].variables).sort().join(), Object.keys(EJEMPLOS[1].variables).sort().join());
+chequear("no queda un 'de' colgado", aplicarPlantilla(PLANTILLA_ESTADO_CUENTA, mensual).includes("Abonadas"), false);
+chequear(
+  "el comprobante mensual tampoco cuenta cuotas",
+  aplicarPlantilla(PLANTILLA_COMPROBANTE, mensual).includes("Te quedan"),
+  false
+);
 
 console.log("--- Planes semanales: la lista de precios sale exacta ---");
 for (const plan of PLANES_SEMANALES) {
@@ -226,6 +237,39 @@ chequear("cuotas pagadas", resumen(semanal, unaSemana, "2026-08-26").cuotasPagad
 const todas = Array.from({ length: 16 }, (_, i) => ({ id: `s${i}`, prestamo_id: "3", fecha: "2026-08-25", monto: 27900, tipo: "cuota" as const, nota: null, created_at: "" }));
 chequear("saldo tras las 16", resumen(semanal, todas, "2026-12-09").aDevolver, 0);
 chequear("una cuota escrita a mano pisa la lista", calcularPlan({ modalidad: "semanal", capital: 200000, tasa: 0, cuotas: 16, cuotaManual: 30000 }).total, 480000);
+
+console.log("--- La forma de pago describe sin revelar la tasa ---");
+const varsSemanal = variablesDePrestamo(semanal, resumen(semanal, unaSemana, "2026-08-26"), "Miriam", "2026-08-26", unaSemana[0]);
+chequear("plan semanal", varsSemanal.forma_pago, "16 cuotas semanales de $27.900");
+chequear("saldo tras una cuota", varsSemanal.saldo, "$418.500");
+chequear("cuotas restantes", varsSemanal.cuotas_restantes, "15");
+chequear("importe del pago", varsSemanal.pago, "$27.900");
+const varsMensual = variablesDePrestamo(base, resumen(base, [], "2026-08-18"), "Miriam", "2026-08-18");
+chequear("interes mensual: forma de pago sin tasa", varsMensual.forma_pago, "$60.000 por mes");
+chequear("interes mensual: sin cuotas", `${varsMensual.cuotas}|${varsMensual.cuotas_pagadas}|${varsMensual.cuotas_restantes}`, "||");
+
+chequear("un renglon en blanco a proposito se respeta", aplicarPlantilla("A\n\nB", muestra), "A\n\nB");
+chequear("dos renglones en blanco seguidos se juntan en uno", aplicarPlantilla("A\n\n\nB", muestra), "A\n\nB");
+chequear(
+  "sin plantilla guardada usa la de por defecto",
+  mensajeEstadoDeCuenta(base, resumen(base, [], "2026-08-18"), "Miriam Marquez", "2026-08-18", null).split("\n")[0],
+  "Hola Miriam Marquez 👋"
+);
+chequear(
+  "con plantilla propia usa la del usuario",
+  mensajeEstadoDeCuenta(base, resumen(base, [], "2026-08-18"), "Miriam Marquez", "2026-08-18", "Buenas {cliente}, son {total}"),
+  "Buenas Miriam Marquez, son $260.000"
+);
+chequear(
+  "una plantilla en blanco vuelve a la de por defecto",
+  mensajeEstadoDeCuenta(base, resumen(base, [], "2026-08-18"), "Miriam Marquez", "2026-08-18", "   ").split("\n")[0],
+  "Hola Miriam Marquez 👋"
+);
+// Los ejemplos de la vista previa tienen que cerrar entre si: si no, el
+// usuario configura sus mensajes mirando numeros que no existen.
+chequear("el ejemplo semanal cierra: cuota x restantes = saldo", `${27900 * 15}`, "418500");
+chequear("el ejemplo mensual no tiene cuotas cargadas", `${EJEMPLOS[1].variables.cuotas}|${EJEMPLOS[1].variables.cuota}|${EJEMPLOS[1].variables.cuotas_restantes}`, "||");
+chequear("los dos ejemplos tienen las mismas etiquetas", Object.keys(EJEMPLOS[0].variables).sort().join(), Object.keys(EJEMPLOS[1].variables).sort().join());
 
 console.log(fallos === 0 ? "\nTODO OK" : `\n${fallos} FALLAS`);
 process.exit(fallos === 0 ? 0 : 1);

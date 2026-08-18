@@ -68,5 +68,6 @@ export type Ajustes = {
   owner_id: string;
   plantilla_estado_cuenta: string | null;
   plantilla_prestamo_nuevo: string | null;
+  plantilla_comprobante: string | null;
   actualizado_at: string;
 };

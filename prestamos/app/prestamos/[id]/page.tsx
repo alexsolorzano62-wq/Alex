@@ -7,9 +7,9 @@ import BotonesWhatsApp from "@/components/BotonesWhatsApp";
 import BotonConfirmar from "@/components/BotonConfirmar";
 import { borrarPago, borrarPrestamo, capitalizarPrestamo } from "@/app/acciones";
 import { traerAjustes, traerPrestamo } from "@/lib/datos";
-import { resumen, tasaImplicita } from "@/lib/calc";
+import { resumen } from "@/lib/calc";
 import { formatFecha, hoyISO } from "@/lib/fechas";
-import { plata, porcentaje, textoVencimiento } from "@/lib/format";
+import { descripcionPlan, plata, tasaMostrada, textoVencimiento } from "@/lib/format";
 import {
   linkWhatsApp,
   mensajeEstadoDeCuenta,
@@ -42,11 +42,6 @@ export default async function PrestamoPage({
   const datos = resumen(prestamo, prestamo.pagos, hoy);
   const nombre = prestamo.cliente?.nombre ?? "Cliente";
   const telefono = prestamo.cliente?.telefono ?? null;
-
-  const tasaMostrada =
-    prestamo.modalidad === "cuotas" && prestamo.total_a_devolver
-      ? tasaImplicita(prestamo.capital_inicial, prestamo.total_a_devolver)
-      : prestamo.tasa_mensual;
 
   // Recién creado se ofrece el mensaje de alta; después, el estado de cuenta.
   const esNuevo = nuevo === "1";
@@ -85,9 +80,7 @@ export default async function PrestamoPage({
           <div className="min-w-0">
             <h1 className="truncate text-xl font-bold">{nombre}</h1>
             <p className="text-sm text-slate-500">
-              {prestamo.modalidad === "mensual"
-                ? `${porcentaje(tasaMostrada)} mensual`
-                : `${datos.cuotasTotal} cuotas de ${plata(datos.cuotaMonto ?? 0)}`}
+              {descripcionPlan(prestamo, datos)}
             </p>
           </div>
           <EstadoBadge estado={datos.estadoVisual} />

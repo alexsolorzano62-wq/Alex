@@ -5,8 +5,7 @@ import Link from "next/link";
 import EstadoBadge from "@/components/EstadoBadge";
 import FilaPrestamo from "@/components/FilaPrestamo";
 import { formatFecha, formatFechaCorta } from "@/lib/fechas";
-import { plata, porcentaje } from "@/lib/format";
-import { tasaImplicita } from "@/lib/calc";
+import { descripcionPlan, plata, porcentaje, tasaMostrada } from "@/lib/format";
 import type { PrestamoResuelto } from "@/lib/agregados";
 
 type Filtro = "vigentes" | "vencidos" | "cerrados" | "todos";
@@ -111,10 +110,7 @@ export default function ListaPrestamos({ items }: { items: PrestamoResuelto[] })
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {visibles.map(({ prestamo, datos }) => {
-                  const tasa =
-                    prestamo.modalidad === "cuotas" && prestamo.total_a_devolver
-                      ? tasaImplicita(prestamo.capital_inicial, prestamo.total_a_devolver)
-                      : prestamo.tasa_mensual;
+                  const tasa = tasaMostrada(prestamo);
 
                   return (
                     <tr key={prestamo.id} className="hover:bg-slate-50">
@@ -146,9 +142,9 @@ export default function ListaPrestamos({ items }: { items: PrestamoResuelto[] })
                         {formatFecha(prestamo.fecha_vencimiento)}
                       </td>
                       <td className="px-3 py-2 text-slate-500">
-                        {prestamo.modalidad === "cuotas"
-                          ? `${datos.cuotasTotal} cuotas de ${plata(datos.cuotaMonto ?? 0)}`
-                          : (prestamo.observacion ?? "")}
+                        {prestamo.modalidad === "mensual"
+                          ? (prestamo.observacion ?? "")
+                          : descripcionPlan(prestamo, datos)}
                       </td>
                     </tr>
                   );

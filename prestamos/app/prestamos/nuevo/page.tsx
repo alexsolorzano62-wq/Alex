@@ -2,12 +2,22 @@ import Link from "next/link";
 import Encabezado from "@/components/Encabezado";
 import FormularioPrestamo from "@/components/FormularioPrestamo";
 import { traerClientes } from "@/lib/datos";
+import type { Modalidad } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Nuevo préstamo" };
 
-export default async function NuevoPrestamoPage() {
-  const clientes = await traerClientes();
+const MODALIDADES: Modalidad[] = ["mensual", "cuotas", "semanal"];
+
+export default async function NuevoPrestamoPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ capital?: string; modalidad?: string; semanas?: string }>;
+}) {
+  const [clientes, parametros] = await Promise.all([traerClientes(), searchParams]);
+
+  // El simulador manda el plan ya elegido; solo se acepta lo que existe.
+  const modalidad = MODALIDADES.find((valor) => valor === parametros.modalidad);
 
   return (
     <>
@@ -19,7 +29,14 @@ export default async function NuevoPrestamoPage() {
         </Link>
         <h1 className="mb-4 mt-2 text-lg font-bold">Nuevo préstamo</h1>
 
-        <FormularioPrestamo clientes={clientes} />
+        <FormularioPrestamo
+          clientes={clientes}
+          inicial={{
+            capital: parametros.capital,
+            modalidad,
+            semanas: parametros.semanas,
+          }}
+        />
       </main>
     </>
   );

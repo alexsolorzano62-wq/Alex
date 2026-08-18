@@ -39,6 +39,13 @@ export function sumarMeses(iso: string, meses: number): string {
   ].join("-");
 }
 
+/** Suma semanas. A diferencia de los meses, una semana son siempre 7 dias. */
+export function sumarSemanas(iso: string, semanas: number): string {
+  const [anio, mes, dia] = partes(iso);
+  const destino = new Date(Date.UTC(anio, mes - 1, dia + semanas * 7));
+  return destino.toISOString().slice(0, 10);
+}
+
 /** Dias de `desde` a `hasta`. Negativo si `hasta` ya paso. */
 export function diasEntre(desde: string, hasta: string): number {
   const [a1, m1, d1] = partes(desde);

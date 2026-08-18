@@ -3,6 +3,8 @@ import { sumarMeses, diasEntre } from "@/lib/fechas";
 import { normalizarTelefono, mensajeEstadoDeCuenta } from "@/lib/whatsapp";
 import { aplicarPlantilla, EJEMPLOS, PLANTILLA_ESTADO_CUENTA, PLANTILLA_PRESTAMO_NUEVO } from "@/lib/plantillas";
 import { parsearPesos, parsearTasa } from "@/lib/parseo";
+import { cuotaSemanal, planesPara, PLANES_SEMANALES } from "@/lib/planes";
+import { sumarSemanas } from "@/lib/fechas";
 import type { Prestamo } from "@/lib/types";
 
 let fallos = 0;
@@ -130,6 +132,66 @@ chequear(
 );
 chequear("el ejemplo en cuotas es un prestamo nuevo, sin cuotas pagas", `${EJEMPLOS[1].variables.cuotas_pagadas}/${EJEMPLOS[1].variables.total}`, "0/$256.110");
 chequear("los dos ejemplos tienen las mismas etiquetas", Object.keys(EJEMPLOS[0].variables).sort().join(), Object.keys(EJEMPLOS[1].variables).sort().join());
+
+console.log("--- Planes semanales: la lista de precios sale exacta ---");
+for (const plan of PLANES_SEMANALES) {
+  const r = cuotaSemanal(plan.capital, plan.semanas)!;
+  chequear(
+    `${plan.capital / 1000}k a ${plan.semanas} semanas`,
+    { cuota: r.cuota, total: r.total, exacto: r.exacto },
+    { cuota: plan.cuota, total: plan.cuota * plan.semanas, exacto: true }
+  );
+}
+
+console.log("--- Planes semanales: montos fuera de la lista ---");
+const entre = cuotaSemanal(350000, 20)!;
+chequear("350k a 20 semanas cae entre 300k y 400k", entre.entre, [300000, 400000]);
+chequear("350k a 20: cuota interpolada y redondeada al cien", entre.cuota, 39500);
+chequear("350k a 20: no es un precio de lista", entre.exacto, false);
+chequear("120k a 16 semanas", cuotaSemanal(120000, 16)!.cuota, 16700);
+chequear("50k a 16: por debajo del menor, misma proporcion", cuotaSemanal(50000, 16)!.cuota, 7000);
+chequear("700k a 20: por encima del mayor, misma proporcion", cuotaSemanal(700000, 20)!.cuota, 78300);
+chequear("las cuotas calculadas son multiplos de cien", [350000, 120000, 275000, 640000].every((c) => cuotaSemanal(c, 16)!.cuota % 100 === 0), true);
+chequear("un plazo sin lista de precios no se inventa", cuotaSemanal(200000, 12), null);
+chequear("un capital de cero no devuelve plan", cuotaSemanal(0, 16), null);
+chequear("planesPara trae los dos plazos", planesPara(200000).map((p) => p.semanas), [16, 20]);
+
+console.log("--- Planes semanales: mas capital nunca sale mas barato ---");
+let monotono = true;
+for (const semanas of [16, 20]) {
+  let anterior = 0;
+  for (let capital = 50000; capital <= 800000; capital += 10000) {
+    const cuota = cuotaSemanal(capital, semanas)!.cuota;
+    if (cuota < anterior) monotono = false;
+    anterior = cuota;
+  }
+}
+chequear("la cuota nunca baja al subir el capital", monotono, true);
+
+console.log("--- Semanas en el calendario ---");
+chequear("una semana son 7 dias", sumarSemanas("2026-08-18", 1), "2026-08-25");
+chequear("16 semanas", sumarSemanas("2026-08-18", 16), "2026-12-08");
+chequear("cruza fin de mes", sumarSemanas("2026-08-28", 1), "2026-09-04");
+chequear("cruza fin de anio", sumarSemanas("2026-12-28", 2), "2027-01-11");
+chequear("cruza el 29 de febrero bisiesto", sumarSemanas("2028-02-26", 1), "2028-03-04");
+
+console.log("--- Un prestamo semanal completo (200k, 16 semanas) ---");
+const planSemanal = calcularPlan({ modalidad: "semanal", capital: 200000, tasa: 0, cuotas: 16 });
+chequear("cuota, total e interes", planSemanal, { interes: 246400, total: 446400, cuotaMonto: 27900 });
+chequear("tasa implicita del plan", Number(tasaImplicita(200000, 446400).toFixed(1)), 123.2);
+const semanal: Prestamo = {
+  id: "3", cliente_id: "c3", modalidad: "semanal",
+  capital_inicial: 200000, capital_actual: 200000, tasa_mensual: 123.2,
+  fecha_inicio: "2026-08-18", fecha_vencimiento: "2026-08-25",
+  cuotas_total: 16, cuota_monto: 27900, total_a_devolver: 446400,
+  estado: "vigente", observacion: null, created_at: "",
+};
+const unaSemana = [{ id: "s1", prestamo_id: "3", fecha: "2026-08-25", monto: 27900, tipo: "cuota" as const, nota: null, created_at: "" }];
+chequear("saldo tras 1 cuota", resumen(semanal, unaSemana, "2026-08-26").aDevolver, 418500);
+chequear("cuotas pagadas", resumen(semanal, unaSemana, "2026-08-26").cuotasPagadas, 1);
+const todas = Array.from({ length: 16 }, (_, i) => ({ id: `s${i}`, prestamo_id: "3", fecha: "2026-08-25", monto: 27900, tipo: "cuota" as const, nota: null, created_at: "" }));
+chequear("saldo tras las 16", resumen(semanal, todas, "2026-12-09").aDevolver, 0);
+chequear("una cuota escrita a mano pisa la lista", calcularPlan({ modalidad: "semanal", capital: 200000, tasa: 0, cuotas: 16, cuotaManual: 30000 }).total, 480000);
 
 console.log(fallos === 0 ? "\nTODO OK" : `\n${fallos} FALLAS`);
 process.exit(fallos === 0 ? 0 : 1);

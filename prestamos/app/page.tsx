@@ -111,7 +111,25 @@ export default async function DashboardPage() {
           </section>
         )}
 
-        <section className="mt-6 grid grid-cols-2 gap-3">
+        <section className="mt-6 space-y-3">
+          <Link
+            href="/simulador"
+            className="flex items-center justify-between rounded-xl border border-brand-200 bg-brand-50 px-4 py-3 active:bg-brand-100"
+          >
+            <span>
+              <span className="block text-sm font-semibold text-brand-800">
+                Simular un préstamo
+              </span>
+              <span className="block text-xs text-brand-700">
+                Cuánto paga por semana, sin guardar nada
+              </span>
+            </span>
+            <span aria-hidden="true" className="text-brand-600">
+              →
+            </span>
+          </Link>
+
+          <div className="grid grid-cols-2 gap-3">
           <Link
             href="/prestamos/nuevo"
             className="rounded-xl bg-brand-600 px-4 py-3 text-center text-sm font-semibold text-white active:bg-brand-700"
@@ -124,6 +142,7 @@ export default async function DashboardPage() {
           >
             Nuevo cliente
           </Link>
+          </div>
         </section>
       </main>
 

@@ -1,7 +1,6 @@
 import { formatFecha } from "@/lib/fechas";
-import { plata, porcentaje, textoVencimiento } from "@/lib/format";
+import { descripcionPlan, plata, porcentaje, tasaMostrada, textoVencimiento } from "@/lib/format";
 import type { ResumenPrestamo } from "@/lib/calc";
-import { tasaImplicita } from "@/lib/calc";
 import type { Prestamo } from "@/lib/types";
 
 /** Los valores con los que se completa una plantilla. */
@@ -72,12 +71,7 @@ export function variablesDePrestamo(
   nombreCliente: string,
   hoy: string
 ): Variables {
-  const esMensual = prestamo.modalidad === "mensual";
-
-  const tasa =
-    !esMensual && prestamo.total_a_devolver
-      ? tasaImplicita(prestamo.capital_inicial, prestamo.total_a_devolver)
-      : prestamo.tasa_mensual;
+  const tasa = tasaMostrada(prestamo);
 
   return {
     cliente: nombreCliente,
@@ -88,9 +82,7 @@ export function variablesDePrestamo(
     capital: plata(datos.capital),
     interes: plata(datos.interes),
     tasa: porcentaje(tasa),
-    plan: esMensual
-      ? `${porcentaje(tasa)} mensual`
-      : `${datos.cuotasTotal} cuotas de ${plata(datos.cuotaMonto ?? 0)}`,
+    plan: descripcionPlan(prestamo, datos),
     cuota: datos.cuotaMonto ? plata(datos.cuotaMonto) : "",
     cuotas: datos.cuotasTotal ? String(datos.cuotasTotal) : "",
     cuotas_pagadas: String(datos.cuotasPagadas),

@@ -3,8 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { calcularPlan, capitalizar, pesos, resumen } from "@/lib/calc";
-import { hoyISO, sumarMeses } from "@/lib/fechas";
+import { calcularPlan, capitalizar, pesos, resumen, tasaImplicita } from "@/lib/calc";
+import { hoyISO, sumarMeses, sumarSemanas } from "@/lib/fechas";
 import { parsearPesos, parsearTasa } from "@/lib/parseo";
 import type { Modalidad, TipoPago } from "@/lib/types";
 
@@ -96,14 +96,31 @@ export async function crearPrestamo(
   const plazoMeses = Number(datos.get("plazo_meses") ?? 1) || 1;
   const cuotas = Number(datos.get("cuotas") ?? 1) || 1;
   const totalManual = parsearPesos(String(datos.get("total_manual")));
+  const cuotaManual = parsearPesos(String(datos.get("cuota_manual")));
 
-  const plan = calcularPlan({ modalidad, capital, tasa, cuotas, totalManual });
+  const plan = calcularPlan({
+    modalidad,
+    capital,
+    tasa,
+    cuotas,
+    totalManual,
+    cuotaManual,
+  });
 
-  // En cuotas, el primer vencimiento es al mes; en mensual, según el plazo.
-  const fechaVencimiento = sumarMeses(
-    fechaInicio,
-    modalidad === "cuotas" ? 1 : Math.max(1, plazoMeses)
-  );
+  // Todo lo que no sea 'mensual' es un plan cerrado con cuotas.
+  const esPlan = modalidad !== "mensual";
+
+  // El primer vencimiento cae a la semana en los planes semanales, al mes en
+  // los mensuales, y según el plazo elegido en la modalidad de interés mensual.
+  const fechaVencimiento =
+    modalidad === "semanal"
+      ? sumarSemanas(fechaInicio, 1)
+      : sumarMeses(fechaInicio, modalidad === "cuotas" ? 1 : Math.max(1, plazoMeses));
+
+  // Un plan semanal no tiene tasa escrita: se guarda la que quedó implícita,
+  // para poder mostrarla después.
+  const tasaGuardada =
+    modalidad === "semanal" ? tasaImplicita(capital, plan.total) : tasa;
 
   const { supabase, ownerId } = await sesion();
   const { data, error } = await supabase
@@ -114,12 +131,12 @@ export async function crearPrestamo(
       modalidad,
       capital_inicial: pesos(capital),
       capital_actual: pesos(capital),
-      tasa_mensual: tasa,
+      tasa_mensual: tasaGuardada,
       fecha_inicio: fechaInicio,
       fecha_vencimiento: fechaVencimiento,
-      cuotas_total: modalidad === "cuotas" ? cuotas : null,
+      cuotas_total: esPlan ? cuotas : null,
       cuota_monto: plan.cuotaMonto,
-      total_a_devolver: modalidad === "cuotas" ? plan.total : null,
+      total_a_devolver: esPlan ? plan.total : null,
       observacion: String(datos.get("observacion") ?? "").trim() || null,
     })
     .select("id")
@@ -220,7 +237,10 @@ export async function registrarPago(
       cambios.estado = "pagado";
       cambios.capital_actual = 0;
     } else {
-      cambios.fecha_vencimiento = sumarMeses(prestamo.fecha_vencimiento, 1);
+      cambios.fecha_vencimiento =
+        prestamo.modalidad === "semanal"
+          ? sumarSemanas(prestamo.fecha_vencimiento, 1)
+          : sumarMeses(prestamo.fecha_vencimiento, 1);
     }
   } else if (tipo === "total") {
     cambios.estado = "pagado";

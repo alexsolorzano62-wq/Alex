@@ -1,4 +1,5 @@
 import { diasEntre, sumarMeses } from "@/lib/fechas";
+import { cuotaSemanal } from "@/lib/planes";
 import type { Modalidad, Pago, Prestamo } from "@/lib/types";
 
 /** Dias antes del vencimiento en los que un prestamo empieza a avisar. */
@@ -50,12 +51,24 @@ export function calcularPlan(datos: {
   cuotas?: number | null;
   /** Total pactado a mano, cuando se negocio un numero redondo. */
   totalManual?: number | null;
+  /** Cuota escrita a mano, para plazos semanales fuera de la lista. */
+  cuotaManual?: number | null;
 }): { interes: number; total: number; cuotaMonto: number | null } {
   const capital = pesos(datos.capital);
 
   if (datos.modalidad === "mensual") {
     const interes = pesos((capital * datos.tasa) / 100);
     return { interes, total: capital + interes, cuotaMonto: null };
+  }
+
+  if (datos.modalidad === "semanal") {
+    const semanas = Math.max(1, datos.cuotas ?? 1);
+    const deLista = cuotaSemanal(capital, semanas);
+    const cuota = pesos(
+      datos.cuotaManual && datos.cuotaManual > 0 ? datos.cuotaManual : (deLista?.cuota ?? 0)
+    );
+    const total = pesos(cuota * semanas);
+    return { interes: total - capital, total, cuotaMonto: cuota };
   }
 
   const cuotas = Math.max(1, datos.cuotas ?? 1);

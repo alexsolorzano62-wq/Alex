@@ -13,10 +13,16 @@ todo y, si querés, les mandás el estado de cuenta por WhatsApp.
   pendiente y la ganancia ya cobrada.
 - **Avisos** de lo vencido y lo que vence en los próximos 7 días.
 - **Clientes** con teléfono y notas, y el historial de todo lo que le prestaste.
-- **Préstamos** en dos modalidades:
+- **Préstamos** en tres modalidades:
   - *Interés mensual*: paga el interés y renueva mes a mes (lo de siempre).
-  - *En cuotas*: plan cerrado en N cuotas fijas. Podés pactar el total a mano y la
-    tasa se calcula sola.
+  - *Plan semanal*: cuotas semanales según tu lista de precios (`lib/planes.ts`).
+    Si el monto no está en la lista, la cuota se calcula en proporción entre los
+    dos escalones vecinos y podés pisarla a mano.
+  - *Cuotas mensuales*: plan cerrado en N cuotas fijas. Podés pactar el total a
+    mano y la tasa se calcula sola.
+- **Simulador**: ponés un monto y ves cuánto paga en cada plan, sin guardar nada.
+  Si cierran, lo convertís en préstamo de un toque, o le mandás las opciones por
+  WhatsApp.
 - **Cobros** con un toque: "cobré el interés" renueva el mes, "entrega a cuenta"
   baja el capital, "saldó todo" cierra el préstamo.
 - **Si no pagó**, el interés del mes se suma al capital y desde ahí en más el
@@ -54,6 +60,7 @@ contenido completo de cada archivo de `supabase/migrations/`:
 1. `0001_init.sql` — crea `clientes`, `prestamos` y `pagos`, con seguridad a nivel
    de fila: cada fila queda atada a tu usuario y nadie más puede leerla.
 2. `0002_plantillas.sql` — guarda los textos de WhatsApp que editás en *Ajustes*.
+3. `0003_planes_semanales.sql` — habilita la modalidad de cuotas semanales.
 
 Si agregás más migraciones a futuro, corrélas siempre en orden numérico.
 
@@ -110,6 +117,11 @@ Cuando publicás un cambio en Vercel, la app se actualiza sola.
   Pasa a deber 260.000 y el mes siguiente el 30% se calcula sobre 260.000
   (o sea 78.000). Interés compuesto.
 - **En cuotas**: el total queda fijo desde el día uno y cada cuota lo va bajando.
+- **Planes semanales**: la cuota sale de la lista de precios de `lib/planes.ts`, que
+  son montos pactados y no una fórmula (la tasa baja a medida que el préstamo crece).
+  Para un monto que no está en la lista, la cuota se calcula en proporción entre los
+  dos escalones vecinos y se redondea al cien. Para un plazo que no está en la lista,
+  la cuota la escribís vos: la app no inventa una tasa que nunca pactaste.
 - **Atrasos**: se marcan en rojo con los días de atraso, pero el monto no cambia
   solo. Si querés cobrarle algo extra, lo cargás vos.
 
@@ -140,6 +152,7 @@ prestamos/
 │  ├─ fechas.ts      Fechas sin líos de zona horaria
 │  ├─ whatsapp.ts    Armado de los mensajes y del link
 │  ├─ plantillas.ts  Plantillas editables y sus etiquetas
+│  ├─ planes.ts     Lista de precios de los planes semanales
 │  └─ datos.ts       Consultas a Supabase
 ├─ scripts/          Tests de cálculo y generador de íconos
 └─ supabase/         Migraciones SQL

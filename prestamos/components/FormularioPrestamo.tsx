@@ -5,42 +5,89 @@ import Link from "next/link";
 import { crearPrestamo } from "@/app/acciones";
 import CampoTexto, { claseInput } from "@/components/CampoTexto";
 import { calcularPlan, tasaImplicita } from "@/lib/calc";
-import { formatFecha, hoyISO, sumarMeses } from "@/lib/fechas";
+import { formatFecha, hoyISO, sumarMeses, sumarSemanas } from "@/lib/fechas";
 import { parsearPesos, parsearTasa } from "@/lib/parseo";
 import { plata, porcentaje } from "@/lib/format";
+import { cuotaSemanal, SEMANAS_CON_PLAN } from "@/lib/planes";
 import type { Cliente, Modalidad } from "@/lib/types";
 
-export default function FormularioPrestamo({ clientes }: { clientes: Cliente[] }) {
+const MODALIDADES: { valor: Modalidad; titulo: string; detalle: string }[] = [
+  {
+    valor: "mensual",
+    titulo: "Interés mensual",
+    detalle: "Paga el interés y renueva mes a mes",
+  },
+  {
+    valor: "semanal",
+    titulo: "Plan semanal",
+    detalle: "Cuotas semanales según tu lista de precios",
+  },
+  {
+    valor: "cuotas",
+    titulo: "Cuotas mensuales",
+    detalle: "Plan cerrado en N cuotas, con el total que pactes",
+  },
+];
+
+export default function FormularioPrestamo({
+  clientes,
+  inicial,
+}: {
+  clientes: Cliente[];
+  /** Valores que llegan del simulador, ya elegidos. */
+  inicial?: { capital?: string; modalidad?: Modalidad; semanas?: string };
+}) {
   const [estado, accion, enviando] = useActionState(crearPrestamo, undefined);
 
-  const [modalidad, setModalidad] = useState<Modalidad>("mensual");
-  const [capital, setCapital] = useState("");
+  const [modalidad, setModalidad] = useState<Modalidad>(inicial?.modalidad ?? "mensual");
+  // El simulador manda el monto en crudo por la URL; acá se muestra con puntos.
+  const [capital, setCapital] = useState(() => {
+    const desdeSimulador = parsearPesos(inicial?.capital);
+    return desdeSimulador ? desdeSimulador.toLocaleString("es-AR") : "";
+  });
   const [tasa, setTasa] = useState("30");
   const [fechaInicio, setFechaInicio] = useState(hoyISO());
   const [plazoMeses, setPlazoMeses] = useState("1");
   const [cuotas, setCuotas] = useState("3");
+  const [semanas, setSemanas] = useState(inicial?.semanas ?? String(SEMANAS_CON_PLAN[0]));
   const [totalManual, setTotalManual] = useState("");
+  const [cuotaManual, setCuotaManual] = useState("");
 
-  // Vista previa: lo mismo que va a quedar guardado, calculado mientras escribís.
   const capitalNum = parsearPesos(capital) ?? 0;
   const tasaNum = parsearTasa(tasa) ?? 0;
   const cuotasNum = Number(cuotas) || 1;
+  const semanasNum = Number(semanas) || 1;
   const totalManualNum = parsearPesos(totalManual);
+  const cuotaManualNum = parsearPesos(cuotaManual);
+
+  const esSemanal = modalidad === "semanal";
+  const cantidad = esSemanal ? semanasNum : cuotasNum;
+
+  // Lo mismo que va a quedar guardado, calculado mientras escribís.
   const plan = calcularPlan({
     modalidad,
     capital: capitalNum,
     tasa: tasaNum,
-    cuotas: cuotasNum,
+    cuotas: cantidad,
     totalManual: totalManualNum,
+    cuotaManual: cuotaManualNum,
   });
-  const vencimiento = sumarMeses(
-    fechaInicio || hoyISO(),
-    modalidad === "cuotas" ? 1 : Math.max(1, Number(plazoMeses) || 1)
-  );
+
+  const deLista = esSemanal ? cuotaSemanal(capitalNum, semanasNum) : null;
+
+  const vencimiento = esSemanal
+    ? sumarSemanas(fechaInicio || hoyISO(), 1)
+    : sumarMeses(
+        fechaInicio || hoyISO(),
+        modalidad === "cuotas" ? 1 : Math.max(1, Number(plazoMeses) || 1)
+      );
+
   const tasaReal =
-    modalidad === "cuotas" && totalManualNum
-      ? tasaImplicita(capitalNum, totalManualNum)
-      : tasaNum;
+    modalidad === "mensual"
+      ? tasaNum
+      : capitalNum > 0
+        ? tasaImplicita(capitalNum, plan.total)
+        : 0;
 
   if (clientes.length === 0) {
     return (
@@ -61,6 +108,7 @@ export default function FormularioPrestamo({ clientes }: { clientes: Cliente[] }
   return (
     <form action={accion} className="space-y-4">
       <input type="hidden" name="modalidad" value={modalidad} />
+      {esSemanal && <input type="hidden" name="cuotas" value={semanas} />}
 
       <CampoTexto etiqueta="Cliente">
         <select name="cliente_id" required className={claseInput} defaultValue="">
@@ -79,19 +127,14 @@ export default function FormularioPrestamo({ clientes }: { clientes: Cliente[] }
         <span className="mb-1 block text-sm font-medium text-slate-700">
           Cómo lo devuelve
         </span>
-        <div className="grid grid-cols-2 gap-2">
-          {(
-            [
-              { valor: "mensual", titulo: "Interés mensual", detalle: "Paga el interés y renueva" },
-              { valor: "cuotas", titulo: "En cuotas", detalle: "Plan cerrado en N cuotas" },
-            ] as const
-          ).map((opcion) => (
+        <div className="space-y-2">
+          {MODALIDADES.map((opcion) => (
             <button
               key={opcion.valor}
               type="button"
               onClick={() => setModalidad(opcion.valor)}
               aria-pressed={modalidad === opcion.valor}
-              className={`rounded-xl border px-3 py-2.5 text-left ${
+              className={`block w-full rounded-xl border px-3 py-2.5 text-left ${
                 modalidad === opcion.valor
                   ? "border-brand-500 bg-brand-50 ring-2 ring-brand-100"
                   : "border-slate-300 bg-white"
@@ -118,19 +161,21 @@ export default function FormularioPrestamo({ clientes }: { clientes: Cliente[] }
         />
       </CampoTexto>
 
-      <div className="grid grid-cols-2 gap-3">
-        <CampoTexto
-          etiqueta={modalidad === "mensual" ? "Tasa mensual %" : "Tasa del plan %"}
-        >
-          <input
-            name="tasa"
-            value={tasa}
-            onChange={(e) => setTasa(e.target.value)}
-            inputMode="decimal"
-            placeholder="30"
-            className={claseInput}
-          />
-        </CampoTexto>
+      <div className={esSemanal ? "" : "grid grid-cols-2 gap-3"}>
+        {!esSemanal && (
+          <CampoTexto
+            etiqueta={modalidad === "mensual" ? "Tasa mensual %" : "Tasa del plan %"}
+          >
+            <input
+              name="tasa"
+              value={tasa}
+              onChange={(e) => setTasa(e.target.value)}
+              inputMode="decimal"
+              placeholder="30"
+              className={claseInput}
+            />
+          </CampoTexto>
+        )}
 
         <CampoTexto etiqueta="Fecha de inicio">
           <input
@@ -144,7 +189,7 @@ export default function FormularioPrestamo({ clientes }: { clientes: Cliente[] }
         </CampoTexto>
       </div>
 
-      {modalidad === "mensual" ? (
+      {modalidad === "mensual" && (
         <CampoTexto etiqueta="Vence en" ayuda="Después lo vas renovando mes a mes.">
           <select
             name="plazo_meses"
@@ -159,7 +204,69 @@ export default function FormularioPrestamo({ clientes }: { clientes: Cliente[] }
             ))}
           </select>
         </CampoTexto>
-      ) : (
+      )}
+
+      {esSemanal && (
+        <>
+          <CampoTexto etiqueta="Plazo">
+            <select
+              value={semanas}
+              onChange={(e) => {
+                setSemanas(e.target.value);
+                setCuotaManual("");
+              }}
+              className={claseInput}
+            >
+              {SEMANAS_CON_PLAN.map((n) => (
+                <option key={n} value={n}>
+                  {n} semanas
+                </option>
+              ))}
+              <option value="otro">Otro plazo</option>
+            </select>
+          </CampoTexto>
+
+          {semanas === "otro" ? (
+            <>
+              <CampoTexto etiqueta="Cantidad de semanas">
+                <input
+                  name="cuotas"
+                  inputMode="numeric"
+                  placeholder="12"
+                  onChange={(e) => setSemanas(e.target.value)}
+                  className={claseInput}
+                />
+              </CampoTexto>
+              <p className="rounded-xl bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                Tu lista de precios tiene {SEMANAS_CON_PLAN.join(" y ")} semanas. Para
+                otro plazo, escribí vos la cuota: no invento una tasa que nunca pactaste.
+              </p>
+            </>
+          ) : null}
+
+          <CampoTexto
+            etiqueta="Cuota semanal"
+            ayuda={
+              deLista?.exacto
+                ? "Sale de tu lista de precios."
+                : deLista?.entre
+                  ? `Calculada en proporción entre los planes de ${plata(deLista.entre[0])} y ${plata(deLista.entre[1])}. Podés pisarla.`
+                  : "Escribila vos o dejala como está."
+            }
+          >
+            <input
+              name="cuota_manual"
+              value={cuotaManual}
+              onChange={(e) => setCuotaManual(e.target.value)}
+              inputMode="decimal"
+              placeholder={deLista ? String(deLista.cuota) : "0"}
+              className={claseInput}
+            />
+          </CampoTexto>
+        </>
+      )}
+
+      {modalidad === "cuotas" && (
         <>
           <CampoTexto etiqueta="Cantidad de cuotas">
             <select
@@ -200,7 +307,7 @@ export default function FormularioPrestamo({ clientes }: { clientes: Cliente[] }
         />
       </CampoTexto>
 
-      {capitalNum > 0 && (
+      {capitalNum > 0 && plan.total > 0 && (
         <div className="rounded-2xl border border-brand-200 bg-brand-50 p-4">
           <p className="text-xs font-semibold uppercase tracking-wide text-brand-700">
             Así queda
@@ -223,17 +330,18 @@ export default function FormularioPrestamo({ clientes }: { clientes: Cliente[] }
                 {plata(plan.total)}
               </dd>
             </div>
-            {modalidad === "cuotas" && plan.cuotaMonto && (
+            {plan.cuotaMonto != null && plan.cuotaMonto > 0 && (
               <div className="flex justify-between">
                 <dt className="text-slate-600">Cuota</dt>
                 <dd className="tabular font-medium">
-                  {cuotasNum} × {plata(plan.cuotaMonto)}
+                  {cantidad} {esSemanal ? "semanas" : "cuotas"} ×{" "}
+                  {plata(plan.cuotaMonto)}
                 </dd>
               </div>
             )}
             <div className="flex justify-between">
               <dt className="text-slate-600">
-                {modalidad === "cuotas" ? "Primer vencimiento" : "Vence"}
+                {modalidad === "mensual" ? "Vence" : "Primer vencimiento"}
               </dt>
               <dd className="font-medium">{formatFecha(vencimiento)}</dd>
             </div>

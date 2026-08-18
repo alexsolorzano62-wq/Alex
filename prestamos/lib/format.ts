@@ -1,3 +1,7 @@
+import type { ResumenPrestamo } from "@/lib/calc";
+import { tasaImplicita } from "@/lib/calc";
+import type { Prestamo } from "@/lib/types";
+
 /** "$200.000", como en la planilla: sin centavos. */
 export function plata(monto: number): string {
   return `$${Math.round(monto).toLocaleString("es-AR")}`;
@@ -16,4 +20,25 @@ export function textoVencimiento(dias: number): string {
   if (dias > 1) return `faltan ${dias} días`;
   if (dias === -1) return "vencido hace 1 día";
   return `vencido hace ${Math.abs(dias)} días`;
+}
+
+/** Cómo se describe el plan en una línea: «30% mensual», «16 semanas de $13.900». */
+export function descripcionPlan(
+  prestamo: Prestamo,
+  datos: ResumenPrestamo
+): string {
+  if (prestamo.modalidad === "mensual") {
+    return `${porcentaje(prestamo.tasa_mensual)} mensual`;
+  }
+
+  const unidad = prestamo.modalidad === "semanal" ? "semanas" : "cuotas";
+  return `${datos.cuotasTotal} ${unidad} de ${plata(datos.cuotaMonto ?? 0)}`;
+}
+
+/** La tasa que corresponde mostrar: la pactada, o la que quedó implícita. */
+export function tasaMostrada(prestamo: Prestamo): number {
+  if (prestamo.modalidad !== "mensual" && prestamo.total_a_devolver) {
+    return tasaImplicita(prestamo.capital_inicial, prestamo.total_a_devolver);
+  }
+  return prestamo.tasa_mensual;
 }

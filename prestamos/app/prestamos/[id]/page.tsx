@@ -6,16 +6,11 @@ import FormularioPago from "@/components/FormularioPago";
 import BotonesWhatsApp from "@/components/BotonesWhatsApp";
 import BotonConfirmar from "@/components/BotonConfirmar";
 import { borrarPago, borrarPrestamo, capitalizarPrestamo } from "@/app/acciones";
-import { traerAjustes, traerPrestamo } from "@/lib/datos";
+import { traerPlantillas, traerPrestamo } from "@/lib/datos";
 import { resumen } from "@/lib/calc";
 import { formatFecha, hoyISO } from "@/lib/fechas";
 import { descripcionPlan, plata, tasaMostrada, textoVencimiento } from "@/lib/format";
-import {
-  linkWhatsApp,
-  mensajeComprobante,
-  mensajeEstadoDeCuenta,
-  mensajePrestamoNuevo,
-} from "@/lib/whatsapp";
+import { linkWhatsApp, mensajeDe } from "@/lib/whatsapp";
 
 export const dynamic = "force-dynamic";
 
@@ -36,7 +31,10 @@ export default async function PrestamoPage({
   const { id } = await params;
   const { nuevo } = await searchParams;
 
-  const [prestamo, ajustes] = await Promise.all([traerPrestamo(id), traerAjustes()]);
+  const [prestamo, plantillas] = await Promise.all([
+    traerPrestamo(id),
+    traerPlantillas(),
+  ]);
   if (!prestamo) notFound();
 
   const hoy = hoyISO();
@@ -46,34 +44,23 @@ export default async function PrestamoPage({
 
   // Recién creado se ofrece el mensaje de alta; después, el estado de cuenta.
   const esNuevo = nuevo === "1";
-  const mensaje = esNuevo
-    ? mensajePrestamoNuevo(
-        prestamo,
-        datos,
-        nombre,
-        hoy,
-        ajustes?.plantilla_prestamo_nuevo
-      )
-    : mensajeEstadoDeCuenta(
-        prestamo,
-        datos,
-        nombre,
-        hoy,
-        ajustes?.plantilla_estado_cuenta
-      );
+  const mensaje = mensajeDe(
+    esNuevo ? "prestamo_nuevo" : "estado_cuenta",
+    prestamo,
+    datos,
+    nombre,
+    hoy,
+    { plantillas }
+  );
 
   // El historial viene del más nuevo al más viejo, así que el último cobro
   // es el primero de la lista.
   const ultimoPago = prestamo.pagos[0] ?? null;
   const comprobante = ultimoPago
-    ? mensajeComprobante(
-        prestamo,
-        datos,
-        nombre,
-        hoy,
-        ultimoPago,
-        ajustes?.plantilla_comprobante
-      )
+    ? mensajeDe("comprobante", prestamo, datos, nombre, hoy, {
+        pago: ultimoPago,
+        plantillas,
+      })
     : null;
 
   return (

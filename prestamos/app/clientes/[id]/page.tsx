@@ -5,11 +5,11 @@ import FilaPrestamo from "@/components/FilaPrestamo";
 import BotonesWhatsApp from "@/components/BotonesWhatsApp";
 import BotonConfirmar from "@/components/BotonConfirmar";
 import { borrarCliente } from "@/app/acciones";
-import { traerAjustes, traerCliente, traerPrestamosDeCliente } from "@/lib/datos";
+import { traerCliente, traerPlantillas, traerPrestamosDeCliente } from "@/lib/datos";
 import { resolver } from "@/lib/agregados";
 import { hoyISO, formatFecha } from "@/lib/fechas";
 import { plata } from "@/lib/format";
-import { linkWhatsApp, mensajeEstadoDeCuenta } from "@/lib/whatsapp";
+import { linkWhatsApp, mensajeDe } from "@/lib/whatsapp";
 
 export const dynamic = "force-dynamic";
 
@@ -19,10 +19,10 @@ export default async function ClientePage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [cliente, prestamos, ajustes] = await Promise.all([
+  const [cliente, prestamos, plantillas] = await Promise.all([
     traerCliente(id),
     traerPrestamosDeCliente(id),
-    traerAjustes(),
+    traerPlantillas(),
   ]);
   if (!cliente) notFound();
 
@@ -37,13 +37,9 @@ export default async function ClientePage({
   // Con un solo préstamo vigente se puede mandar su estado de cuenta directo.
   const unico = vigentes.length === 1 ? vigentes[0] : null;
   const mensaje = unico
-    ? mensajeEstadoDeCuenta(
-        unico.prestamo,
-        unico.datos,
-        cliente.nombre,
-        hoy,
-        ajustes?.plantilla_estado_cuenta
-      )
+    ? mensajeDe("estado_cuenta", unico.prestamo, unico.datos, cliente.nombre, hoy, {
+        plantillas,
+      })
     : null;
 
   return (

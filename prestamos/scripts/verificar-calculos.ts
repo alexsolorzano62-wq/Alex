@@ -1,7 +1,7 @@
 import { calcularPlan, resumen, tasaImplicita, capitalizar, renovar } from "@/lib/calc";
 import { sumarMeses, diasEntre } from "@/lib/fechas";
-import { normalizarTelefono, mensajeEstadoDeCuenta } from "@/lib/whatsapp";
-import { aplicarPlantilla, variablesDePrestamo, EJEMPLOS, PLANTILLA_ESTADO_CUENTA, PLANTILLA_PRESTAMO_NUEVO, PLANTILLA_COMPROBANTE } from "@/lib/plantillas";
+import { normalizarTelefono, mensajeDe } from "@/lib/whatsapp";
+import { aplicarPlantilla, plantillaDe, variablesDePrestamo, EJEMPLOS, MODALIDADES, PLANTILLAS_POR_DEFECTO, TIPOS } from "@/lib/plantillas";
 import { parsearPesos, parsearTasa } from "@/lib/parseo";
 import { cuotaSemanal, planesPara, PLANES_SEMANALES, SEMANAS_CON_PLAN } from "@/lib/planes";
 import { sumarSemanas } from "@/lib/fechas";
@@ -95,54 +95,66 @@ chequear("sin telefono", normalizarTelefono(null), null);
 chequear("basura", normalizarTelefono("no tiene"), null);
 
 console.log("--- Plantillas de WhatsApp ---");
-const muestra = EJEMPLOS[0].variables;
+const muestra = EJEMPLOS.semanal;
 chequear("reemplaza una etiqueta", aplicarPlantilla("Hola {cliente}", muestra), "Hola Miriam Marquez");
-chequear("reemplaza varias", aplicarPlantilla("{cliente} debe {total}", muestra), "Miriam Marquez debe $418.500");
-chequear("etiqueta repetida", aplicarPlantilla("{total} y {total}", muestra), "$418.500 y $418.500");
+chequear("reemplaza varias", aplicarPlantilla("{cliente} debe {saldo}", muestra), "Miriam Marquez debe $418.500");
+chequear("etiqueta repetida", aplicarPlantilla("{saldo} y {saldo}", muestra), "$418.500 y $418.500");
 chequear("etiqueta inventada queda a la vista", aplicarPlantilla("Hola {nocxiste}", muestra), "Hola {nocxiste}");
-chequear("una etiqueta vacia se lleva su renglon", aplicarPlantilla("Uno\nCuota: {noexiste_vacio}\nDos", { ...muestra, noexiste_vacio: "" }), "Uno\nDos");
+chequear("una etiqueta vacia se lleva su renglon", aplicarPlantilla("Uno\nCuota: {vacio}\nDos", { ...muestra, vacio: "" }), "Uno\nDos");
 chequear("texto sin etiquetas queda igual", aplicarPlantilla("Pasa el jueves", muestra), "Pasa el jueves");
 chequear("plantilla vacia no rompe", aplicarPlantilla("", muestra), "");
+chequear("un renglon en blanco a proposito se respeta", aplicarPlantilla("A\n\nB", muestra), "A\n\nB");
+chequear("dos renglones en blanco seguidos se juntan en uno", aplicarPlantilla("A\n\n\nB", muestra), "A\n\nB");
+
+console.log("--- Los nueve mensajes de fabrica ---");
 chequear(
-  "estado de cuenta por defecto (plan semanal)",
-  aplicarPlantilla(PLANTILLA_ESTADO_CUENTA, muestra),
-  "Hola Miriam Marquez 👋\nTu estado de cuenta al 25/08/2026:\n\nMonto: $200.000\nForma de pago: 16 cuotas semanales de $27.900\nAbonadas: 1 de 16\nPróximo vencimiento: 01/09/2026 (faltan 7 días)"
+  "estado de cuenta / semanal",
+  aplicarPlantilla(PLANTILLAS_POR_DEFECTO.estado_cuenta.semanal, EJEMPLOS.semanal),
+  "Hola Miriam Marquez 👋\nTu estado de cuenta al 25/08/2026:\n\nMonto: $200.000\n*Te quedan 15 cuotas de $27.900*\nPróximo vencimiento: 01/09/2026 (faltan 7 días)"
 );
 chequear(
-  "prestamo nuevo por defecto",
-  aplicarPlantilla(PLANTILLA_PRESTAMO_NUEVO, muestra),
-  "Hola Miriam Marquez 👋\nPrestamo confirmado ✅:\n\nImporte: $200.000\nForma de pago: 16 cuotas semanales de $27.900\nPrimer vencimiento: 01/09/2026"
+  "estado de cuenta / mensual: muestra el total, sin cuotas",
+  aplicarPlantilla(PLANTILLAS_POR_DEFECTO.estado_cuenta.mensual, EJEMPLOS.mensual),
+  "Hola Willy Marquez 👋\nTu estado de cuenta al 18/08/2026:\n\nMonto: $500.000\n*A devolver: $625.000*\nPróximo vencimiento: 15/09/2026 (faltan 28 días)"
 );
 chequear(
-  "comprobante por defecto",
-  aplicarPlantilla(PLANTILLA_COMPROBANTE, muestra),
-  "Hola Miriam Marquez 👋\nRecibimos tu pago ✅\n\nImporte abonado: $27.900\nFecha: 25/08/2026\nTe quedan 15 cuotas de $27.900\nSaldo: $418.500\nPróximo vencimiento: 01/09/2026"
+  "prestamo nuevo / semanal",
+  aplicarPlantilla(PLANTILLAS_POR_DEFECTO.prestamo_nuevo.semanal, EJEMPLOS.semanal),
+  "Hola Miriam Marquez 👋\nPrestamo confirmado ✅:\n\nImporte: $200.000\n*A devolver: 16 cuotas semanales de $27.900*\nPrimer vencimiento: 01/09/2026"
+);
+chequear(
+  "prestamo nuevo / mensual",
+  aplicarPlantilla(PLANTILLAS_POR_DEFECTO.prestamo_nuevo.mensual, EJEMPLOS.mensual),
+  "Hola Willy Marquez 👋\nPrestamo confirmado ✅:\n\nImporte: $500.000\n*A devolver: $625.000*\nFecha de vencimiento: 15/09/2026"
+);
+chequear(
+  "comprobante / semanal",
+  aplicarPlantilla(PLANTILLAS_POR_DEFECTO.comprobante.semanal, EJEMPLOS.semanal),
+  "Hola Miriam Marquez 👋\nRecibimos tu pago ✅\n\nImporte abonado: $27.900\nFecha: 25/08/2026\nTe quedan 15 cuotas de $27.900\n*Saldo: $418.500*\nPróximo vencimiento: 01/09/2026"
+);
+chequear(
+  "comprobante / mensual: sin renglon de cuotas",
+  aplicarPlantilla(PLANTILLAS_POR_DEFECTO.comprobante.mensual, EJEMPLOS.mensual),
+  "Hola Willy Marquez 👋\nRecibimos tu pago ✅\n\nImporte abonado: $125.000\nFecha: 18/08/2026\n*Saldo: $625.000*\nPróximo vencimiento: 15/09/2026"
 );
 
-console.log("--- Lo que es tuyo no sale en el mensaje ---");
-for (const [nombre, plantilla] of [
-  ["estado de cuenta", PLANTILLA_ESTADO_CUENTA],
-  ["prestamo nuevo", PLANTILLA_PRESTAMO_NUEVO],
-] as const) {
-  const texto = aplicarPlantilla(plantilla, muestra);
-  chequear(`${nombre}: no dice la tasa`, texto.includes("%"), false);
-  chequear(`${nombre}: no dice el total a devolver`, texto.includes("$446.400"), false);
-  chequear(`${nombre}: no dice el interes`, texto.includes("$246.400"), false);
+console.log("--- Ninguno de los nueve filtra la tasa ---");
+let filtra: string | null = null;
+for (const { tipo } of TIPOS) {
+  for (const { modalidad } of MODALIDADES) {
+    const texto = aplicarPlantilla(PLANTILLAS_POR_DEFECTO[tipo][modalidad], EJEMPLOS[modalidad]);
+    if (texto.includes("%")) filtra = `${tipo}/${modalidad} dice la tasa`;
+    if (texto.trim() === "") filtra = `${tipo}/${modalidad} sale vacio`;
+  }
 }
+chequear("ningun mensaje de fabrica muestra la tasa ni sale vacio", filtra, null);
 
-console.log("--- Un prestamo mensual no habla de cuotas ---");
-const mensual = EJEMPLOS[1].variables;
-chequear(
-  "el renglon de cuotas desaparece entero",
-  aplicarPlantilla(PLANTILLA_ESTADO_CUENTA, mensual),
-  "Hola Willy Marquez 👋\nTu estado de cuenta al 18/08/2026:\n\nMonto: $500.000\nForma de pago: $125.000 por mes\nPróximo vencimiento: 15/09/2026 (faltan 28 días)"
-);
-chequear("no queda un 'de' colgado", aplicarPlantilla(PLANTILLA_ESTADO_CUENTA, mensual).includes("Abonadas"), false);
-chequear(
-  "el comprobante mensual tampoco cuenta cuotas",
-  aplicarPlantilla(PLANTILLA_COMPROBANTE, mensual).includes("Te quedan"),
-  false
-);
+console.log("--- Elegir plantilla ---");
+chequear("sin nada guardado usa la de fabrica", plantillaDe(null, "estado_cuenta", "semanal"), PLANTILLAS_POR_DEFECTO.estado_cuenta.semanal);
+chequear("usa la del usuario cuando existe", plantillaDe({ estado_cuenta: { semanal: "Hola {cliente}" } }, "estado_cuenta", "semanal"), "Hola {cliente}");
+chequear("una en blanco vuelve a la de fabrica", plantillaDe({ estado_cuenta: { semanal: "   " } }, "estado_cuenta", "semanal"), PLANTILLAS_POR_DEFECTO.estado_cuenta.semanal);
+chequear("lo guardado en una modalidad no pisa a las otras", plantillaDe({ estado_cuenta: { semanal: "propia" } }, "estado_cuenta", "mensual"), PLANTILLAS_POR_DEFECTO.estado_cuenta.mensual);
+chequear("los tres ejemplos tienen las mismas etiquetas", MODALIDADES.map(({ modalidad }) => Object.keys(EJEMPLOS[modalidad]).sort().join()).every((k, _, todos) => k === todos[0]), true);
 
 console.log("--- Planes semanales: la lista de precios sale exacta ---");
 for (const plan of PLANES_SEMANALES) {
@@ -238,7 +250,7 @@ const todas = Array.from({ length: 16 }, (_, i) => ({ id: `s${i}`, prestamo_id: 
 chequear("saldo tras las 16", resumen(semanal, todas, "2026-12-09").aDevolver, 0);
 chequear("una cuota escrita a mano pisa la lista", calcularPlan({ modalidad: "semanal", capital: 200000, tasa: 0, cuotas: 16, cuotaManual: 30000 }).total, 480000);
 
-console.log("--- La forma de pago describe sin revelar la tasa ---");
+console.log("--- La forma de pago y el mensaje real ---");
 const varsSemanal = variablesDePrestamo(semanal, resumen(semanal, unaSemana, "2026-08-26"), "Miriam", "2026-08-26", unaSemana[0]);
 chequear("plan semanal", varsSemanal.forma_pago, "16 cuotas semanales de $27.900");
 chequear("saldo tras una cuota", varsSemanal.saldo, "$418.500");
@@ -247,29 +259,16 @@ chequear("importe del pago", varsSemanal.pago, "$27.900");
 const varsMensual = variablesDePrestamo(base, resumen(base, [], "2026-08-18"), "Miriam", "2026-08-18");
 chequear("interes mensual: forma de pago sin tasa", varsMensual.forma_pago, "$60.000 por mes");
 chequear("interes mensual: sin cuotas", `${varsMensual.cuotas}|${varsMensual.cuotas_pagadas}|${varsMensual.cuotas_restantes}`, "||");
-
-chequear("un renglon en blanco a proposito se respeta", aplicarPlantilla("A\n\nB", muestra), "A\n\nB");
-chequear("dos renglones en blanco seguidos se juntan en uno", aplicarPlantilla("A\n\n\nB", muestra), "A\n\nB");
 chequear(
-  "sin plantilla guardada usa la de por defecto",
-  mensajeEstadoDeCuenta(base, resumen(base, [], "2026-08-18"), "Miriam Marquez", "2026-08-18", null).split("\n")[0],
-  "Hola Miriam Marquez 👋"
+  "el mensaje real de un prestamo semanal",
+  mensajeDe("comprobante", semanal, resumen(semanal, unaSemana, "2026-08-26"), "Miriam", "2026-08-26", { pago: unaSemana[0] }),
+  "Hola Miriam 👋\nRecibimos tu pago ✅\n\nImporte abonado: $27.900\nFecha: 25/08/2026\nTe quedan 15 cuotas de $27.900\n*Saldo: $418.500*\nPróximo vencimiento: 25/08/2026"
 );
 chequear(
-  "con plantilla propia usa la del usuario",
-  mensajeEstadoDeCuenta(base, resumen(base, [], "2026-08-18"), "Miriam Marquez", "2026-08-18", "Buenas {cliente}, son {total}"),
-  "Buenas Miriam Marquez, son $260.000"
+  "el mensaje real de uno mensual usa su propia plantilla",
+  mensajeDe("estado_cuenta", base, resumen(base, [], "2026-08-18"), "Miriam", "2026-08-18").includes("A devolver: $260.000"),
+  true
 );
-chequear(
-  "una plantilla en blanco vuelve a la de por defecto",
-  mensajeEstadoDeCuenta(base, resumen(base, [], "2026-08-18"), "Miriam Marquez", "2026-08-18", "   ").split("\n")[0],
-  "Hola Miriam Marquez 👋"
-);
-// Los ejemplos de la vista previa tienen que cerrar entre si: si no, el
-// usuario configura sus mensajes mirando numeros que no existen.
-chequear("el ejemplo semanal cierra: cuota x restantes = saldo", `${27900 * 15}`, "418500");
-chequear("el ejemplo mensual no tiene cuotas cargadas", `${EJEMPLOS[1].variables.cuotas}|${EJEMPLOS[1].variables.cuota}|${EJEMPLOS[1].variables.cuotas_restantes}`, "||");
-chequear("los dos ejemplos tienen las mismas etiquetas", Object.keys(EJEMPLOS[0].variables).sort().join(), Object.keys(EJEMPLOS[1].variables).sort().join());
 
 console.log(fallos === 0 ? "\nTODO OK" : `\n${fallos} FALLAS`);
 process.exit(fallos === 0 ? 0 : 1);

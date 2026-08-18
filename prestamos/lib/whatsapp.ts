@@ -1,9 +1,9 @@
 import {
   aplicarPlantilla,
+  plantillaDe,
   variablesDePrestamo,
-  PLANTILLA_ESTADO_CUENTA,
-  PLANTILLA_PRESTAMO_NUEVO,
-  PLANTILLA_COMPROBANTE,
+  type PlantillasGuardadas,
+  type TipoMensaje,
 } from "@/lib/plantillas";
 import type { ResumenPrestamo } from "@/lib/calc";
 import type { Pago, Prestamo } from "@/lib/types";
@@ -49,53 +49,19 @@ export function linkWhatsApp(telefono: string | null, mensaje: string): string {
 }
 
 /**
- * Los mensajes salen de las plantillas que se editan en /ajustes. Si todavía no
- * hay ninguna guardada, se usa el texto que viene por defecto.
+ * Arma un mensaje: toma la plantilla que corresponde al tipo y a la modalidad
+ * del préstamo, y le completa los datos.
  */
-function armar(
-  plantillaGuardada: string | null | undefined,
-  plantillaPorDefecto: string,
+export function mensajeDe(
+  tipo: TipoMensaje,
   prestamo: Prestamo,
   datos: ResumenPrestamo,
   nombreCliente: string,
   hoy: string,
-  pago?: Pago | null
+  opciones?: { pago?: Pago | null; plantillas?: PlantillasGuardadas | null }
 ): string {
-  const plantilla = plantillaGuardada?.trim() || plantillaPorDefecto;
   return aplicarPlantilla(
-    plantilla,
-    variablesDePrestamo(prestamo, datos, nombreCliente, hoy, pago)
+    plantillaDe(opciones?.plantillas, tipo, prestamo.modalidad),
+    variablesDePrestamo(prestamo, datos, nombreCliente, hoy, opciones?.pago)
   );
-}
-
-export function mensajeEstadoDeCuenta(
-  prestamo: Prestamo,
-  datos: ResumenPrestamo,
-  nombreCliente: string,
-  hoy: string,
-  plantilla?: string | null
-): string {
-  return armar(plantilla, PLANTILLA_ESTADO_CUENTA, prestamo, datos, nombreCliente, hoy);
-}
-
-export function mensajePrestamoNuevo(
-  prestamo: Prestamo,
-  datos: ResumenPrestamo,
-  nombreCliente: string,
-  hoy: string,
-  plantilla?: string | null
-): string {
-  return armar(plantilla, PLANTILLA_PRESTAMO_NUEVO, prestamo, datos, nombreCliente, hoy);
-}
-
-/** El comprobante de un pago, con el saldo y lo que le queda por delante. */
-export function mensajeComprobante(
-  prestamo: Prestamo,
-  datos: ResumenPrestamo,
-  nombreCliente: string,
-  hoy: string,
-  pago: Pago,
-  plantilla?: string | null
-): string {
-  return armar(plantilla, PLANTILLA_COMPROBANTE, prestamo, datos, nombreCliente, hoy, pago);
 }

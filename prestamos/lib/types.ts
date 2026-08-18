@@ -66,6 +66,9 @@ export type PrestamoConCliente = Prestamo & {
 
 export type Ajustes = {
   owner_id: string;
+  /** Textos por tipo de mensaje y modalidad. Ver `lib/plantillas.ts`. */
+  plantillas: Record<string, Record<string, string>> | null;
+  /** Columnas viejas, de cuando había un solo texto por mensaje. */
   plantilla_estado_cuenta: string | null;
   plantilla_prestamo_nuevo: string | null;
   plantilla_comprobante: string | null;

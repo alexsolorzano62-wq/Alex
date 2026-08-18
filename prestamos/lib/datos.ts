@@ -1,6 +1,7 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import type { Ajustes, Cliente, Pago, Prestamo, PrestamoConCliente } from "@/lib/types";
+import type { PlantillasGuardadas, TipoMensaje } from "@/lib/plantillas";
 
 /** El usuario de la sesión. El proxy ya garantiza que hay uno. */
 export async function usuarioActual() {
@@ -65,11 +66,40 @@ export async function traerPrestamosDeCliente(
   return todos.filter((prestamo) => prestamo.cliente_id === clienteId);
 }
 
-/** Las plantillas de WhatsApp. Devuelve null si nunca se guardaron. */
-export async function traerAjustes(): Promise<Ajustes | null> {
+/**
+ * Las plantillas de WhatsApp, ya ordenadas por tipo y modalidad.
+ *
+ * Si quedó algo guardado en las columnas viejas —de cuando había un solo texto
+ * por mensaje— se usa como respaldo para las tres modalidades, así nadie pierde
+ * lo que había escrito.
+ */
+export async function traerPlantillas(): Promise<PlantillasGuardadas> {
   const supabase = await createClient();
   const { data } = await supabase.from("ajustes").select("*").maybeSingle();
-  return data;
+  if (!data) return {};
+
+  const fila = data as Ajustes;
+  const guardadas: PlantillasGuardadas = {};
+
+  const legado: [TipoMensaje, string | null][] = [
+    ["estado_cuenta", fila.plantilla_estado_cuenta],
+    ["prestamo_nuevo", fila.plantilla_prestamo_nuevo],
+    ["comprobante", fila.plantilla_comprobante],
+  ];
+  for (const [tipo, texto] of legado) {
+    if (texto?.trim()) {
+      guardadas[tipo] = { mensual: texto, semanal: texto, cuotas: texto };
+    }
+  }
+
+  for (const [tipo, porModalidad] of Object.entries(fila.plantillas ?? {})) {
+    guardadas[tipo as TipoMensaje] = {
+      ...guardadas[tipo as TipoMensaje],
+      ...porModalidad,
+    };
+  }
+
+  return guardadas;
 }
 
 export type { Ajustes, Cliente, Pago, Prestamo, PrestamoConCliente };

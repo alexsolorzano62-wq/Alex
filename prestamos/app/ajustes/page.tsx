@@ -1,13 +1,13 @@
 import Link from "next/link";
 import Encabezado from "@/components/Encabezado";
 import FormularioPlantillas from "@/components/FormularioPlantillas";
-import { traerAjustes } from "@/lib/datos";
+import { traerPlantillas } from "@/lib/datos";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Mensajes de WhatsApp" };
 
 export default async function AjustesPage() {
-  const ajustes = await traerAjustes();
+  const plantillas = await traerPlantillas();
 
   return (
     <>
@@ -25,7 +25,7 @@ export default async function AjustesPage() {
           desaparece solo.
         </p>
 
-        <FormularioPlantillas ajustes={ajustes} />
+        <FormularioPlantillas plantillas={plantillas} />
       </main>
     </>
   );

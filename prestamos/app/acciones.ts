@@ -270,14 +270,20 @@ export async function guardarPlantillas(
 ): Promise<Resultado> {
   const { supabase, ownerId } = await sesion();
 
+  // Los campos llegan como "estado_cuenta.semanal". Solo se guarda lo que
+  // tiene texto: lo vacío vuelve al texto de fábrica.
+  const plantillas: Record<string, Record<string, string>> = {};
+  for (const [campo, valor] of datos.entries()) {
+    if (!campo.includes(".")) continue;
+    const [tipo, modalidad] = campo.split(".");
+    const texto = String(valor).trim();
+    if (!texto) continue;
+    plantillas[tipo] = { ...plantillas[tipo], [modalidad]: texto };
+  }
+
   const { error } = await supabase.from("ajustes").upsert({
     owner_id: ownerId,
-    plantilla_estado_cuenta:
-      String(datos.get("plantilla_estado_cuenta") ?? "").trim() || null,
-    plantilla_prestamo_nuevo:
-      String(datos.get("plantilla_prestamo_nuevo") ?? "").trim() || null,
-    plantilla_comprobante:
-      String(datos.get("plantilla_comprobante") ?? "").trim() || null,
+    plantillas,
     actualizado_at: new Date().toISOString(),
   });
 

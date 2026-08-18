@@ -1,7 +1,7 @@
 import { formatFecha } from "@/lib/fechas";
 import { descripcionPlan, plata, porcentaje, tasaMostrada, textoVencimiento } from "@/lib/format";
 import type { ResumenPrestamo } from "@/lib/calc";
-import type { Pago, Prestamo } from "@/lib/types";
+import type { Modalidad, Pago, Prestamo } from "@/lib/types";
 
 /** Los valores con los que se completa una plantilla. */
 export type Variables = Record<string, string>;
@@ -34,36 +34,126 @@ export const ETIQUETAS: { clave: string; descripcion: string }[] = [
   { clave: "observacion", descripcion: "La observación del préstamo" },
 ];
 
-export const PLANTILLA_ESTADO_CUENTA = `Hola {cliente} 👋
+export type TipoMensaje = "estado_cuenta" | "prestamo_nuevo" | "comprobante";
+
+export const TIPOS: { tipo: TipoMensaje; titulo: string; ayuda: string }[] = [
+  {
+    tipo: "prestamo_nuevo",
+    titulo: "Préstamo nuevo",
+    ayuda: "El aviso que sale cuando le cargás un préstamo recién hecho.",
+  },
+  {
+    tipo: "estado_cuenta",
+    titulo: "Estado de cuenta",
+    ayuda: "El que le mandás para recordarle cuánto debe y cuándo vence.",
+  },
+  {
+    tipo: "comprobante",
+    titulo: "Comprobante de pago",
+    ayuda: "El recibo que le mandás cuando te paga.",
+  },
+];
+
+export const MODALIDADES: { modalidad: Modalidad; titulo: string }[] = [
+  { modalidad: "semanal", titulo: "Plan semanal" },
+  { modalidad: "mensual", titulo: "Interés mensual" },
+  { modalidad: "cuotas", titulo: "Cuotas mensuales" },
+];
+
+/**
+ * El texto de fábrica de cada mensaje, para cada modalidad.
+ *
+ * Cambian porque lo que el cliente necesita saber cambia: en un préstamo con
+ * interés mensual el número que importa es cuánto devuelve; en un plan, cuántas
+ * cuotas le quedan y de cuánto. La tasa no aparece en ninguno.
+ */
+export const PLANTILLAS_POR_DEFECTO: Record<TipoMensaje, Record<Modalidad, string>> = {
+  prestamo_nuevo: {
+    mensual: `Hola {cliente} 👋
+Prestamo confirmado ✅:
+
+Importe: {prestado}
+*A devolver: {total}*
+Fecha de vencimiento: {vence}`,
+    semanal: `Hola {cliente} 👋
+Prestamo confirmado ✅:
+
+Importe: {prestado}
+*A devolver: {cuotas} cuotas semanales de {cuota}*
+Primer vencimiento: {vence}`,
+    cuotas: `Hola {cliente} 👋
+Prestamo confirmado ✅:
+
+Importe: {prestado}
+*A devolver: {cuotas} cuotas de {cuota}*
+Primer vencimiento: {vence}`,
+  },
+
+  estado_cuenta: {
+    mensual: `Hola {cliente} 👋
 Tu estado de cuenta al {fecha}:
 
 Monto: {prestado}
-Forma de pago: {forma_pago}
-Abonadas: {cuotas_pagadas} de {cuotas}
-Próximo vencimiento: {vence} ({dias})`;
+*A devolver: {total}*
+Próximo vencimiento: {vence} ({dias})`,
+    semanal: `Hola {cliente} 👋
+Tu estado de cuenta al {fecha}:
 
-export const PLANTILLA_COMPROBANTE = `Hola {cliente} 👋
+Monto: {prestado}
+*Te quedan {cuotas_restantes} cuotas de {cuota}*
+Próximo vencimiento: {vence} ({dias})`,
+    cuotas: `Hola {cliente} 👋
+Tu estado de cuenta al {fecha}:
+
+Monto: {prestado}
+*Te quedan {cuotas_restantes} cuotas de {cuota}*
+Próximo vencimiento: {vence} ({dias})`,
+  },
+
+  comprobante: {
+    mensual: `Hola {cliente} 👋
+Recibimos tu pago ✅
+
+Importe abonado: {pago}
+Fecha: {fecha}
+*Saldo: {saldo}*
+Próximo vencimiento: {vence}`,
+    semanal: `Hola {cliente} 👋
 Recibimos tu pago ✅
 
 Importe abonado: {pago}
 Fecha: {fecha}
 Te quedan {cuotas_restantes} cuotas de {cuota}
-Saldo: {saldo}
-Próximo vencimiento: {vence}`;
+*Saldo: {saldo}*
+Próximo vencimiento: {vence}`,
+    cuotas: `Hola {cliente} 👋
+Recibimos tu pago ✅
 
-export const PLANTILLA_PRESTAMO_NUEVO = `Hola {cliente} 👋
-Prestamo confirmado ✅:
+Importe abonado: {pago}
+Fecha: {fecha}
+Te quedan {cuotas_restantes} cuotas de {cuota}
+*Saldo: {saldo}*
+Próximo vencimiento: {vence}`,
+  },
+};
 
-Importe: {prestado}
-Forma de pago: {forma_pago}
-Primer vencimiento: {vence}`;
+/** Lo que se guarda: solo los textos que el usuario cambió. */
+export type PlantillasGuardadas = Partial<
+  Record<TipoMensaje, Partial<Record<Modalidad, string>>>
+>;
 
 /**
- * Reemplaza cada {etiqueta} por su valor.
- *
- * Una etiqueta mal escrita se deja tal cual, a propósito: así se ve el error en
- * la vista previa en vez de aparecer un hueco silencioso en el mensaje.
+ * El texto que corresponde usar: el guardado si existe y no está vacío, si no
+ * el de fábrica. Así un mensaje nunca sale en blanco.
  */
+export function plantillaDe(
+  guardadas: PlantillasGuardadas | null | undefined,
+  tipo: TipoMensaje,
+  modalidad: Modalidad
+): string {
+  return guardadas?.[tipo]?.[modalidad]?.trim() || PLANTILLAS_POR_DEFECTO[tipo][modalidad];
+}
+
 export function aplicarPlantilla(plantilla: string, variables: Variables): string {
   // Un renglón con una etiqueta sin dato se va entero: en un préstamo con
   // interés mensual no hay cuotas, y "Abonadas: 0 de " no se le manda a nadie.
@@ -131,58 +221,73 @@ export function variablesDePrestamo(
 }
 
 /**
- * Datos de muestra para la vista previa de /ajustes, con los números de la
- * planilla: un préstamo con interés mensual y uno en cuotas.
+ * Datos de muestra para la vista previa de /ajustes: uno por modalidad, con los
+ * números de la lista de precios y de la planilla.
  */
-export const EJEMPLOS: { nombre: string; variables: Variables }[] = [
-  {
-    nombre: "Plan semanal",
-    variables: {
-      cliente: "Miriam Marquez",
-      forma_pago: "16 cuotas semanales de $27.900",
-      saldo: "$418.500",
-      cuotas_restantes: "15",
-      pago: "$27.900",
-      total: "$418.500",
-      vence: "01/09/2026",
-      dias: "faltan 7 días",
-      prestado: "$200.000",
-      capital: "$200.000",
-      interes: "$246.400",
-      tasa: "123,2%",
-      plan: "16 semanas de $27.900",
-      cuota: "$27.900",
-      cuotas: "16",
-      cuotas_pagadas: "1",
-      inicio: "18/08/2026",
-      fecha: "25/08/2026",
-      observacion: "",
-    },
+export const EJEMPLOS: Record<Modalidad, Variables> = {
+  semanal: {
+    cliente: "Miriam Marquez",
+    forma_pago: "16 cuotas semanales de $27.900",
+    saldo: "$418.500",
+    cuotas_restantes: "15",
+    pago: "$27.900",
+    total: "$418.500",
+    vence: "01/09/2026",
+    dias: "faltan 7 días",
+    prestado: "$200.000",
+    capital: "$200.000",
+    interes: "$246.400",
+    tasa: "123,2%",
+    plan: "16 semanas de $27.900",
+    cuota: "$27.900",
+    cuotas: "16",
+    cuotas_pagadas: "1",
+    inicio: "18/08/2026",
+    fecha: "25/08/2026",
+    observacion: "",
   },
-  {
-    nombre: "Interés mensual",
-    variables: {
-      cliente: "Willy Marquez",
-      forma_pago: "$125.000 por mes",
-      saldo: "$625.000",
-      // Un préstamo con interés mensual no tiene cuotas: estas etiquetas van
-      // vacías y se llevan su renglón entero.
-      cuotas_restantes: "",
-      pago: "$125.000",
-      total: "$625.000",
-      vence: "15/09/2026",
-      dias: "faltan 28 días",
-      prestado: "$500.000",
-      capital: "$500.000",
-      interes: "$125.000",
-      tasa: "25%",
-      plan: "25% mensual",
-      cuota: "",
-      cuotas: "",
-      cuotas_pagadas: "",
-      inicio: "16/08/2026",
-      fecha: "18/08/2026",
-      observacion: "",
-    },
+  mensual: {
+    cliente: "Willy Marquez",
+    forma_pago: "$125.000 por mes",
+    saldo: "$625.000",
+    // Un préstamo con interés mensual no tiene cuotas: estas etiquetas van
+    // vacías y se llevan su renglón entero.
+    cuotas_restantes: "",
+    pago: "$125.000",
+    total: "$625.000",
+    vence: "15/09/2026",
+    dias: "faltan 28 días",
+    prestado: "$500.000",
+    capital: "$500.000",
+    interes: "$125.000",
+    tasa: "25%",
+    plan: "25% mensual",
+    cuota: "",
+    cuotas: "",
+    cuotas_pagadas: "",
+    inicio: "16/08/2026",
+    fecha: "18/08/2026",
+    observacion: "",
   },
-];
+  cuotas: {
+    cliente: "Luciana Aparicio",
+    forma_pago: "3 cuotas mensuales de $85.370",
+    saldo: "$170.740",
+    cuotas_restantes: "2",
+    pago: "$85.370",
+    total: "$170.740",
+    vence: "10/10/2026",
+    dias: "faltan 23 días",
+    prestado: "$200.000",
+    capital: "$200.000",
+    interes: "$56.110",
+    tasa: "28,06%",
+    plan: "3 cuotas de $85.370",
+    cuota: "$85.370",
+    cuotas: "3",
+    cuotas_pagadas: "1",
+    inicio: "13/08/2026",
+    fecha: "10/09/2026",
+    observacion: "",
+  },
+};

@@ -6,77 +6,66 @@ import {
   aplicarPlantilla,
   EJEMPLOS,
   ETIQUETAS,
-  PLANTILLA_ESTADO_CUENTA,
-  PLANTILLA_PRESTAMO_NUEVO,
-  PLANTILLA_COMPROBANTE,
+  MODALIDADES,
+  PLANTILLAS_POR_DEFECTO,
+  TIPOS,
+  type PlantillasGuardadas,
+  type TipoMensaje,
 } from "@/lib/plantillas";
-import type { Ajustes } from "@/lib/types";
+import type { Modalidad } from "@/lib/types";
 
-type Editor = {
-  campo: "plantilla_estado_cuenta" | "plantilla_prestamo_nuevo" | "plantilla_comprobante";
-  titulo: string;
-  ayuda: string;
-  porDefecto: string;
-};
+function clave(tipo: TipoMensaje, modalidad: Modalidad) {
+  return `${tipo}.${modalidad}`;
+}
 
-const EDITORES: Editor[] = [
-  {
-    campo: "plantilla_estado_cuenta",
-    titulo: "Estado de cuenta",
-    ayuda: "El que le mandás para recordarle cuánto debe y cuándo vence.",
-    porDefecto: PLANTILLA_ESTADO_CUENTA,
-  },
-  {
-    campo: "plantilla_prestamo_nuevo",
-    titulo: "Préstamo nuevo",
-    ayuda: "El aviso que sale cuando le cargás un préstamo recién hecho.",
-    porDefecto: PLANTILLA_PRESTAMO_NUEVO,
-  },
-  {
-    campo: "plantilla_comprobante",
-    titulo: "Comprobante de pago",
-    ayuda: "El recibo que le mandás cuando te paga, con el saldo y lo que le queda.",
-    porDefecto: PLANTILLA_COMPROBANTE,
-  },
-];
+/** Los nueve textos: lo guardado si existe, si no el de fábrica. */
+function estadoInicial(guardadas: PlantillasGuardadas) {
+  const textos: Record<string, string> = {};
+  for (const { tipo } of TIPOS) {
+    for (const { modalidad } of MODALIDADES) {
+      textos[clave(tipo, modalidad)] =
+        guardadas[tipo]?.[modalidad] ?? PLANTILLAS_POR_DEFECTO[tipo][modalidad];
+    }
+  }
+  return textos;
+}
 
-export default function FormularioPlantillas({ ajustes }: { ajustes: Ajustes | null }) {
+export default function FormularioPlantillas({
+  plantillas,
+}: {
+  plantillas: PlantillasGuardadas;
+}) {
   const [estado, accion, enviando] = useActionState(guardarPlantillas, undefined);
   const [guardado, setGuardado] = useState(false);
-
-  const [textos, setTextos] = useState<Record<string, string>>({
-    plantilla_estado_cuenta:
-      ajustes?.plantilla_estado_cuenta ?? PLANTILLA_ESTADO_CUENTA,
-    plantilla_prestamo_nuevo:
-      ajustes?.plantilla_prestamo_nuevo ?? PLANTILLA_PRESTAMO_NUEVO,
-    plantilla_comprobante: ajustes?.plantilla_comprobante ?? PLANTILLA_COMPROBANTE,
-  });
-
-  const [ejemplo, setEjemplo] = useState(0);
+  const [textos, setTextos] = useState(() => estadoInicial(plantillas));
+  const [modalidad, setModalidad] = useState<Modalidad>("semanal");
   const referencias = useRef<Record<string, HTMLTextAreaElement | null>>({});
 
   /** Mete la etiqueta justo donde está el cursor. */
-  function insertar(campo: string, clave: string) {
+  function insertar(campo: string, etiqueta: string) {
     const area = referencias.current[campo];
     const texto = textos[campo];
-    const etiqueta = `{${clave}}`;
+    const trozo = `{${etiqueta}}`;
 
     if (!area) {
-      setTextos((previo) => ({ ...previo, [campo]: texto + etiqueta }));
+      setTextos((previo) => ({ ...previo, [campo]: texto + trozo }));
       return;
     }
 
     const desde = area.selectionStart;
     const hasta = area.selectionEnd;
-    const nuevo = texto.slice(0, desde) + etiqueta + texto.slice(hasta);
-    setTextos((previo) => ({ ...previo, [campo]: nuevo }));
+    setTextos((previo) => ({
+      ...previo,
+      [campo]: texto.slice(0, desde) + trozo + texto.slice(hasta),
+    }));
 
-    // Se devuelve el cursor justo después de lo que se acaba de insertar.
     requestAnimationFrame(() => {
       area.focus();
-      area.setSelectionRange(desde + etiqueta.length, desde + etiqueta.length);
+      area.setSelectionRange(desde + trozo.length, desde + trozo.length);
     });
   }
+
+  const muestra = EJEMPLOS[modalidad];
 
   return (
     <form
@@ -84,91 +73,105 @@ export default function FormularioPlantillas({ ajustes }: { ajustes: Ajustes | n
         setGuardado(true);
         return accion(datos);
       }}
-      className="space-y-8"
+      className="space-y-6"
     >
+      {/* Las modalidades que no se están editando viajan igual, para que
+          guardar una no borre las otras. */}
+      {Object.entries(textos)
+        .filter(([campo]) => !campo.endsWith(`.${modalidad}`))
+        .map(([campo, texto]) => (
+          <input key={campo} type="hidden" name={campo} value={texto} />
+        ))}
+
       <div className="rounded-2xl border border-slate-200 bg-white p-3">
-        <p className="mb-1.5 text-xs font-medium text-slate-500">
-          Ver las vistas previas con un préstamo:
+        <p className="mb-2 text-xs font-medium text-slate-500">
+          Estás editando los mensajes de:
         </p>
-        <div className="flex gap-2">
-          {EJEMPLOS.map((muestra, indice) => (
+        <div className="flex flex-wrap gap-2">
+          {MODALIDADES.map((opcion) => (
             <button
-              key={muestra.nombre}
+              key={opcion.modalidad}
               type="button"
-              onClick={() => setEjemplo(indice)}
-              aria-pressed={ejemplo === indice}
+              onClick={() => setModalidad(opcion.modalidad)}
+              aria-pressed={modalidad === opcion.modalidad}
               className={`rounded-full px-3.5 py-1.5 text-sm font-medium ${
-                ejemplo === indice
+                modalidad === opcion.modalidad
                   ? "bg-brand-600 text-white"
                   : "border border-slate-300 bg-white text-slate-600"
               }`}
             >
-              {muestra.nombre}
+              {opcion.titulo}
             </button>
           ))}
         </div>
-        <p className="mt-1.5 text-xs text-slate-400">
-          Conviene que el texto se lea bien en los dos casos, porque la misma
-          plantilla se usa para todos tus préstamos.
+        <p className="mt-2 text-xs text-slate-400">
+          Cada modalidad tiene sus propios textos, porque lo que el cliente necesita
+          saber no es lo mismo.
         </p>
       </div>
 
-      {EDITORES.map((editor) => (
-        <section key={editor.campo}>
-          <div className="flex items-baseline justify-between gap-2">
-            <h2 className="text-sm font-bold text-slate-900">{editor.titulo}</h2>
-            <button
-              type="button"
-              onClick={() =>
-                setTextos((previo) => ({ ...previo, [editor.campo]: editor.porDefecto }))
-              }
-              className="text-xs font-medium text-slate-500 underline"
-            >
-              Restaurar el original
-            </button>
-          </div>
-          <p className="mb-2 text-xs text-slate-500">{editor.ayuda}</p>
-
-          <textarea
-            ref={(elemento) => {
-              referencias.current[editor.campo] = elemento;
-            }}
-            name={editor.campo}
-            value={textos[editor.campo]}
-            onChange={(e) =>
-              setTextos((previo) => ({ ...previo, [editor.campo]: e.target.value }))
-            }
-            rows={9}
-            className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 font-mono text-sm leading-relaxed outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
-          />
-
-          <p className="mt-2 text-xs font-medium text-slate-500">
-            Tocá una etiqueta para insertarla donde tengas el cursor:
-          </p>
-          <div className="mt-1.5 flex flex-wrap gap-1.5">
-            {ETIQUETAS.map((etiqueta) => (
+      {TIPOS.map((mensaje) => {
+        const campo = clave(mensaje.tipo, modalidad);
+        return (
+          <section key={campo}>
+            <div className="flex items-baseline justify-between gap-2">
+              <h2 className="text-sm font-bold text-slate-900">{mensaje.titulo}</h2>
               <button
-                key={etiqueta.clave}
                 type="button"
-                title={etiqueta.descripcion}
-                onClick={() => insertar(editor.campo, etiqueta.clave)}
-                className="rounded-lg border border-slate-300 bg-white px-2 py-1 font-mono text-[11px] text-slate-600 active:bg-brand-50"
+                onClick={() =>
+                  setTextos((previo) => ({
+                    ...previo,
+                    [campo]: PLANTILLAS_POR_DEFECTO[mensaje.tipo][modalidad],
+                  }))
+                }
+                className="text-xs font-medium text-slate-500 underline"
               >
-                {`{${etiqueta.clave}}`}
+                Restaurar el original
               </button>
-            ))}
-          </div>
+            </div>
+            <p className="mb-2 text-xs text-slate-500">{mensaje.ayuda}</p>
 
-          <div className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 p-3">
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-emerald-800">
-              Así le va a llegar
+            <textarea
+              ref={(elemento) => {
+                referencias.current[campo] = elemento;
+              }}
+              name={campo}
+              value={textos[campo]}
+              onChange={(e) =>
+                setTextos((previo) => ({ ...previo, [campo]: e.target.value }))
+              }
+              rows={8}
+              className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 font-mono text-sm leading-relaxed outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
+            />
+
+            <p className="mt-2 text-xs font-medium text-slate-500">
+              Tocá una etiqueta para insertarla donde tengas el cursor:
             </p>
-            <pre className="mt-1.5 whitespace-pre-wrap font-sans text-sm leading-relaxed text-slate-800">
-              {aplicarPlantilla(textos[editor.campo], EJEMPLOS[ejemplo].variables)}
-            </pre>
-          </div>
-        </section>
-      ))}
+            <div className="mt-1.5 flex flex-wrap gap-1.5">
+              {ETIQUETAS.map((etiqueta) => (
+                <button
+                  key={etiqueta.clave}
+                  type="button"
+                  title={etiqueta.descripcion}
+                  onClick={() => insertar(campo, etiqueta.clave)}
+                  className="rounded-lg border border-slate-300 bg-white px-2 py-1 font-mono text-[11px] text-slate-600 active:bg-brand-50"
+                >
+                  {`{${etiqueta.clave}}`}
+                </button>
+              ))}
+            </div>
+
+            <div className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 p-3">
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-emerald-800">
+                Así le va a llegar
+              </p>
+              <pre className="mt-1.5 whitespace-pre-wrap font-sans text-sm leading-relaxed text-slate-800">
+                {aplicarPlantilla(textos[campo], muestra)}
+              </pre>
+            </div>
+          </section>
+        );
+      })}
 
       {estado?.error && (
         <p className="rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700">
@@ -187,7 +190,7 @@ export default function FormularioPlantillas({ ajustes }: { ajustes: Ajustes | n
         disabled={enviando}
         className="w-full rounded-xl bg-brand-600 px-5 py-3 text-base font-semibold text-white active:bg-brand-700 disabled:opacity-60"
       >
-        {enviando ? "Guardando..." : "Guardar plantillas"}
+        {enviando ? "Guardando..." : "Guardar los nueve mensajes"}
       </button>
     </form>
   );

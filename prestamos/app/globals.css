@@ -1,0 +1,22 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html {
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  min-height: 100dvh;
+}
+
+/* Instalada en el celular, la barra de abajo tiene que esquivar la franja
+   del gesto de inicio del iPhone. */
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* Los importes se leen en columna: todos los digitos ocupan lo mismo. */
+.tabular {
+  font-variant-numeric: tabular-nums;
+}

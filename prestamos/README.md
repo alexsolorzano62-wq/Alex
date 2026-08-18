@@ -15,9 +15,9 @@ todo y, si querés, les mandás el estado de cuenta por WhatsApp.
 - **Clientes** con teléfono y notas, y el historial de todo lo que le prestaste.
 - **Préstamos** en tres modalidades:
   - *Interés mensual*: paga el interés y renueva mes a mes (lo de siempre).
-  - *Plan semanal*: cuotas semanales según tu lista de precios (`lib/planes.ts`).
-    Si el monto no está en la lista, la cuota se calcula en proporción entre los
-    dos escalones vecinos y podés pisarla a mano.
+  - *Plan semanal*: cuotas semanales según tu lista de precios (`lib/planes.ts`),
+    en 8, 10, 12, 16 o 20 semanas. Si el monto no está en la lista, la cuota se
+    calcula en proporción entre los dos escalones vecinos y podés pisarla a mano.
   - *Cuotas mensuales*: plan cerrado en N cuotas fijas. Podés pactar el total a
     mano y la tasa se calcula sola.
 - **Simulador**: ponés un monto y ves cuánto paga en cada plan, sin guardar nada.
@@ -117,8 +117,9 @@ Cuando publicás un cambio en Vercel, la app se actualiza sola.
   Pasa a deber 260.000 y el mes siguiente el 30% se calcula sobre 260.000
   (o sea 78.000). Interés compuesto.
 - **En cuotas**: el total queda fijo desde el día uno y cada cuota lo va bajando.
-- **Planes semanales**: la cuota sale de la lista de precios de `lib/planes.ts`, que
-  son montos pactados y no una fórmula (la tasa baja a medida que el préstamo crece).
+- **Planes semanales**: la cuota sale de la lista de precios de `lib/planes.ts`.
+  Los plazos de 8, 10 y 12 semanas van a 11,5% semanal parejo; los de 16 y 20 son
+  montos pactados, con descuento por volumen para los préstamos grandes.
   Para un monto que no está en la lista, la cuota se calcula en proporción entre los
   dos escalones vecinos y se redondea al cien. Para un plazo que no está en la lista,
   la cuota la escribís vos: la app no inventa una tasa que nunca pactaste.

@@ -3,7 +3,7 @@ import { sumarMeses, diasEntre } from "@/lib/fechas";
 import { normalizarTelefono, mensajeEstadoDeCuenta } from "@/lib/whatsapp";
 import { aplicarPlantilla, EJEMPLOS, PLANTILLA_ESTADO_CUENTA, PLANTILLA_PRESTAMO_NUEVO } from "@/lib/plantillas";
 import { parsearPesos, parsearTasa } from "@/lib/parseo";
-import { cuotaSemanal, planesPara, PLANES_SEMANALES } from "@/lib/planes";
+import { cuotaSemanal, planesPara, PLANES_SEMANALES, SEMANAS_CON_PLAN } from "@/lib/planes";
 import { sumarSemanas } from "@/lib/fechas";
 import type { Prestamo } from "@/lib/types";
 
@@ -152,13 +152,14 @@ chequear("120k a 16 semanas", cuotaSemanal(120000, 16)!.cuota, 16700);
 chequear("50k a 16: por debajo del menor, misma proporcion", cuotaSemanal(50000, 16)!.cuota, 7000);
 chequear("700k a 20: por encima del mayor, misma proporcion", cuotaSemanal(700000, 20)!.cuota, 78300);
 chequear("las cuotas calculadas son multiplos de cien", [350000, 120000, 275000, 640000].every((c) => cuotaSemanal(c, 16)!.cuota % 100 === 0), true);
-chequear("un plazo sin lista de precios no se inventa", cuotaSemanal(200000, 12), null);
+chequear("un plazo sin lista de precios no se inventa (6 sem)", cuotaSemanal(200000, 6), null);
+chequear("tampoco uno mas largo que los tuyos (24 sem)", cuotaSemanal(200000, 24), null);
 chequear("un capital de cero no devuelve plan", cuotaSemanal(0, 16), null);
-chequear("planesPara trae los dos plazos", planesPara(200000).map((p) => p.semanas), [16, 20]);
+chequear("planesPara trae los cinco plazos ordenados", planesPara(200000).map((p) => p.semanas), [8, 10, 12, 16, 20]);
 
 console.log("--- Planes semanales: mas capital nunca sale mas barato ---");
 let monotono = true;
-for (const semanas of [16, 20]) {
+for (const semanas of SEMANAS_CON_PLAN) {
   let anterior = 0;
   for (let capital = 50000; capital <= 800000; capital += 10000) {
     const cuota = cuotaSemanal(capital, semanas)!.cuota;
@@ -173,7 +174,7 @@ chequear("la cuota nunca baja al subir el capital", monotono, true);
 // mil caia de 125,2 a 113,0 y prestar 300k dejaba casi lo mismo que 250k.
 const MAXIMA_CAIDA = 10;
 let paredon: string | null = null;
-for (const semanas of [16, 20]) {
+for (const semanas of SEMANAS_CON_PLAN) {
   const escalones = PLANES_SEMANALES.filter((p) => p.semanas === semanas).sort((a, b) => a.capital - b.capital);
   for (let i = 1; i < escalones.length; i++) {
     const antes = (escalones[i - 1].cuota / escalones[i - 1].capital) * 1000;
@@ -184,6 +185,22 @@ for (const semanas of [16, 20]) {
   }
 }
 chequear("ningun escalon de descuento cae de golpe", paredon, null);
+
+// Estirar el plazo tiene que dejar mas ganancia. Si un plazo largo rindiera
+// menos que uno corto, convendria no ofrecerlo.
+let inversion: string | null = null;
+for (const capital of [...new Set(PLANES_SEMANALES.map((p) => p.capital))]) {
+  let anterior = 0;
+  for (const semanas of SEMANAS_CON_PLAN) {
+    const ganancia = cuotaSemanal(capital, semanas)!.interes;
+    if (ganancia <= anterior) {
+      inversion = `${capital} a ${semanas} sem deja ${ganancia} y el plazo anterior ${anterior}`;
+    }
+    anterior = ganancia;
+  }
+}
+chequear("un plazo mas largo siempre deja mas ganancia", inversion, null);
+chequear("los plazos cortos van a 11,5% parejo", [100000, 500000].map((c) => Math.round((cuotaSemanal(c, 12)!.cuota / c) * 1000)), [158, 158]);
 
 console.log("--- Semanas en el calendario ---");
 chequear("una semana son 7 dias", sumarSemanas("2026-08-18", 1), "2026-08-25");

@@ -8,8 +8,39 @@
  * El descuento por volumen tiene que bajar de a poco. Si un escalón cae de
  * golpe, prestar más deja de convenir: el test comprueba que prestar más
  * siempre deje más ganancia que prestar menos.
+ *
+ * Los plazos cortos (8, 10 y 12 semanas) van a 11,5% semanal parejo, que es la
+ * tasa de los planes de 16 semanas hasta 250.000. El descuento por volumen
+ * existe solo en los plazos largos: premia que se comprometa por más tiempo.
  */
 export const PLANES_SEMANALES: { capital: number; semanas: number; cuota: number }[] = [
+  // 8 semanas — 11,5% semanal, sin descuento por volumen.
+  { capital: 100_000, semanas: 8, cuota: 19_800 },
+  { capital: 150_000, semanas: 8, cuota: 29_700 },
+  { capital: 200_000, semanas: 8, cuota: 39_600 },
+  { capital: 250_000, semanas: 8, cuota: 49_400 },
+  { capital: 300_000, semanas: 8, cuota: 59_300 },
+  { capital: 400_000, semanas: 8, cuota: 79_100 },
+  { capital: 500_000, semanas: 8, cuota: 98_900 },
+
+  // 10 semanas — 11,5% semanal, sin descuento por volumen.
+  { capital: 100_000, semanas: 10, cuota: 17_300 },
+  { capital: 150_000, semanas: 10, cuota: 26_000 },
+  { capital: 200_000, semanas: 10, cuota: 34_700 },
+  { capital: 250_000, semanas: 10, cuota: 43_300 },
+  { capital: 300_000, semanas: 10, cuota: 52_000 },
+  { capital: 400_000, semanas: 10, cuota: 69_400 },
+  { capital: 500_000, semanas: 10, cuota: 86_700 },
+
+  // 12 semanas — 11,5% semanal, sin descuento por volumen.
+  { capital: 100_000, semanas: 12, cuota: 15_800 },
+  { capital: 150_000, semanas: 12, cuota: 23_700 },
+  { capital: 200_000, semanas: 12, cuota: 31_500 },
+  { capital: 250_000, semanas: 12, cuota: 39_400 },
+  { capital: 300_000, semanas: 12, cuota: 47_300 },
+  { capital: 400_000, semanas: 12, cuota: 63_100 },
+  { capital: 500_000, semanas: 12, cuota: 78_900 },
+  // 16 y 20 semanas — precios pactados, con descuento por volumen.
   { capital: 100_000, semanas: 16, cuota: 13_900 },
   { capital: 150_000, semanas: 16, cuota: 20_900 },
   { capital: 200_000, semanas: 16, cuota: 27_900 },

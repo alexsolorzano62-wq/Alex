@@ -4,8 +4,8 @@ import { useState } from "react";
 import Link from "next/link";
 import BotonesWhatsApp from "@/components/BotonesWhatsApp";
 import { claseInput } from "@/components/CampoTexto";
-import { calcularPlan, tasaImplicita } from "@/lib/calc";
-import { plata, porcentaje } from "@/lib/format";
+import { calcularPlan } from "@/lib/calc";
+import { plata } from "@/lib/format";
 import { parsearPesos, parsearTasa } from "@/lib/parseo";
 import { planesPara, PLANES_SEMANALES } from "@/lib/planes";
 import { linkWhatsApp } from "@/lib/whatsapp";
@@ -92,40 +92,32 @@ export default function Simulador() {
               {semanales.map((plan) => (
                 <div
                   key={plan.semanas}
-                  className="rounded-2xl border border-slate-200 bg-white p-4"
+                  className="rounded-xl border border-slate-200 bg-white p-3"
                 >
                   <div className="flex items-baseline justify-between gap-3">
                     <p className="text-sm font-semibold text-slate-900">
                       {plan.semanas} semanas
                     </p>
-                    <p className="tabular text-lg font-bold text-brand-700">
+                    <p className="tabular text-lg font-bold leading-none text-brand-700">
                       {plata(plan.cuota)}
                       <span className="text-xs font-normal text-slate-500"> /semana</span>
                     </p>
                   </div>
 
-                  <dl className="mt-2 space-y-1 text-sm">
-                    <div className="flex justify-between">
-                      <dt className="text-slate-600">Devuelve en total</dt>
-                      <dd className="tabular font-semibold">{plata(plan.total)}</dd>
-                    </div>
-                    <div className="flex justify-between">
-                      <dt className="text-slate-600">Tu ganancia</dt>
-                      <dd className="tabular font-medium text-emerald-700">
-                        {plata(plan.interes)}{" "}
-                        <span className="text-xs text-slate-500">
-                          ({porcentaje(tasaImplicita(capitalNum, plan.total))})
-                        </span>
-                      </dd>
-                    </div>
-                  </dl>
-
-                  <Link
-                    href={`/prestamos/nuevo?capital=${capitalNum}&modalidad=semanal&semanas=${plan.semanas}`}
-                    className="mt-3 block rounded-xl bg-brand-600 px-4 py-2.5 text-center text-sm font-semibold text-white active:bg-brand-700"
-                  >
-                    Usar este plan
-                  </Link>
+                  <div className="mt-1.5 flex items-center justify-between gap-3">
+                    <p className="tabular min-w-0 truncate text-xs text-slate-500">
+                      devuelve {plata(plan.total)} · ganás{" "}
+                      <span className="font-semibold text-emerald-700">
+                        {plata(plan.interes)}
+                      </span>
+                    </p>
+                    <Link
+                      href={`/prestamos/nuevo?capital=${capitalNum}&modalidad=semanal&semanas=${plan.semanas}`}
+                      className="shrink-0 rounded-lg bg-brand-600 px-3 py-1.5 text-xs font-semibold text-white active:bg-brand-700"
+                    >
+                      Usar
+                    </Link>
+                  </div>
                 </div>
               ))}
             </div>

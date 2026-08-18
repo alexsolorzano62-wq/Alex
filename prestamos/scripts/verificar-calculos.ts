@@ -1,6 +1,7 @@
 import { calcularPlan, resumen, tasaImplicita, capitalizar, renovar } from "@/lib/calc";
 import { sumarMeses, diasEntre } from "@/lib/fechas";
-import { normalizarTelefono } from "@/lib/whatsapp";
+import { normalizarTelefono, mensajeEstadoDeCuenta } from "@/lib/whatsapp";
+import { aplicarPlantilla, EJEMPLOS, PLANTILLA_ESTADO_CUENTA } from "@/lib/plantillas";
 import { parsearPesos, parsearTasa } from "@/lib/parseo";
 import type { Prestamo } from "@/lib/types";
 
@@ -90,6 +91,38 @@ chequear("(11) 5555-4444", normalizarTelefono("(11) 5555-4444"), "5491155554444"
 chequear("caracteristica de 3: 351 155 55 4444", normalizarTelefono("351 15 555 4444"), "5493515554444");
 chequear("sin telefono", normalizarTelefono(null), null);
 chequear("basura", normalizarTelefono("no tiene"), null);
+
+console.log("--- Plantillas de WhatsApp ---");
+const muestra = EJEMPLOS[0].variables;
+chequear("reemplaza una etiqueta", aplicarPlantilla("Hola {cliente}", muestra), "Hola Miriam Marquez");
+chequear("reemplaza varias", aplicarPlantilla("{cliente} debe {total}", muestra), "Miriam Marquez debe $260.000");
+chequear("etiqueta repetida", aplicarPlantilla("{total} y {total}", muestra), "$260.000 y $260.000");
+chequear("etiqueta inventada queda a la vista", aplicarPlantilla("Hola {nocxiste}", muestra), "Hola {nocxiste}");
+chequear("etiqueta vacia no deja renglon en blanco", aplicarPlantilla("Uno\n{cuota}\n\nDos", muestra), "Uno\n\nDos");
+chequear("texto sin etiquetas queda igual", aplicarPlantilla("Pasa el jueves", muestra), "Pasa el jueves");
+chequear("plantilla vacia no rompe", aplicarPlantilla("", muestra), "");
+chequear(
+  "la plantilla por defecto arma el mensaje entero",
+  aplicarPlantilla(PLANTILLA_ESTADO_CUENTA, muestra),
+  "Hola Miriam Marquez 👋\nTu estado de cuenta al 18/08/2026:\n\nCapital prestado: $200.000\nInterés (30% mensual): $60.000\n*Total a devolver: $260.000*\nVencimiento: 06/09/2026 (faltan 19 días)"
+);
+chequear(
+  "sin plantilla guardada usa la de por defecto",
+  mensajeEstadoDeCuenta(base, resumen(base, [], "2026-08-18"), "Miriam Marquez", "2026-08-18", null).split("\n")[0],
+  "Hola Miriam Marquez 👋"
+);
+chequear(
+  "con plantilla propia usa la del usuario",
+  mensajeEstadoDeCuenta(base, resumen(base, [], "2026-08-18"), "Miriam Marquez", "2026-08-18", "Buenas {cliente}, son {total}"),
+  "Buenas Miriam Marquez, son $260.000"
+);
+chequear(
+  "una plantilla en blanco vuelve a la de por defecto",
+  mensajeEstadoDeCuenta(base, resumen(base, [], "2026-08-18"), "Miriam Marquez", "2026-08-18", "   ").split("\n")[0],
+  "Hola Miriam Marquez 👋"
+);
+chequear("el ejemplo en cuotas es un prestamo nuevo, sin cuotas pagas", `${EJEMPLOS[1].variables.cuotas_pagadas}/${EJEMPLOS[1].variables.total}`, "0/$256.110");
+chequear("los dos ejemplos tienen las mismas etiquetas", Object.keys(EJEMPLOS[0].variables).sort().join(), Object.keys(EJEMPLOS[1].variables).sort().join());
 
 console.log(fallos === 0 ? "\nTODO OK" : `\n${fallos} FALLAS`);
 process.exit(fallos === 0 ? 0 : 1);

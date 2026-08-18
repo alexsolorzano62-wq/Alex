@@ -5,7 +5,7 @@ import FilaPrestamo from "@/components/FilaPrestamo";
 import BotonesWhatsApp from "@/components/BotonesWhatsApp";
 import BotonConfirmar from "@/components/BotonConfirmar";
 import { borrarCliente } from "@/app/acciones";
-import { traerCliente, traerPrestamosDeCliente } from "@/lib/datos";
+import { traerAjustes, traerCliente, traerPrestamosDeCliente } from "@/lib/datos";
 import { resolver } from "@/lib/agregados";
 import { hoyISO, formatFecha } from "@/lib/fechas";
 import { plata } from "@/lib/format";
@@ -19,9 +19,10 @@ export default async function ClientePage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [cliente, prestamos] = await Promise.all([
+  const [cliente, prestamos, ajustes] = await Promise.all([
     traerCliente(id),
     traerPrestamosDeCliente(id),
+    traerAjustes(),
   ]);
   if (!cliente) notFound();
 
@@ -36,7 +37,13 @@ export default async function ClientePage({
   // Con un solo préstamo vigente se puede mandar su estado de cuenta directo.
   const unico = vigentes.length === 1 ? vigentes[0] : null;
   const mensaje = unico
-    ? mensajeEstadoDeCuenta(unico.prestamo, unico.datos, cliente.nombre, hoy)
+    ? mensajeEstadoDeCuenta(
+        unico.prestamo,
+        unico.datos,
+        cliente.nombre,
+        hoy,
+        ajustes?.plantilla_estado_cuenta
+      )
     : null;
 
   return (

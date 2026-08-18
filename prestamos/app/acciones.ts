@@ -242,6 +242,29 @@ export async function borrarPago(datos: FormData) {
   refrescar();
 }
 
+// ---------------------------------------------------------------- plantillas
+
+export async function guardarPlantillas(
+  _previo: Resultado,
+  datos: FormData
+): Promise<Resultado> {
+  const { supabase, ownerId } = await sesion();
+
+  const { error } = await supabase.from("ajustes").upsert({
+    owner_id: ownerId,
+    plantilla_estado_cuenta:
+      String(datos.get("plantilla_estado_cuenta") ?? "").trim() || null,
+    plantilla_prestamo_nuevo:
+      String(datos.get("plantilla_prestamo_nuevo") ?? "").trim() || null,
+    actualizado_at: new Date().toISOString(),
+  });
+
+  if (error) return { error: `No se pudo guardar: ${error.message}` };
+
+  refrescar();
+  return undefined;
+}
+
 // --------------------------------------------------------------------- salir
 
 export async function cerrarSesion() {

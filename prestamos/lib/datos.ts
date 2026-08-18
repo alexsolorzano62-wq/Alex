@@ -1,6 +1,6 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
-import type { Cliente, Pago, Prestamo, PrestamoConCliente } from "@/lib/types";
+import type { Ajustes, Cliente, Pago, Prestamo, PrestamoConCliente } from "@/lib/types";
 
 /** El usuario de la sesión. El proxy ya garantiza que hay uno. */
 export async function usuarioActual() {
@@ -65,4 +65,11 @@ export async function traerPrestamosDeCliente(
   return todos.filter((prestamo) => prestamo.cliente_id === clienteId);
 }
 
-export type { Cliente, Pago, Prestamo, PrestamoConCliente };
+/** Las plantillas de WhatsApp. Devuelve null si nunca se guardaron. */
+export async function traerAjustes(): Promise<Ajustes | null> {
+  const supabase = await createClient();
+  const { data } = await supabase.from("ajustes").select("*").maybeSingle();
+  return data;
+}
+
+export type { Ajustes, Cliente, Pago, Prestamo, PrestamoConCliente };

@@ -24,6 +24,9 @@ todo y, si querés, les mandás el estado de cuenta por WhatsApp.
 - **WhatsApp**: manda el estado de cuenta o el aviso de préstamo nuevo, con el
   texto ya escrito. Si el cliente tiene teléfono cargado, abre su chat directo;
   si no, te deja elegir el contacto o copiar el texto.
+- **Mensajes a tu manera**: en *Ajustes* (el engranaje del encabezado) escribís vos
+  el texto de los dos mensajes, con etiquetas como `{cliente}`, `{total}` o
+  `{vence}` que se reemplazan solas. Hay vista previa en vivo.
 - **La planilla de siempre**: en pantalla grande los préstamos se ven como tabla,
   con la fila de totales abajo.
 
@@ -45,11 +48,14 @@ Esta app **no** necesita la secret key.
 
 ## 2. Crear las tablas
 
-En Supabase, andá a **SQL Editor → New query**, pegá el contenido completo de
-`supabase/migrations/0001_init.sql` y ejecutalo.
+En Supabase, andá a **SQL Editor → New query** y corré, **en este orden**, el
+contenido completo de cada archivo de `supabase/migrations/`:
 
-Eso crea `clientes`, `prestamos` y `pagos`, con seguridad a nivel de fila: cada
-fila queda atada a tu usuario y nadie más puede leerla.
+1. `0001_init.sql` — crea `clientes`, `prestamos` y `pagos`, con seguridad a nivel
+   de fila: cada fila queda atada a tu usuario y nadie más puede leerla.
+2. `0002_plantillas.sql` — guarda los textos de WhatsApp que editás en *Ajustes*.
+
+Si agregás más migraciones a futuro, corrélas siempre en orden numérico.
 
 ## 3. Crear tu usuario
 
@@ -133,6 +139,7 @@ prestamos/
 │  ├─ calc.ts        Toda la matemática de los préstamos
 │  ├─ fechas.ts      Fechas sin líos de zona horaria
 │  ├─ whatsapp.ts    Armado de los mensajes y del link
+│  ├─ plantillas.ts  Plantillas editables y sus etiquetas
 │  └─ datos.ts       Consultas a Supabase
 ├─ scripts/          Tests de cálculo y generador de íconos
 └─ supabase/         Migraciones SQL

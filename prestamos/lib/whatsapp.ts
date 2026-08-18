@@ -1,5 +1,9 @@
-import { plata, porcentaje, textoVencimiento } from "@/lib/format";
-import { formatFecha } from "@/lib/fechas";
+import {
+  aplicarPlantilla,
+  variablesDePrestamo,
+  PLANTILLA_ESTADO_CUENTA,
+  PLANTILLA_PRESTAMO_NUEVO,
+} from "@/lib/plantillas";
 import type { ResumenPrestamo } from "@/lib/calc";
 import type { Prestamo } from "@/lib/types";
 
@@ -43,66 +47,41 @@ export function linkWhatsApp(telefono: string | null, mensaje: string): string {
     : `https://wa.me/?text=${texto}`;
 }
 
-export function mensajeEstadoDeCuenta(
+/**
+ * Los mensajes salen de las plantillas que se editan en /ajustes. Si todavía no
+ * hay ninguna guardada, se usa el texto que viene por defecto.
+ */
+function armar(
+  plantillaGuardada: string | null | undefined,
+  plantillaPorDefecto: string,
   prestamo: Prestamo,
   datos: ResumenPrestamo,
   nombreCliente: string,
   hoy: string
 ): string {
-  const lineas = [
-    `Hola ${nombreCliente} 👋`,
-    `Tu estado de cuenta al ${formatFecha(hoy)}:`,
-    "",
-  ];
+  const plantilla = plantillaGuardada?.trim() || plantillaPorDefecto;
+  return aplicarPlantilla(
+    plantilla,
+    variablesDePrestamo(prestamo, datos, nombreCliente, hoy)
+  );
+}
 
-  if (prestamo.modalidad === "mensual") {
-    lineas.push(
-      `Capital prestado: ${plata(datos.capital)}`,
-      `Interés (${porcentaje(prestamo.tasa_mensual)} mensual): ${plata(datos.interes)}`,
-      `*Total a devolver: ${plata(datos.aDevolver)}*`,
-      `Vencimiento: ${formatFecha(prestamo.fecha_vencimiento)} (${textoVencimiento(datos.diasParaVencer)})`,
-      "",
-      `Si abonás solo el interés (${plata(datos.interes)}), el préstamo se renueva un mes más.`
-    );
-  } else {
-    lineas.push(
-      `Capital prestado: ${plata(prestamo.capital_inicial)}`,
-      `Plan: ${datos.cuotasTotal} cuotas de ${plata(datos.cuotaMonto ?? 0)}`,
-      `Cuotas abonadas: ${datos.cuotasPagadas} de ${datos.cuotasTotal}`,
-      `*Saldo pendiente: ${plata(datos.aDevolver)}*`,
-      `Próximo vencimiento: ${formatFecha(prestamo.fecha_vencimiento)} (${textoVencimiento(datos.diasParaVencer)})`
-    );
-  }
-
-  return lineas.join("\n");
+export function mensajeEstadoDeCuenta(
+  prestamo: Prestamo,
+  datos: ResumenPrestamo,
+  nombreCliente: string,
+  hoy: string,
+  plantilla?: string | null
+): string {
+  return armar(plantilla, PLANTILLA_ESTADO_CUENTA, prestamo, datos, nombreCliente, hoy);
 }
 
 export function mensajePrestamoNuevo(
   prestamo: Prestamo,
   datos: ResumenPrestamo,
-  nombreCliente: string
+  nombreCliente: string,
+  hoy: string,
+  plantilla?: string | null
 ): string {
-  const lineas = [`Hola ${nombreCliente} 👋`, "Te confirmo el préstamo:", ""];
-
-  if (prestamo.modalidad === "mensual") {
-    lineas.push(
-      `Importe: ${plata(prestamo.capital_inicial)}`,
-      `Interés: ${porcentaje(prestamo.tasa_mensual)} mensual (${plata(datos.interes)})`,
-      `Monto a devolver: ${plata(datos.aDevolver)}`,
-      `Fecha de vencimiento: ${formatFecha(prestamo.fecha_vencimiento)}`
-    );
-  } else {
-    lineas.push(
-      `Importe: ${plata(prestamo.capital_inicial)}`,
-      `Monto a devolver: ${plata(prestamo.total_a_devolver ?? 0)}`,
-      `Plan: ${datos.cuotasTotal} cuotas de ${plata(datos.cuotaMonto ?? 0)}`,
-      `Primer vencimiento: ${formatFecha(prestamo.fecha_vencimiento)}`
-    );
-  }
-
-  if (prestamo.observacion) {
-    lineas.push("", prestamo.observacion);
-  }
-
-  return lineas.join("\n");
+  return armar(plantilla, PLANTILLA_PRESTAMO_NUEVO, prestamo, datos, nombreCliente, hoy);
 }

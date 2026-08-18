@@ -6,7 +6,7 @@ import FormularioPago from "@/components/FormularioPago";
 import BotonesWhatsApp from "@/components/BotonesWhatsApp";
 import BotonConfirmar from "@/components/BotonConfirmar";
 import { borrarPago, borrarPrestamo, capitalizarPrestamo } from "@/app/acciones";
-import { traerPrestamo } from "@/lib/datos";
+import { traerAjustes, traerPrestamo } from "@/lib/datos";
 import { resumen, tasaImplicita } from "@/lib/calc";
 import { formatFecha, hoyISO } from "@/lib/fechas";
 import { plata, porcentaje, textoVencimiento } from "@/lib/format";
@@ -35,7 +35,7 @@ export default async function PrestamoPage({
   const { id } = await params;
   const { nuevo } = await searchParams;
 
-  const prestamo = await traerPrestamo(id);
+  const [prestamo, ajustes] = await Promise.all([traerPrestamo(id), traerAjustes()]);
   if (!prestamo) notFound();
 
   const hoy = hoyISO();
@@ -51,8 +51,20 @@ export default async function PrestamoPage({
   // Recién creado se ofrece el mensaje de alta; después, el estado de cuenta.
   const esNuevo = nuevo === "1";
   const mensaje = esNuevo
-    ? mensajePrestamoNuevo(prestamo, datos, nombre)
-    : mensajeEstadoDeCuenta(prestamo, datos, nombre, hoy);
+    ? mensajePrestamoNuevo(
+        prestamo,
+        datos,
+        nombre,
+        hoy,
+        ajustes?.plantilla_prestamo_nuevo
+      )
+    : mensajeEstadoDeCuenta(
+        prestamo,
+        datos,
+        nombre,
+        hoy,
+        ajustes?.plantilla_estado_cuenta
+      );
 
   return (
     <>

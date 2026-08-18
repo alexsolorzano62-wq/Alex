@@ -1,7 +1,7 @@
 import { calcularPlan, resumen, tasaImplicita, capitalizar, renovar } from "@/lib/calc";
 import { sumarMeses, diasEntre } from "@/lib/fechas";
 import { normalizarTelefono, mensajeEstadoDeCuenta } from "@/lib/whatsapp";
-import { aplicarPlantilla, EJEMPLOS, PLANTILLA_ESTADO_CUENTA } from "@/lib/plantillas";
+import { aplicarPlantilla, EJEMPLOS, PLANTILLA_ESTADO_CUENTA, PLANTILLA_PRESTAMO_NUEVO } from "@/lib/plantillas";
 import { parsearPesos, parsearTasa } from "@/lib/parseo";
 import type { Prestamo } from "@/lib/types";
 
@@ -102,10 +102,17 @@ chequear("etiqueta vacia no deja renglon en blanco", aplicarPlantilla("Uno\n{cuo
 chequear("texto sin etiquetas queda igual", aplicarPlantilla("Pasa el jueves", muestra), "Pasa el jueves");
 chequear("plantilla vacia no rompe", aplicarPlantilla("", muestra), "");
 chequear(
-  "la plantilla por defecto arma el mensaje entero",
+  "estado de cuenta por defecto: sale entero y respeta el renglon en blanco del medio",
   aplicarPlantilla(PLANTILLA_ESTADO_CUENTA, muestra),
-  "Hola Miriam Marquez 👋\nTu estado de cuenta al 18/08/2026:\n\nCapital prestado: $200.000\nInterés (30% mensual): $60.000\n*Total a devolver: $260.000*\nVencimiento: 06/09/2026 (faltan 19 días)"
+  "Hola Miriam Marquez 👋\nTu estado de cuenta al 18/08/2026:\n\nMonto: $200.000\n\n*Total a devolver: $260.000*\nVencimiento: 06/09/2026 (faltan 19 días)"
 );
+chequear(
+  "prestamo nuevo por defecto",
+  aplicarPlantilla(PLANTILLA_PRESTAMO_NUEVO, muestra),
+  "Hola Miriam Marquez 👋\nPrestamo confirmado ✅:\n\nImporte: $200.000\n*Monto a devolver: $260.000*\nFecha de vencimiento: 06/09/2026"
+);
+chequear("un renglon en blanco a proposito se respeta", aplicarPlantilla("A\n\nB", muestra), "A\n\nB");
+chequear("dos renglones en blanco seguidos se juntan en uno", aplicarPlantilla("A\n\n\nB", muestra), "A\n\nB");
 chequear(
   "sin plantilla guardada usa la de por defecto",
   mensajeEstadoDeCuenta(base, resumen(base, [], "2026-08-18"), "Miriam Marquez", "2026-08-18", null).split("\n")[0],

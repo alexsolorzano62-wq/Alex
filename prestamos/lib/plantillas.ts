@@ -34,17 +34,16 @@ export const ETIQUETAS: { clave: string; descripcion: string }[] = [
 export const PLANTILLA_ESTADO_CUENTA = `Hola {cliente} 👋
 Tu estado de cuenta al {fecha}:
 
-Capital prestado: {prestado}
-Interés ({plan}): {interes}
+Monto: {prestado}
+
 *Total a devolver: {total}*
 Vencimiento: {vence} ({dias})`;
 
 export const PLANTILLA_PRESTAMO_NUEVO = `Hola {cliente} 👋
-Te confirmo el préstamo:
+Prestamo confirmado ✅:
 
 Importe: {prestado}
-Interés: {plan} ({interes})
-Monto a devolver: {total}
+*Monto a devolver: {total}*
 Fecha de vencimiento: {vence}`;
 
 /**

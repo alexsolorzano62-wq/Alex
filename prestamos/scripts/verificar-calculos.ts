@@ -146,7 +146,7 @@ for (const plan of PLANES_SEMANALES) {
 console.log("--- Planes semanales: montos fuera de la lista ---");
 const entre = cuotaSemanal(350000, 20)!;
 chequear("350k a 20 semanas cae entre 300k y 400k", entre.entre, [300000, 400000]);
-chequear("350k a 20: cuota interpolada y redondeada al cien", entre.cuota, 39500);
+chequear("350k a 20: cuota interpolada y redondeada al cien", entre.cuota, 40700);
 chequear("350k a 20: no es un precio de lista", entre.exacto, false);
 chequear("120k a 16 semanas", cuotaSemanal(120000, 16)!.cuota, 16700);
 chequear("50k a 16: por debajo del menor, misma proporcion", cuotaSemanal(50000, 16)!.cuota, 7000);
@@ -167,6 +167,23 @@ for (const semanas of [16, 20]) {
   }
 }
 chequear("la cuota nunca baja al subir el capital", monotono, true);
+
+// El descuento por volumen tiene que bajar de a poco. Si un escalon cae de
+// golpe, prestar mas deja de rendir: con el 300k a 33.900 la cuota por cada
+// mil caia de 125,2 a 113,0 y prestar 300k dejaba casi lo mismo que 250k.
+const MAXIMA_CAIDA = 10;
+let paredon: string | null = null;
+for (const semanas of [16, 20]) {
+  const escalones = PLANES_SEMANALES.filter((p) => p.semanas === semanas).sort((a, b) => a.capital - b.capital);
+  for (let i = 1; i < escalones.length; i++) {
+    const antes = (escalones[i - 1].cuota / escalones[i - 1].capital) * 1000;
+    const ahora = (escalones[i].cuota / escalones[i].capital) * 1000;
+    if (antes - ahora > MAXIMA_CAIDA) {
+      paredon = `${escalones[i - 1].capital} -> ${escalones[i].capital} a ${semanas} sem: cae ${(antes - ahora).toFixed(1)} por mil`;
+    }
+  }
+}
+chequear("ningun escalon de descuento cae de golpe", paredon, null);
 
 console.log("--- Semanas en el calendario ---");
 chequear("una semana son 7 dias", sumarSemanas("2026-08-18", 1), "2026-08-25");

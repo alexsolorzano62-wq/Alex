@@ -4,6 +4,10 @@
  * Son montos pactados, no una fórmula: la tasa baja a medida que el préstamo
  * crece (a 100.000 la cuota es 139 por cada mil prestados; a 500.000, 132,8).
  * Por eso se guardan tal cual y no se calculan.
+ *
+ * El descuento por volumen tiene que bajar de a poco. Si un escalón cae de
+ * golpe, prestar más deja de convenir: el test comprueba que prestar más
+ * siempre deje más ganancia que prestar menos.
  */
 export const PLANES_SEMANALES: { capital: number; semanas: number; cuota: number }[] = [
   { capital: 100_000, semanas: 16, cuota: 13_900 },
@@ -18,7 +22,7 @@ export const PLANES_SEMANALES: { capital: number; semanas: number; cuota: number
   { capital: 150_000, semanas: 20, cuota: 18_900 },
   { capital: 200_000, semanas: 20, cuota: 24_800 },
   { capital: 250_000, semanas: 20, cuota: 31_300 },
-  { capital: 300_000, semanas: 20, cuota: 33_900 },
+  { capital: 300_000, semanas: 20, cuota: 36_300 },
   { capital: 400_000, semanas: 20, cuota: 45_000 },
   { capital: 500_000, semanas: 20, cuota: 55_900 },
 ];

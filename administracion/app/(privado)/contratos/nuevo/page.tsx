@@ -50,6 +50,9 @@ export default async function NuevoContrato({
         propiedades={propiedades}
         inquilinos={inquilinos}
         propiedadInicial={propiedad}
+        // La lectura del PDF con IA se ofrece solo si hay clave configurada.
+        // Sin clave, la carga es manual y la app no muestra algo que no anda.
+        conLecturaIA={Boolean(process.env.ANTHROPIC_API_KEY)}
       />
     </div>
   );

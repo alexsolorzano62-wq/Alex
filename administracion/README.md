@@ -55,6 +55,7 @@ verifican con `npm test`, sin levantar nada.
 - [Supabase](https://supabase.com/) — base de datos y autenticación
 - [pdf-lib](https://pdf-lib.js.org/) — recibos y liquidaciones
 - [API de Claude](https://console.anthropic.com/) — lectura de contratos en PDF
+  (opcional, hoy apagada)
 
 ## Puesta en marcha
 
@@ -129,7 +130,15 @@ viven en Supabase Storage y hay que sincronizarlos aparte.
 Un respaldo que nunca se restauró no es un respaldo: antes de confiar en esto,
 restaurá una copia sobre un proyecto de prueba.
 
-## Costo de la lectura de contratos con IA
+## Lectura de contratos con IA (pausada)
+
+**Está apagada por defecto: la carga de contratos es manual.** El recuadro de
+"Cargar desde el PDF" solo aparece si existe la variable `ANTHROPIC_API_KEY`.
+Sin esa variable, la pantalla de nuevo contrato muestra únicamente el
+formulario, sin ofrecer algo que no funcionaría.
+
+Para encenderla más adelante alcanza con cargar la clave. El código quedó
+escrito y compilando: `app/api/contratos/importar/route.ts`.
 
 Se usa `claude-opus-5` por defecto. Para extraer datos de un contrato alcanza
 con un modelo más chico y sale bastante menos: poné `ANTHROPIC_MODEL` en

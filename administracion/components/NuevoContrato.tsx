@@ -29,12 +29,13 @@ type DatosLeidos = {
 };
 
 export function NuevoContrato({
-  accion, propiedades, inquilinos, propiedadInicial,
+  accion, propiedades, inquilinos, propiedadInicial, conLecturaIA = false,
 }: {
   accion: (formData: FormData) => Promise<void>;
   propiedades: { id: string; direccion: string; piso_depto: string | null }[];
   inquilinos: { id: string; nombre: string }[];
   propiedadInicial?: string;
+  conLecturaIA?: boolean;
 }) {
   const [leyendo, setLeyendo] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -68,6 +69,7 @@ export function NuevoContrato({
 
   return (
     <div className="space-y-6">
+      {conLecturaIA && (
       <section className="rounded-xl border border-dashed border-marca-300 bg-marca-50/50 p-4">
         <h2 className="font-titulo text-base font-bold">Cargar desde el PDF</h2>
         <p className="mt-1 text-sm text-stone-600">
@@ -110,6 +112,7 @@ export function NuevoContrato({
           </div>
         )}
       </section>
+      )}
 
       <FormularioContrato
         // Al llegar datos nuevos, el formulario se vuelve a montar con ellos.

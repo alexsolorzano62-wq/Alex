@@ -15,14 +15,20 @@ El ciclo del mes, que es de lo que vive la administración:
    *Aumentos*, con el monto nuevo ya calculado contra la serie del índice.
 2. **Cobrar.** Se registra el pago, los punitorios salen solos según los días
    de atraso, y se pueden sumar los gastos que le tocan al inquilino.
-3. **Recibo.** PDF con el logo en marca de agua. Desde la segunda impresión
-   sale marcado como DUPLICADO.
+3. **Recibo.** Una hoja A4 con el comprobante **impreso dos veces**: la mitad
+   de arriba para el inquilino, la de abajo para el archivo de la inmobiliaria,
+   con línea de corte al medio. Lleva el logo en marca de agua y, desde la
+   segunda impresión, la leyenda DUPLICADO.
 4. **Gastos.** Expensas, ABL, servicios y reparaciones, indicando si los paga
    el inquilino o el propietario.
 5. **Liquidar.** Cobrado − honorarios − gastos = neto a transferir, agrupado
    por propietario y con su PDF.
 6. **Cerrar.** El panel muestra cobrado contra pendiente, honorarios generados
    y qué contratos vencen.
+
+Y transversal a todo eso, **Unidades**: la cartera completa en una lista, con
+buscador por dirección, propietario o inquilino, y filtros por estado, tipo y
+orden (alfabético, o del alquiler más caro al más barato).
 
 ## Decisiones que conviene conocer antes de tocar el código
 
@@ -46,8 +52,15 @@ consultarse al vuelo: el cierre del mes no puede depender de que la web del
 BCRA esté arriba, y guardar los valores usados deja cada ajuste auditable.
 
 **Los cálculos son funciones puras y están testeadas.** `lib/ajustes.ts`,
-`lib/punitorios.ts` y `lib/liquidacion.ts` no tocan la base ni React. Se
-verifican con `npm test`, sin levantar nada.
+`lib/punitorios.ts`, `lib/liquidacion.ts` y `lib/unidades.ts` no tocan la base
+ni React. Se verifican con `npm test`, sin levantar nada.
+
+**El buscador y los filtros viven en la URL, y filtran en memoria.** Con ~100
+unidades, traer todo y filtrar en JavaScript sale más barato y mucho más simple
+que pelear con la consulta para buscar por campos de tablas relacionadas. Si
+algún día la cartera crece a miles, ese es el momento de moverlo a la base —
+no antes. La búsqueda ignora acentos y mayúsculas, y cada palabra puede caer en
+un campo distinto: "alsina peña" encuentra la unidad de Alsina cuyo dueño es Peña.
 
 ## Stack
 
@@ -156,6 +169,7 @@ con un modelo más chico y sale bastante menos: poné `ANTHROPIC_MODEL` en
 app/
   (privado)/          Todo lo que requiere sesión, con el marco de la app
     panel/            Resumen del mes
+    unidades/         Toda la cartera, con buscador y filtros
     contratos/        Alta, detalle y edición
     ajustes/          Aumentos pendientes de aplicar
     cobros/           Cobranzas y recibos
@@ -170,10 +184,11 @@ app/
   acciones.ts         Todas las escrituras a la base (Server Actions)
 lib/
   ajustes.ts          Motor de aumentos
+  unidades.ts         Búsqueda y orden de la cartera
   punitorios.ts       Intereses por mora
   liquidacion.ts      Cobrado − honorarios − gastos
   dinero.ts fechas.ts parseo.ts
-  pdf/                Recibo y liquidación, con la marca de agua
+  pdf/                Recibo (dos por hoja A4) y liquidación, con marca de agua
   supabase/           Clientes de conexión y perfil
 supabase/migrations/  El esquema, con RLS y triggers de inmutabilidad
 scripts/              Verificación de los cálculos (npm test)

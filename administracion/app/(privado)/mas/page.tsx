@@ -6,7 +6,9 @@ import { Titulo } from "@/components/Ui";
 export const dynamic = "force-dynamic";
 
 const SECCIONES = [
-  { href: "/propiedades", texto: "Propiedades", detalle: "Los inmuebles que administrás" },
+  { href: "/unidades", texto: "Unidades", detalle: "Toda la cartera, con buscador y filtros" },
+  { href: "/contratos", texto: "Contratos", detalle: "Alta, ajustes y vencimientos" },
+  { href: "/propiedades", texto: "Propiedades", detalle: "Alta y edición de inmuebles" },
   { href: "/propietarios", texto: "Propietarios", detalle: "Dueños y cómo se les rinde" },
   { href: "/inquilinos", texto: "Inquilinos", detalle: "Quiénes ocupan cada unidad" },
   { href: "/gastos", texto: "Gastos", detalle: "Expensas, impuestos y reparaciones" },

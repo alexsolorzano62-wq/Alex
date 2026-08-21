@@ -5,11 +5,11 @@ import type { Perfil } from "@/lib/supabase/perfil";
 
 const SECCIONES = [
   { href: "/panel", texto: "Panel" },
+  { href: "/unidades", texto: "Unidades" },
   { href: "/contratos", texto: "Contratos" },
   { href: "/cobros", texto: "Cobros" },
   { href: "/gastos", texto: "Gastos" },
   { href: "/liquidaciones", texto: "Liquidaciones" },
-  { href: "/propiedades", texto: "Propiedades" },
 ];
 
 export function Encabezado({ perfil }: { perfil: Perfil }) {

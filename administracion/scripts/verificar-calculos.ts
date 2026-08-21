@@ -3,6 +3,7 @@ import { sumarMeses, diasEntre, vencimientoDelPeriodo, primerDiaDelMes, nombreDe
 import { calcularAjuste, coeficientePorIndice, coeficienteFijo, proximoAjuste, tocaAjustar } from "@/lib/ajustes";
 import { calcularPunitorios, diasDeAtraso } from "@/lib/punitorios";
 import { calcularTotales, honorariosDe, armarDetalle } from "@/lib/liquidacion";
+import { coincide, ordenar, type Unidad } from "@/lib/unidades";
 
 let fallos = 0;
 function chequear(nombre: string, obtenido: unknown, esperado: unknown) {
@@ -88,6 +89,40 @@ chequear("primer renglon: neto del cobro", detalle[0].neto, 460000);
 chequear("el gasto entra en negativo", detalle[2].montoBruto, -45000);
 chequear("los gastos no pagan honorarios", detalle[2].honorariosMonto, 0);
 chequear("el % queda congelado en el renglon", detalle[1].honorariosPorcentaje, 10);
+
+console.log("--- Buscador de unidades ---");
+function unidad(direccion: string, propietario: string, inquilino: string | null, monto: number | null, fin: string | null): Unidad {
+  return {
+    id: direccion, direccion, pisoDepto: null, direccionCompleta: direccion,
+    localidad: "San Miguel de Tucumán", tipo: "departamento", estado: monto == null ? "disponible" : "alquilado",
+    propietarioId: null, propietario, contratoId: null, inquilino, monto, moneda: "ARS",
+    indice: "ICL", honorarios: 8, fechaFin: fin, proximoAjuste: null,
+  };
+}
+const cartera = [
+  unidad("Mitre 450", "Roberto Peña", "María Gutiérrez", 612000, "2027-03-01"),
+  unidad("Belgrano 1287", "Marta Iglesias", "Carlos Ruiz", 448500, "2026-11-30"),
+  unidad("Alsina 670", "Roberto Peña", "Diego Sosa", 585500, "2026-09-12"),
+  unidad("Núñez 90", "Nélida Ferrari", null, null, null),
+];
+
+chequear("busca por direccion", cartera.filter((u) => coincide(u, "mitre")).map((u) => u.direccion), ["Mitre 450"]);
+chequear("busca por propietario", cartera.filter((u) => coincide(u, "peña")).map((u) => u.direccion), ["Mitre 450", "Alsina 670"]);
+chequear("busca por inquilino", cartera.filter((u) => coincide(u, "sosa")).map((u) => u.direccion), ["Alsina 670"]);
+chequear("sin tilde encuentra igual", cartera.filter((u) => coincide(u, "nunez")).map((u) => u.direccion), ["Núñez 90"]);
+chequear("con tilde tambien", cartera.filter((u) => coincide(u, "NÚÑEZ")).map((u) => u.direccion), ["Núñez 90"]);
+chequear("dos palabras cruzan campos", cartera.filter((u) => coincide(u, "alsina peña")).map((u) => u.direccion), ["Alsina 670"]);
+chequear("busqueda vacia trae todo", cartera.filter((u) => coincide(u, "   ")).length, 4);
+chequear("sin coincidencias", cartera.filter((u) => coincide(u, "rivadavia")).length, 0);
+
+console.log("--- Orden de la cartera ---");
+chequear("alfabetico por direccion", ordenar(cartera, "direccion").map((u) => u.direccion), ["Alsina 670", "Belgrano 1287", "Mitre 450", "Núñez 90"]);
+chequear("alfabetico al reves", ordenar(cartera, "direccion_desc").map((u) => u.direccion), ["Núñez 90", "Mitre 450", "Belgrano 1287", "Alsina 670"]);
+chequear("del mas caro al mas barato", ordenar(cartera, "precio_desc").map((u) => u.monto), [612000, 585500, 448500, null]);
+chequear("del mas barato al mas caro", ordenar(cartera, "precio_asc").map((u) => u.monto), [448500, 585500, 612000, null]);
+chequear("las vacantes quedan al final", ordenar(cartera, "precio_desc")[3].direccion, "Núñez 90");
+chequear("por contrato que vence primero", ordenar(cartera, "vencimiento").map((u) => u.direccion), ["Alsina 670", "Belgrano 1287", "Mitre 450", "Núñez 90"]);
+chequear("los numeros de calle ordenan como numeros", ordenar([unidad("Mitre 100", "x", null, null, null), unidad("Mitre 9", "x", null, null, null)], "direccion").map((u) => u.direccion), ["Mitre 9", "Mitre 100"]);
 
 console.log("--- Formato ---");
 chequear("dias entre vencimiento y pago", diasEntre("2026-08-10", "2026-09-09"), 30);

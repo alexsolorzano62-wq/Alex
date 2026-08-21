@@ -160,3 +160,76 @@ export function pie(pagina: PDFPage, fuentes: Tipografias, texto: string) {
     color: GRIS,
   });
 }
+
+// Marca de agua acotada a una banda de la hoja. Hace falta porque el recibo
+// entra dos veces en la misma A4: cada mitad lleva la suya.
+export function marcaDeAguaEnBanda(
+  pagina: PDFPage,
+  fuentes: Tipografias,
+  leyenda: string | null,
+  baseY: number,
+  alto: number
+) {
+  const [ancho] = A4;
+
+  for (let fila = 0; fila < 3; fila++) {
+    for (let columna = 0; columna < 3; columna++) {
+      pagina.drawText("LAMELAS & CHAUMONT", {
+        x: 20 + columna * 210,
+        y: baseY + 40 + fila * (alto / 3.2),
+        size: 13,
+        font: fuentes.tituloNegrita,
+        color: VERDE,
+        opacity: 0.05,
+        rotate: degrees(30),
+      });
+    }
+  }
+
+  if (leyenda) {
+    const tamano = 44;
+    const anchoTexto = fuentes.tituloNegrita.widthOfTextAtSize(leyenda, tamano);
+    pagina.drawText(leyenda, {
+      x: (ancho - anchoTexto * 0.78) / 2,
+      y: baseY + alto / 2 - 60,
+      size: tamano,
+      font: fuentes.tituloNegrita,
+      color: rgb(0.7, 0.15, 0.1),
+      opacity: 0.15,
+      rotate: degrees(30),
+    });
+  }
+}
+
+// La línea de corte entre las dos mitades, con su tijerita.
+export function lineaDeCorte(pagina: PDFPage, fuentes: Tipografias, y: number) {
+  const [ancho] = A4;
+
+  pagina.drawLine({
+    start: { x: 24, y },
+    end: { x: ancho - 24, y },
+    thickness: 0.6,
+    color: LINEA,
+    dashArray: [3, 3],
+  });
+
+  const texto = "cortar por aquí";
+  const anchoTexto = fuentes.texto.widthOfTextAtSize(texto, 6.5);
+  const centro = ancho / 2;
+
+  // Un blanco detrás para que la línea no cruce el texto.
+  pagina.drawRectangle({
+    x: centro - anchoTexto / 2 - 10,
+    y: y - 4,
+    width: anchoTexto + 20,
+    height: 9,
+    color: rgb(1, 1, 1),
+  });
+  pagina.drawText(texto, {
+    x: centro - anchoTexto / 2,
+    y: y - 2.5,
+    size: 6.5,
+    font: fuentes.texto,
+    color: GRIS,
+  });
+}

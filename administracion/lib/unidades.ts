@@ -10,6 +10,7 @@ export type Unidad = {
   localidad: string | null;
   tipo: string;
   estado: string;
+  edificio: string | null;
   propietarioId: string | null;
   propietario: string;
   contratoId: string | null;
@@ -89,4 +90,117 @@ export function ordenar(unidades: Unidad[], orden: Orden): Unidad[] {
     default:
       return lista.sort((a, b) => comparador.compare(a.direccionCompleta, b.direccionCompleta));
   }
+}
+
+// ---------------------------------------------------------------------------
+// Agrupar la cartera.
+//
+// Por propietario, porque hay dueños con unidades en direcciones distintas y
+// verlas juntas es lo que después se liquida junto. Por edificio, porque hay
+// dueños de edificios enteros y el mes se mira piso por piso.
+// ---------------------------------------------------------------------------
+
+export type Agrupado = "ninguno" | "propietario" | "edificio";
+
+export type Grupo = {
+  clave: string;
+  titulo: string;
+  subtitulo: string | null;
+  href: string | null;
+  unidades: Unidad[];
+  renta: number;
+  alquiladas: number;
+  vacantes: number;
+};
+
+// El edificio cargado a mano manda sobre la dirección: sirve para unir
+// unidades que se escribieron distinto ("Rivadavia 2340" y "Av. Rivadavia
+// 2340") y para ponerle el nombre propio al grupo.
+export function claveDeEdificio(unidad: Unidad): string {
+  const nombre = unidad.edificio?.trim();
+  if (nombre) return `n:${normalizar(nombre)}`;
+  return `d:${normalizar(unidad.direccion)}|${normalizar(unidad.localidad ?? "")}`;
+}
+
+function resumir(unidades: Unidad[]): Pick<Grupo, "renta" | "alquiladas" | "vacantes"> {
+  return {
+    renta: unidades
+      .filter((u) => u.moneda === "ARS" && u.monto != null)
+      .reduce((suma, u) => suma + (u.monto ?? 0), 0),
+    alquiladas: unidades.filter((u) => u.estado === "alquilado").length,
+    vacantes: unidades.filter((u) => u.estado !== "alquilado").length,
+  };
+}
+
+function plural(cantidad: number, singular: string, plural: string): string {
+  return `${cantidad} ${cantidad === 1 ? singular : plural}`;
+}
+
+export function agrupar(
+  unidades: Unidad[],
+  criterio: Agrupado,
+  orden: Orden
+): Grupo[] {
+  if (criterio === "ninguno") return [];
+
+  const cajones = new Map<string, Unidad[]>();
+
+  for (const unidad of unidades) {
+    const clave =
+      criterio === "propietario"
+        ? unidad.propietarioId ?? `sin-propietario`
+        : claveDeEdificio(unidad);
+
+    const cajon = cajones.get(clave);
+    if (cajon) cajon.push(unidad);
+    else cajones.set(clave, [unidad]);
+  }
+
+  const grupos: Grupo[] = [];
+
+  for (const [clave, delGrupo] of cajones) {
+    const ordenadas = ordenar(delGrupo, orden);
+    const primera = ordenadas[0];
+
+    if (criterio === "propietario") {
+      // Cuántas direcciones distintas tiene: es el dato que dice de un vistazo
+      // si el dueño tiene un edificio o unidades desparramadas.
+      const direcciones = new Set(ordenadas.map((u) => normalizar(u.direccion)));
+      grupos.push({
+        clave,
+        titulo: primera.propietario || "Sin propietario asignado",
+        subtitulo: plural(direcciones.size, "dirección", "direcciones"),
+        href: primera.propietarioId ? `/propietarios/${primera.propietarioId}` : null,
+        unidades: ordenadas,
+        ...resumir(ordenadas),
+      });
+      continue;
+    }
+
+    // Si alguna unidad del edificio tiene nombre cargado, lo usa todo el grupo.
+    const nombre = ordenadas.find((u) => u.edificio?.trim())?.edificio?.trim();
+    const duenos = new Set(ordenadas.map((u) => u.propietarioId ?? u.propietario));
+
+    grupos.push({
+      clave,
+      titulo: nombre || primera.direccion,
+      subtitulo: nombre
+        ? primera.direccion
+        : duenos.size > 1
+        ? plural(duenos.size, "propietario", "propietarios")
+        : primera.propietario || null,
+      href: null,
+      unidades: ordenadas,
+      ...resumir(ordenadas),
+    });
+  }
+
+  // Los grupos se ordenan con el mismo criterio que las unidades: por plata
+  // cuando se ordena por plata, alfabético en el resto de los casos.
+  const alfabetico = (a: Grupo, b: Grupo) => comparador.compare(a.titulo, b.titulo);
+
+  if (orden === "precio_desc") return grupos.sort((a, b) => b.renta - a.renta || alfabetico(a, b));
+  if (orden === "precio_asc") return grupos.sort((a, b) => a.renta - b.renta || alfabetico(a, b));
+  if (orden === "direccion_desc") return grupos.sort((a, b) => -alfabetico(a, b));
+  return grupos.sort(alfabetico);
 }

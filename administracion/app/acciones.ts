@@ -168,6 +168,7 @@ function datosPropiedad(formData: FormData) {
     propietario_id: String(formData.get("propietario_id")),
     titulares_adicionales: textoONulo(formData.get("titulares_adicionales")),
     direccion: String(formData.get("direccion") ?? "").trim(),
+    edificio: textoONulo(formData.get("edificio")),
     piso_depto: textoONulo(formData.get("piso_depto")),
     localidad: textoONulo(formData.get("localidad")),
     provincia: textoONulo(formData.get("provincia")),

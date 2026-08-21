@@ -3,7 +3,7 @@ import { sumarMeses, diasEntre, vencimientoDelPeriodo, primerDiaDelMes, nombreDe
 import { calcularAjuste, coeficientePorIndice, coeficienteFijo, proximoAjuste, tocaAjustar } from "@/lib/ajustes";
 import { calcularPunitorios, diasDeAtraso } from "@/lib/punitorios";
 import { calcularTotales, honorariosDe, armarDetalle } from "@/lib/liquidacion";
-import { coincide, ordenar, type Unidad } from "@/lib/unidades";
+import { agrupar, claveDeEdificio, coincide, ordenar, type Unidad } from "@/lib/unidades";
 
 let fallos = 0;
 function chequear(nombre: string, obtenido: unknown, esperado: unknown) {
@@ -91,11 +91,12 @@ chequear("los gastos no pagan honorarios", detalle[2].honorariosMonto, 0);
 chequear("el % queda congelado en el renglon", detalle[1].honorariosPorcentaje, 10);
 
 console.log("--- Buscador de unidades ---");
-function unidad(direccion: string, propietario: string, inquilino: string | null, monto: number | null, fin: string | null): Unidad {
+function unidad(direccion: string, propietario: string, inquilino: string | null, monto: number | null, fin: string | null, edificio: string | null = null, piso: string | null = null): Unidad {
   return {
-    id: direccion, direccion, pisoDepto: null, direccionCompleta: direccion,
-    localidad: "San Miguel de Tucumán", tipo: "departamento", estado: monto == null ? "disponible" : "alquilado",
-    propietarioId: null, propietario, contratoId: null, inquilino, monto, moneda: "ARS",
+    id: `${direccion} ${piso ?? ""}`.trim(), direccion, pisoDepto: piso,
+    direccionCompleta: `${direccion}${piso ? ` ${piso}` : ""}`,
+    localidad: "San Miguel de Tucumán", tipo: "departamento", estado: monto == null ? "disponible" : "alquilado", edificio,
+    propietarioId: propietario, propietario, contratoId: null, inquilino, monto, moneda: "ARS",
     indice: "ICL", honorarios: 8, fechaFin: fin, proximoAjuste: null,
   };
 }
@@ -123,6 +124,52 @@ chequear("del mas barato al mas caro", ordenar(cartera, "precio_asc").map((u) =>
 chequear("las vacantes quedan al final", ordenar(cartera, "precio_desc")[3].direccion, "Núñez 90");
 chequear("por contrato que vence primero", ordenar(cartera, "vencimiento").map((u) => u.direccion), ["Alsina 670", "Belgrano 1287", "Mitre 450", "Núñez 90"]);
 chequear("los numeros de calle ordenan como numeros", ordenar([unidad("Mitre 100", "x", null, null, null), unidad("Mitre 9", "x", null, null, null)], "direccion").map((u) => u.direccion), ["Mitre 9", "Mitre 100"]);
+
+console.log("--- Agrupar por propietario ---");
+// Peña tiene dos unidades en direcciones distintas; Ferrari, un edificio entero.
+const conEdificio = [
+  ...cartera,
+  unidad("Rivadavia 2340", "Nélida Ferrari", "Ana Vera", 400000, "2027-01-31", null, "1ºA"),
+  unidad("Rivadavia 2340", "Nélida Ferrari", null, null, null, null, "2ºA"),
+  unidad("Av. Rivadavia 2340", "Nélida Ferrari", "Luis Paz", 430000, "2027-02-28", "Edificio Rivadavia", "3ºA"),
+];
+
+const porDueno = agrupar(conEdificio, "propietario", "direccion");
+chequear("un grupo por propietario", porDueno.length, 3);
+chequear("Peña junta sus dos direcciones", porDueno.find((g) => g.titulo === "Roberto Peña")?.unidades.length, 2);
+chequear("y se ve que son dos direcciones", porDueno.find((g) => g.titulo === "Roberto Peña")?.subtitulo, "2 direcciones");
+chequear("la renta del grupo suma", porDueno.find((g) => g.titulo === "Roberto Peña")?.renta, 1197500);
+chequear("Ferrari tiene una vacante", porDueno.find((g) => g.titulo === "Nélida Ferrari")?.vacantes, 2);
+
+console.log("--- Agrupar por edificio ---");
+chequear("dos unidades de la misma direccion comparten clave", claveDeEdificio(conEdificio[4]) === claveDeEdificio(conEdificio[5]), true);
+chequear("el nombre cargado a mano hace su propia clave", claveDeEdificio(conEdificio[6]).startsWith("n:"), true);
+
+const porEdificio = agrupar(conEdificio.slice(4), "edificio", "direccion");
+chequear("las dos unidades de Rivadavia 2340 quedan juntas", porEdificio.find((g) => g.titulo === "Rivadavia 2340")?.unidades.length, 2);
+chequear("y el edificio muestra a su dueño", porEdificio.find((g) => g.titulo === "Rivadavia 2340")?.subtitulo, "Nélida Ferrari");
+chequear("la unidad con nombre propio se muestra con ese nombre", porEdificio.some((g) => g.titulo === "Edificio Rivadavia"), true);
+
+const mismoNombre = agrupar([
+  unidad("Rivadavia 2340", "Nélida Ferrari", "Ana Vera", 400000, null, "Edificio Rivadavia", "1ºA"),
+  unidad("Av. Rivadavia 2340", "Nélida Ferrari", "Luis Paz", 430000, null, "Edificio Rivadavia", "3ºA"),
+], "edificio", "direccion");
+chequear("el nombre une direcciones escritas distinto", mismoNombre.length, 1);
+chequear("y la renta del edificio suma", mismoNombre[0].renta, 830000);
+
+chequear(
+  "el piso dentro de la direccion parte el edificio (por eso van en campos separados)",
+  agrupar([
+    unidad("Rivadavia 2340 1ºA", "Nélida Ferrari", "Ana Vera", 400000, null),
+    unidad("Rivadavia 2340 2ºA", "Nélida Ferrari", "Luis Paz", 430000, null),
+  ], "edificio", "direccion").length,
+  2
+);
+
+console.log("--- Orden de los grupos ---");
+const porPlata = agrupar(conEdificio, "propietario", "precio_desc");
+chequear("el propietario que mas renta va primero", porPlata[0].titulo, "Roberto Peña");
+chequear("sin agrupar no arma grupos", agrupar(conEdificio, "ninguno", "direccion").length, 0);
 
 console.log("--- Formato ---");
 chequear("dias entre vencimiento y pago", diasEntre("2026-08-10", "2026-09-09"), 30);

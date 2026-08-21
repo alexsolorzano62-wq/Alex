@@ -14,11 +14,12 @@ export const ORDENES = [
 // El buscador y los filtros viven en la URL: así la vista que estás mirando
 // se puede compartir o dejar en un favorito, y volver atrás funciona.
 export function FiltrosUnidades({
-  tipos, mostrarEstado = true, mostrarOrden = true, marcador,
+  tipos, mostrarEstado = true, mostrarOrden = true, mostrarAgrupar = true, marcador,
 }: {
   tipos: { valor: string; texto: string }[];
   mostrarEstado?: boolean;
   mostrarOrden?: boolean;
+  mostrarAgrupar?: boolean;
   marcador?: string;
 }) {
   const router = useRouter();
@@ -53,7 +54,8 @@ export function FiltrosUnidades({
     Boolean(texto) ||
     Boolean(params.get("estado")) ||
     Boolean(params.get("tipo")) ||
-    Boolean(params.get("orden"));
+    Boolean(params.get("orden")) ||
+    Boolean(params.get("agrupar"));
 
   return (
     <div className="mb-4 space-y-3">
@@ -88,6 +90,19 @@ export function FiltrosUnidades({
             {ORDENES.map((o) => (
               <option key={o.valor} value={o.valor}>{o.texto}</option>
             ))}
+          </select>
+        )}
+
+        {mostrarAgrupar && (
+          <select
+            className="campo w-auto py-1.5 text-sm"
+            value={params.get("agrupar") ?? "ninguno"}
+            onChange={(e) => cambiar("agrupar", e.target.value)}
+            aria-label="Agrupar por"
+          >
+            <option value="ninguno">Sin agrupar</option>
+            <option value="propietario">Agrupar por propietario</option>
+            <option value="edificio">Agrupar por edificio</option>
           </select>
         )}
 

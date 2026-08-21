@@ -10,6 +10,7 @@ type Propiedad = {
   localidad: string | null;
   provincia: string | null;
   tipo: string;
+  edificio: string | null;
   ambientes: number | null;
   superficie_m2: number | null;
   partida_inmobiliaria: string | null;
@@ -48,8 +49,19 @@ export function FormularioPropiedad({
           ayuda="Si la escritura está a nombre de más de uno. La plata se le rinde igual al propietario de arriba."
         />
         <Campo rotulo="Dirección" nombre="direccion" valor={propiedad?.direccion} requerido />
+        <Campo
+          rotulo="Edificio"
+          nombre="edificio"
+          valor={propiedad?.edificio}
+          ayuda="Opcional. Las unidades de una misma dirección ya se agrupan solas; completá esto solo si el edificio tiene nombre propio o si las direcciones se cargaron escritas distinto y hay que unirlas."
+        />
         <div className="grid gap-4 sm:grid-cols-3">
-          <Campo rotulo="Piso / Depto" nombre="piso_depto" valor={propiedad?.piso_depto} />
+          <Campo
+            rotulo="Piso / Depto"
+            nombre="piso_depto"
+            valor={propiedad?.piso_depto}
+            ayuda="Va acá y no en la dirección: es lo que permite agrupar las unidades de un mismo edificio."
+          />
           <Campo rotulo="Localidad" nombre="localidad" valor={propiedad?.localidad} />
           <Campo rotulo="Provincia" nombre="provincia" valor={propiedad?.provincia ?? "Buenos Aires"} />
         </div>

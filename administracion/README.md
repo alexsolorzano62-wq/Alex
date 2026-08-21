@@ -27,8 +27,9 @@ El ciclo del mes, que es de lo que vive la administración:
    y qué contratos vencen.
 
 Y transversal a todo eso, **Unidades**: la cartera completa en una lista, con
-buscador por dirección, propietario o inquilino, y filtros por estado, tipo y
-orden (alfabético, o del alquiler más caro al más barato).
+buscador por dirección, propietario o inquilino, filtros por estado, tipo y
+orden (alfabético, o del alquiler más caro al más barato), y **agrupado por
+propietario o por edificio** — con subtotal de renta y vacantes en cada grupo.
 
 ## Decisiones que conviene conocer antes de tocar el código
 
@@ -61,6 +62,14 @@ que pelear con la consulta para buscar por campos de tablas relacionadas. Si
 algún día la cartera crece a miles, ese es el momento de moverlo a la base —
 no antes. La búsqueda ignora acentos y mayúsculas, y cada palabra puede caer en
 un campo distinto: "alsina peña" encuentra la unidad de Alsina cuyo dueño es Peña.
+
+**El edificio se deduce de la dirección, y el piso va en su propio campo.** Dos
+unidades cargadas en "Rivadavia 2340" se agrupan solas; si el piso se escribe
+adentro de la dirección ("Rivadavia 2340 1ºA") el edificio se parte en dos, y
+hay un chequeo en `npm test` que deja constancia de eso. El campo `edificio`
+existe para los dos casos en que la dirección no alcanza: cuando el edificio
+tiene nombre propio, y cuando las direcciones se cargaron escritas distinto
+("Av. Rivadavia 2340") y hay que unirlas a mano.
 
 ## Stack
 
@@ -95,6 +104,7 @@ En **SQL Editor → New query**, correr en orden el contenido de
 2. `0002_indices_ajustes.sql` — series de índices e historial de aumentos.
 3. `0003_cobros_gastos.sql` — recibos (con su inmutabilidad) y gastos.
 4. `0004_liquidaciones.sql` — liquidaciones al propietario y su detalle.
+5. `0005_edificios.sql` — el nombre de edificio, para agrupar la cartera.
 
 ### 3. Crear el primer usuario
 

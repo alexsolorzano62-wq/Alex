@@ -9,7 +9,10 @@ import {
 } from "@/lib/fechas";
 import { TIPOS_PROPIEDAD, etiqueta } from "@/lib/types";
 import { agrupar, coincide, ordenar, type Agrupado, type Orden, type Unidad } from "@/lib/unidades";
-import { armarFila, estaPaga, totales, type FilaPlanilla } from "@/lib/planilla";
+import {
+  armarFila, contarMesesAdeudados, estadoDeFila, totales,
+  ETIQUETA_ESTADO, type EstadoFila, type FilaPlanilla,
+} from "@/lib/planilla";
 
 export const dynamic = "force-dynamic";
 
@@ -20,6 +23,7 @@ type FilaContrato = {
   dia_vencimiento: number;
   indice: string;
   honorarios_porcentaje: number;
+  fecha_inicio: string;
   fecha_fin: string;
   fecha_proximo_ajuste: string | null;
   observaciones: string | null;
@@ -36,18 +40,28 @@ type FilaContrato = {
   } | null;
 };
 
+// Los colores de la planilla de Excel: verde abonado, amarillo con saldo,
+// naranja impago. El borde de la izquierda lleva el peso, para que también se
+// distingan impresas en blanco y negro.
+const TONOS: Record<EstadoFila, string> = {
+  abonado: "border-marca-500 bg-marca-50/70",
+  con_saldo: "border-amber-400 bg-amber-50",
+  impago: "border-orange-500 bg-orange-50",
+};
+
+const TONOS_CHIP: Record<EstadoFila, string> = {
+  abonado: "bg-marca-100 text-marca-800",
+  con_saldo: "bg-amber-200 text-amber-900",
+  impago: "bg-orange-200 text-orange-900",
+};
+
 function Fila({ fila, periodo }: { fila: FilaPlanilla; periodo: string }) {
-  const paga = estaPaga(fila);
+  const estado = estadoDeFila(fila);
+  const paga = fila.cobroId != null;
   const vence = vencimientoDelPeriodo(periodo, 10);
 
   return (
-    <tr
-      className={
-        paga
-          ? "border-l-4 border-marca-500 bg-marca-50/70"
-          : "border-l-4 border-transparent hover:bg-stone-50"
-      }
-    >
+    <tr className={`border-l-4 ${TONOS[estado]}`}>
       <td className="px-3 py-2 align-top">
         <Link
           href={fila.contratoId ? `/contratos/${fila.contratoId}` : `/propiedades/${fila.id}`}
@@ -61,7 +75,18 @@ function Fila({ fila, periodo }: { fila: FilaPlanilla; periodo: string }) {
       <td className="px-3 py-2 align-top text-stone-700">
         {fila.inquilino ?? "—"}
         {fila.observaciones && (
-          <div className="text-[11px] italic text-amber-700">{fila.observaciones}</div>
+          <div className="text-[11px] italic text-stone-500">{fila.observaciones}</div>
+        )}
+        {fila.saldoDelMes > 1 && (
+          <div className="tabular text-[11px] font-semibold text-amber-800">
+            Queda debiendo {formatearMoneda(fila.saldoDelMes, fila.moneda)}
+          </div>
+        )}
+        {fila.mesesAdeudados > 0 && (
+          <div className="text-[11px] font-semibold text-amber-800">
+            Debe {fila.mesesAdeudados}{" "}
+            {fila.mesesAdeudados === 1 ? "mes anterior" : "meses anteriores"}
+          </div>
         )}
       </td>
 
@@ -89,17 +114,20 @@ function Fila({ fila, periodo }: { fila: FilaPlanilla; periodo: string }) {
       </td>
 
       <td className="whitespace-nowrap px-3 py-2 align-top">
+        <span className={`rounded px-1.5 py-0.5 text-[11px] font-semibold ${TONOS_CHIP[estado]}`}>
+          {ETIQUETA_ESTADO[estado]}
+        </span>
         {paga ? (
           <Link
             href={`/cobros/${fila.cobroId}`}
-            className="font-semibold text-marca-800 hover:underline"
+            className="mt-1 block text-[11px] text-stone-600 hover:text-marca-700 hover:underline"
           >
-            Abonado {fila.fechaPago ? formatearFecha(fila.fechaPago) : ""}
+            Recibo {fila.fechaPago ? `del ${formatearFecha(fila.fechaPago)}` : ""}
           </Link>
         ) : (
           <Link
             href={`/cobros/nuevo?contrato=${fila.contratoId}&periodo=${periodo}`}
-            className="rounded-lg bg-marca-600 px-2.5 py-1 text-xs font-semibold text-white hover:bg-marca-700"
+            className="mt-1 block rounded-lg bg-marca-600 px-2.5 py-1 text-center text-xs font-semibold text-white hover:bg-marca-700"
           >
             {vence < hoyISO() ? "Cobrar · atrasado" : "Cobrar"}
           </Link>
@@ -145,24 +173,48 @@ export default async function Planilla({
   const supabase = await createClient();
   const periodo = primerDiaDelMes(periodoParam ?? hoyISO());
 
-  const [{ data: contratos }, { data: cobros }] = await Promise.all([
+  // Se mira un año para atrás para saber quién arrastra meses sin pagar.
+  const desde = sumarMeses(periodo, -12);
+
+  const [{ data: contratos }, { data: cobros }, { data: historicos }] = await Promise.all([
     supabase
       .from("contratos")
       .select(
-        "id, monto_actual, moneda, dia_vencimiento, indice, honorarios_porcentaje, fecha_fin, fecha_proximo_ajuste, observaciones, inquilinos(nombre), propiedades(id, direccion, piso_depto, localidad, tipo, estado, edificio, propietarios(id, nombre))"
+        "id, monto_actual, moneda, dia_vencimiento, indice, honorarios_porcentaje, fecha_inicio, fecha_fin, fecha_proximo_ajuste, observaciones, inquilinos(nombre), propiedades(id, direccion, piso_depto, localidad, tipo, estado, edificio, propietarios(id, nombre))"
       )
       .eq("estado", "activo")
       .is("deleted_at", null),
+    // El detalle hace falta para separar el alquiler de las expensas y los
+    // punitorios: el saldo se mide contra el alquiler, no contra el total.
     supabase
       .from("cobros")
-      .select("id, contrato_id, total, medio_pago, fecha_pago")
+      .select("id, contrato_id, total, medio_pago, fecha_pago, cobro_conceptos(tipo, monto)")
       .eq("periodo", periodo)
+      .is("anulado_at", null),
+    supabase
+      .from("cobros")
+      .select("contrato_id, periodo")
+      .gte("periodo", desde)
+      .lt("periodo", periodo)
       .is("anulado_at", null),
   ]);
 
+  type CobroDelMes = {
+    id: string; contrato_id: string; total: number; medio_pago: string;
+    fecha_pago: string; cobro_conceptos: { tipo: string; monto: number }[];
+  };
+
   const cobroPorContrato = new Map(
-    (cobros ?? []).map((c) => [c.contrato_id, c])
+    ((cobros ?? []) as unknown as CobroDelMes[]).map((c) => [c.contrato_id, c])
   );
+
+  // Qué períodos ya tiene cobrados cada contrato.
+  const periodosPorContrato = new Map<string, Set<string>>();
+  for (const h of historicos ?? []) {
+    const suyos = periodosPorContrato.get(h.contrato_id) ?? new Set<string>();
+    suyos.add(h.periodo);
+    periodosPorContrato.set(h.contrato_id, suyos);
+  }
 
   const filas: FilaPlanilla[] = ((contratos ?? []) as unknown as FilaContrato[]).map((c) => {
     const p = c.propiedades;
@@ -187,14 +239,28 @@ export default async function Planilla({
       proximoAjuste: c.fecha_proximo_ajuste,
     };
 
-    return armarFila(unidad, cobroPorContrato.get(c.id) ?? null, c.observaciones);
+    const cobro = cobroPorContrato.get(c.id);
+    const alquilerCobrado = (cobro?.cobro_conceptos ?? [])
+      .filter((x) => x.tipo === "alquiler")
+      .reduce((suma, x) => suma + Number(x.monto), 0);
+
+    const mesesAdeudados = contarMesesAdeudados({
+      fechaInicio: c.fecha_inicio,
+      periodoActual: periodo,
+      periodosCobrados: periodosPorContrato.get(c.id) ?? new Set(),
+    });
+
+    return armarFila(
+      unidad,
+      cobro ? { ...cobro, alquilerCobrado } : null,
+      c.observaciones,
+      mesesAdeudados
+    );
   });
 
   const filtradas = filas
     .filter((f) => (tipo === "todos" ? true : f.tipo === tipo))
-    .filter((f) =>
-      estado === "pagadas" ? estaPaga(f) : estado === "pendientes" ? !estaPaga(f) : true
-    )
+    .filter((f) => (estado === "todos" ? true : estadoDeFila(f) === estado))
     .filter((f) => coincide(f, q));
 
   const listadas = ordenar(filtradas, orden as Orden);
@@ -210,7 +276,7 @@ export default async function Planilla({
         <div className="text-center">
           <div className="font-titulo text-lg font-bold capitalize">{nombreDelPeriodo(periodo)}</div>
           <div className="tabular text-xs text-stone-500">
-            {t.pagadas} de {t.unidades} abonadas · falta cobrar {formatearCorto(t.faltaCobrar)}
+            {t.abonadas} abonadas · {t.conSaldo} con saldo · {t.impagas} impagas
           </div>
         </div>
         <Link href={`/cobros?periodo=${sumarMeses(periodo, 1)}`} className="boton-secundario px-3 py-1.5">→</Link>
@@ -219,9 +285,10 @@ export default async function Planilla({
       <FiltrosUnidades
         tipos={TIPOS_PROPIEDAD.map((x) => ({ valor: x, texto: etiqueta(x) }))}
         estados={[
-          { valor: "todos", texto: "Abonadas y pendientes" },
-          { valor: "pagadas", texto: "Solo abonadas" },
-          { valor: "pendientes", texto: "Solo pendientes" },
+          { valor: "todos", texto: "Todas" },
+          { valor: "abonado", texto: "Solo abonadas" },
+          { valor: "con_saldo", texto: "Solo con saldo" },
+          { valor: "impago", texto: "Solo impagas" },
         ]}
       />
 
@@ -262,8 +329,13 @@ export default async function Planilla({
                       )}
                     </div>
                     <div className="tabular text-xs text-stone-600">
-                      {delGrupo.pagadas}/{delGrupo.unidades} abonadas ·{" "}
-                      <span className="font-semibold">{formatearCorto(delGrupo.netoPropietarios)}</span>{" "}
+                      {delGrupo.abonadas}/{delGrupo.unidades} abonadas
+                      {delGrupo.conSaldo + delGrupo.impagas > 0 && (
+                        <span className="text-amber-800">
+                          {" "}· {formatearCorto(delGrupo.faltaCobrar + delGrupo.saldos)} sin entrar
+                        </span>
+                      )}{" "}
+                      · <span className="font-semibold">{formatearCorto(delGrupo.netoPropietarios)}</span>{" "}
                       al dueño
                     </div>
                   </div>
@@ -289,7 +361,12 @@ export default async function Planilla({
                 <tr className="font-semibold">
                   <td className="px-3 py-3">Total de {t.unidades} unidades</td>
                   <td className="px-3 py-3 text-stone-600">
-                    {t.pagadas} abonadas · {t.pendientes} pendientes
+                    {t.abonadas} abonadas · {t.conSaldo} con saldo · {t.impagas} impagas
+                    {t.faltaCobrar + t.saldos > 0 && (
+                      <span className="tabular block text-[11px] font-semibold text-amber-800">
+                        Sin entrar: {formatearMoneda(t.faltaCobrar + t.saldos)}
+                      </span>
+                    )}
                   </td>
                   <td className="tabular px-3 py-3 text-right">{formatearMoneda(t.alquilerEsperado)}</td>
                   <td className="tabular px-3 py-3 text-right text-marca-800">{formatearMoneda(t.cobrado)}</td>
@@ -301,10 +378,24 @@ export default async function Planilla({
             </table>
           </div>
 
-          <p className="text-xs text-stone-500">
-            Las filas en verde están abonadas. Los totales suman solo los contratos
-            en pesos: mezclar monedas daría un número que no significa nada.
-          </p>
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-stone-500">
+            <span className="flex items-center gap-1.5">
+              <span className="inline-block h-3 w-3 rounded-sm border-l-4 border-marca-500 bg-marca-50"></span>
+              Abonado
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="inline-block h-3 w-3 rounded-sm border-l-4 border-amber-400 bg-amber-50"></span>
+              Con saldo o deuda de meses anteriores
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="inline-block h-3 w-3 rounded-sm border-l-4 border-orange-500 bg-orange-50"></span>
+              Impago
+            </span>
+            <span>
+              Los totales suman solo los contratos en pesos: mezclar monedas daría
+              un número que no significa nada.
+            </span>
+          </div>
         </div>
       )}
     </div>

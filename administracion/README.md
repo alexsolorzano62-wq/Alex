@@ -14,11 +14,15 @@ El ciclo del mes, que es de lo que vive la administración:
 1. **¿Toca aumento?** Los contratos que cumplieron período aparecen en
    *Aumentos*, con el monto nuevo ya calculado contra la serie del índice.
 2. **Cobrar.** La *Planilla del mes* es la pantalla principal: una fila por
-   unidad con inquilino, alquiler, cobrado, honorarios y neto al dueño. **Las
-   filas abonadas quedan en verde**, que es la convención que ya usaba la
-   inmobiliaria en su planilla de Excel. Al registrar el pago, los punitorios
-   salen solos según los días de atraso y se pueden sumar los gastos del
-   inquilino.
+   unidad con inquilino, alquiler, cobrado, honorarios y neto al dueño, con los
+   colores que ya usaba la inmobiliaria en su planilla de Excel:
+
+   - **verde** — abonado, no debe nada
+   - **amarillo** — pagó pero quedó saldo, o arrastra meses anteriores
+   - **naranja** — no pagó este mes
+
+   Al registrar el pago, los punitorios salen solos según los días de atraso y
+   se pueden sumar los gastos del inquilino.
 3. **Recibo.** Una hoja A4 con el comprobante **impreso dos veces**: la mitad
    de arriba para el inquilino, la de abajo para el archivo de la inmobiliaria,
    con línea de corte al medio. Lleva el logo en marca de agua y, desde la
@@ -64,6 +68,19 @@ ni React. Se verifican con `npm test`, sin levantar nada.
 inmobiliaria administra ~130 unidades y las mira como una tabla: en tarjetas no
 entran. Los totales de la planilla suman solo los contratos en pesos —
 mezclarlos con los que están en dólares daría un número que no significa nada.
+
+**El saldo se mide contra el alquiler, no contra el total del recibo.** Un
+recibo puede traer expensas y punitorios, así que comparar su total con el
+alquiler pactado marcaría como "pagado de más" a alguien que entregó menos
+alquiler del que debía. Por eso la planilla lee el detalle del recibo y suma
+solo los conceptos de tipo `alquiler`. Pagar de más no genera deuda: el saldo
+nunca es negativo, porque tener plata a favor y deber plata son cosas distintas
+y sumarlas daría un total de deuda que miente. Y una diferencia de menos de un
+peso es redondeo, no deuda.
+
+**La deuda de meses anteriores se mira un año para atrás.** Más atrás que eso
+ya no es un saldo, es otro problema. Se cuenta desde el inicio del contrato:
+un contrato nuevo no arrastra nada.
 
 **Los honorarios de la planilla se calculan sobre lo cobrado, no sobre el
 alquiler pactado.** Un recibo puede traer expensas y punitorios además del
@@ -193,7 +210,7 @@ con un modelo más chico y sale bastante menos: poné `ANTHROPIC_MODEL` en
 app/
   (privado)/          Todo lo que requiere sesión, con el marco de la app
     panel/            Resumen del mes
-    cobros/           Planilla del mes: verde = abonado
+    cobros/           Planilla del mes: verde, amarillo y naranja
     unidades/         Toda la cartera, con buscador y filtros
     contratos/        Alta, detalle y edición
     ajustes/          Aumentos pendientes de aplicar
@@ -210,7 +227,7 @@ app/
 lib/
   ajustes.ts          Motor de aumentos
   unidades.ts         Búsqueda, orden y agrupado de la cartera
-  planilla.ts         Filas y totales del mes
+  planilla.ts         Filas, estados (abonado/saldo/impago) y totales del mes
   punitorios.ts       Intereses por mora
   liquidacion.ts      Cobrado − honorarios − gastos
   dinero.ts fechas.ts parseo.ts

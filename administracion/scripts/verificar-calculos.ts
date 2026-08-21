@@ -4,7 +4,7 @@ import { calcularAjuste, coeficientePorIndice, coeficienteFijo, proximoAjuste, t
 import { calcularPunitorios, diasDeAtraso } from "@/lib/punitorios";
 import { calcularTotales, honorariosDe, armarDetalle } from "@/lib/liquidacion";
 import { agrupar, claveDeEdificio, coincide, ordenar, type Unidad } from "@/lib/unidades";
-import { armarFila, estaPaga, totales as totalesPlanilla } from "@/lib/planilla";
+import { armarFila, contarMesesAdeudados, estadoDeFila, totales as totalesPlanilla } from "@/lib/planilla";
 
 let fallos = 0;
 function chequear(nombre: string, obtenido: unknown, esperado: unknown) {
@@ -174,26 +174,70 @@ chequear("sin agrupar no arma grupos", agrupar(conEdificio, "ninguno", "direccio
 
 console.log("--- Planilla del mes ---");
 const planilla = [
-  armarFila({ ...cartera[0], honorarios: 8 }, { id: "r1", total: 620000, medio_pago: "transferencia", fecha_pago: "2026-08-12" }, null),
-  armarFila({ ...cartera[1], honorarios: 10 }, { id: "r2", total: 448500, medio_pago: "efectivo", fecha_pago: "2026-08-05" }, "debe agua"),
+  // Pagó el alquiler completo más expensas: abonada.
+  armarFila({ ...cartera[0], honorarios: 8 }, { id: "r1", total: 620000, alquilerCobrado: 612000, medio_pago: "transferencia", fecha_pago: "2026-08-12" }, null),
+  // Pagó todo el alquiler pero debe un mes anterior: con saldo.
+  armarFila({ ...cartera[1], honorarios: 10 }, { id: "r2", total: 448500, alquilerCobrado: 448500, medio_pago: "efectivo", fecha_pago: "2026-08-05" }, "debe agua", 1),
+  // No pagó nada: impaga.
   armarFila({ ...cartera[2], honorarios: 8 }, null, null),
 ];
 
-chequear("la que pago queda marcada", estaPaga(planilla[0]), true);
-chequear("la que no pago, no", estaPaga(planilla[2]), false);
+chequear("la que pago queda marcada", planilla[0].cobroId !== null, true);
+chequear("la que no pago, no", planilla[2].cobroId === null, true);
 chequear("honorarios sobre lo cobrado, no sobre el alquiler", planilla[0].honorariosMonto, 49600);
 chequear("neto al propietario", planilla[0].netoPropietario, 570400);
 chequear("sin cobro no hay honorarios devengados", planilla[2].honorariosMonto, 0);
 chequear("la observacion viaja a la fila", planilla[1].observaciones, "debe agua");
 
+console.log("--- Los tres colores ---");
+chequear("verde: pago todo y no debe nada", estadoDeFila(planilla[0]), "abonado");
+chequear("amarillo: pago pero arrastra un mes", estadoDeFila(planilla[1]), "con_saldo");
+chequear("naranja: no pago nada", estadoDeFila(planilla[2]), "impago");
+
+// Pago parcial: entregó menos de lo que dice el contrato.
+const parcial = armarFila(
+  { ...cartera[0], honorarios: 8 },
+  { id: "r9", total: 300000, alquilerCobrado: 300000, medio_pago: "efectivo", fecha_pago: "2026-08-20" },
+  null
+);
+chequear("amarillo tambien cuando entrego de menos", estadoDeFila(parcial), "con_saldo");
+chequear("y el saldo es la diferencia", parcial.saldoDelMes, 312000);
+
+// Pagó de más: no es deuda, es saldo a favor. Sigue verde.
+const demas = armarFila(
+  { ...cartera[0], honorarios: 8 },
+  { id: "r10", total: 700000, alquilerCobrado: 650000, medio_pago: "efectivo", fecha_pago: "2026-08-02" },
+  null
+);
+chequear("pagar de mas no genera deuda", demas.saldoDelMes, 0);
+chequear("y queda en verde", estadoDeFila(demas), "abonado");
+
+// Diferencias de centavos son redondeo, no deuda.
+const centavos = armarFila(
+  { ...cartera[0], honorarios: 8 },
+  { id: "r11", total: 611999.5, alquilerCobrado: 611999.5, medio_pago: "efectivo", fecha_pago: "2026-08-02" },
+  null
+);
+chequear("medio peso de diferencia no es deuda", estadoDeFila(centavos), "abonado");
+
+console.log("--- Meses adeudados ---");
+const cobrados = new Set(["2026-06-01", "2026-07-01"]);
+chequear("al dia: no debe meses", contarMesesAdeudados({ fechaInicio: "2026-06-01", periodoActual: "2026-08-01", periodosCobrados: cobrados }), 0);
+chequear("le falta julio", contarMesesAdeudados({ fechaInicio: "2026-06-01", periodoActual: "2026-08-01", periodosCobrados: new Set(["2026-06-01"]) }), 1);
+chequear("no cuenta meses previos al contrato", contarMesesAdeudados({ fechaInicio: "2026-07-01", periodoActual: "2026-08-01", periodosCobrados: new Set() }), 1);
+chequear("contrato nuevo no arrastra nada", contarMesesAdeudados({ fechaInicio: "2026-08-01", periodoActual: "2026-08-01", periodosCobrados: new Set() }), 0);
+chequear("se corta al ano", contarMesesAdeudados({ fechaInicio: "2020-01-01", periodoActual: "2026-08-01", periodosCobrados: new Set() }), 12);
+
 const tp = totalesPlanilla(planilla);
-chequear("abonadas", tp.pagadas, 2);
-chequear("pendientes", tp.pendientes, 1);
+chequear("abonadas", tp.abonadas, 1);
+chequear("con saldo", tp.conSaldo, 1);
+chequear("impagas", tp.impagas, 1);
 chequear("alquiler esperado del mes", tp.alquilerEsperado, 1646000);
 chequear("cobrado hasta hoy", tp.cobrado, 1068500);
 chequear("honorarios del mes", tp.honorarios, 94450);
 chequear("neto a repartir", tp.netoPropietarios, 974050);
-chequear("lo que falta cobrar sale del contrato", tp.faltaCobrar, 585500);
+chequear("falta cobrar: solo las impagas", tp.faltaCobrar, 585500);
+chequear("saldos: lo que quedo a medias", tp.saldos, 0);
 
 // El recibo puede traer expensas y punitorios: el cobrado supera al alquiler y
 // los honorarios se calculan sobre ese total, que es como se liquida.

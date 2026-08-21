@@ -4,6 +4,7 @@ import { calcularAjuste, coeficientePorIndice, coeficienteFijo, proximoAjuste, t
 import { calcularPunitorios, diasDeAtraso } from "@/lib/punitorios";
 import { calcularTotales, honorariosDe, armarDetalle } from "@/lib/liquidacion";
 import { agrupar, claveDeEdificio, coincide, ordenar, type Unidad } from "@/lib/unidades";
+import { armarFila, estaPaga, totales as totalesPlanilla } from "@/lib/planilla";
 
 let fallos = 0;
 function chequear(nombre: string, obtenido: unknown, esperado: unknown) {
@@ -170,6 +171,33 @@ console.log("--- Orden de los grupos ---");
 const porPlata = agrupar(conEdificio, "propietario", "precio_desc");
 chequear("el propietario que mas renta va primero", porPlata[0].titulo, "Roberto Peña");
 chequear("sin agrupar no arma grupos", agrupar(conEdificio, "ninguno", "direccion").length, 0);
+
+console.log("--- Planilla del mes ---");
+const planilla = [
+  armarFila({ ...cartera[0], honorarios: 8 }, { id: "r1", total: 620000, medio_pago: "transferencia", fecha_pago: "2026-08-12" }, null),
+  armarFila({ ...cartera[1], honorarios: 10 }, { id: "r2", total: 448500, medio_pago: "efectivo", fecha_pago: "2026-08-05" }, "debe agua"),
+  armarFila({ ...cartera[2], honorarios: 8 }, null, null),
+];
+
+chequear("la que pago queda marcada", estaPaga(planilla[0]), true);
+chequear("la que no pago, no", estaPaga(planilla[2]), false);
+chequear("honorarios sobre lo cobrado, no sobre el alquiler", planilla[0].honorariosMonto, 49600);
+chequear("neto al propietario", planilla[0].netoPropietario, 570400);
+chequear("sin cobro no hay honorarios devengados", planilla[2].honorariosMonto, 0);
+chequear("la observacion viaja a la fila", planilla[1].observaciones, "debe agua");
+
+const tp = totalesPlanilla(planilla);
+chequear("abonadas", tp.pagadas, 2);
+chequear("pendientes", tp.pendientes, 1);
+chequear("alquiler esperado del mes", tp.alquilerEsperado, 1646000);
+chequear("cobrado hasta hoy", tp.cobrado, 1068500);
+chequear("honorarios del mes", tp.honorarios, 94450);
+chequear("neto a repartir", tp.netoPropietarios, 974050);
+chequear("lo que falta cobrar sale del contrato", tp.faltaCobrar, 585500);
+
+// El recibo puede traer expensas y punitorios: el cobrado supera al alquiler y
+// los honorarios se calculan sobre ese total, que es como se liquida.
+chequear("cobrado puede superar al alquiler pactado", planilla[0].cobrado! > planilla[0].monto!, true);
 
 console.log("--- Formato ---");
 chequear("dias entre vencimiento y pago", diasEntre("2026-08-10", "2026-09-09"), 30);

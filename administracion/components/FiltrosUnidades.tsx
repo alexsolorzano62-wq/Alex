@@ -13,11 +13,21 @@ export const ORDENES = [
 
 // El buscador y los filtros viven en la URL: así la vista que estás mirando
 // se puede compartir o dejar en un favorito, y volver atrás funciona.
+const ESTADOS_UNIDAD = [
+  { valor: "todos", texto: "Todos los estados" },
+  { valor: "alquilado", texto: "Alquiladas" },
+  { valor: "disponible", texto: "Disponibles" },
+  { valor: "en_refaccion", texto: "En refacción" },
+  { valor: "retirado", texto: "Retiradas" },
+];
+
 export function FiltrosUnidades({
-  tipos, mostrarEstado = true, mostrarOrden = true, mostrarAgrupar = true, marcador,
+  tipos, estados = ESTADOS_UNIDAD, mostrarOrden = true, mostrarAgrupar = true, marcador,
 }: {
   tipos: { valor: string; texto: string }[];
-  mostrarEstado?: boolean;
+  // La planilla del mes filtra por abonado o pendiente; el listado de unidades,
+  // por el estado del inmueble. Misma caja, distinto significado.
+  estados?: { valor: string; texto: string }[] | null;
   mostrarOrden?: boolean;
   mostrarAgrupar?: boolean;
   marcador?: string;
@@ -106,18 +116,16 @@ export function FiltrosUnidades({
           </select>
         )}
 
-        {mostrarEstado && (
+        {estados && estados.length > 0 && (
           <select
             className="campo w-auto py-1.5 text-sm"
             value={params.get("estado") ?? "todos"}
             onChange={(e) => cambiar("estado", e.target.value)}
             aria-label="Estado"
           >
-            <option value="todos">Todos los estados</option>
-            <option value="alquilado">Alquiladas</option>
-            <option value="disponible">Disponibles</option>
-            <option value="en_refaccion">En refacción</option>
-            <option value="retirado">Retiradas</option>
+            {estados.map((e) => (
+              <option key={e.valor} value={e.valor}>{e.texto}</option>
+            ))}
           </select>
         )}
 

@@ -13,8 +13,12 @@ El ciclo del mes, que es de lo que vive la administración:
 
 1. **¿Toca aumento?** Los contratos que cumplieron período aparecen en
    *Aumentos*, con el monto nuevo ya calculado contra la serie del índice.
-2. **Cobrar.** Se registra el pago, los punitorios salen solos según los días
-   de atraso, y se pueden sumar los gastos que le tocan al inquilino.
+2. **Cobrar.** La *Planilla del mes* es la pantalla principal: una fila por
+   unidad con inquilino, alquiler, cobrado, honorarios y neto al dueño. **Las
+   filas abonadas quedan en verde**, que es la convención que ya usaba la
+   inmobiliaria en su planilla de Excel. Al registrar el pago, los punitorios
+   salen solos según los días de atraso y se pueden sumar los gastos del
+   inquilino.
 3. **Recibo.** Una hoja A4 con el comprobante **impreso dos veces**: la mitad
    de arriba para el inquilino, la de abajo para el archivo de la inmobiliaria,
    con línea de corte al medio. Lleva el logo en marca de agua y, desde la
@@ -55,6 +59,16 @@ BCRA esté arriba, y guardar los valores usados deja cada ajuste auditable.
 **Los cálculos son funciones puras y están testeadas.** `lib/ajustes.ts`,
 `lib/punitorios.ts`, `lib/liquidacion.ts` y `lib/unidades.ts` no tocan la base
 ni React. Se verifican con `npm test`, sin levantar nada.
+
+**La planilla del mes reemplazó a la vista de cobros en tarjetas.** La
+inmobiliaria administra ~130 unidades y las mira como una tabla: en tarjetas no
+entran. Los totales de la planilla suman solo los contratos en pesos —
+mezclarlos con los que están en dólares daría un número que no significa nada.
+
+**Los honorarios de la planilla se calculan sobre lo cobrado, no sobre el
+alquiler pactado.** Un recibo puede traer expensas y punitorios además del
+alquiler, y es sobre ese total que se liquida. Es la misma cuenta que hace la
+liquidación al propietario, para que los dos números coincidan.
 
 **El buscador y los filtros viven en la URL, y filtran en memoria.** Con ~100
 unidades, traer todo y filtrar en JavaScript sale más barato y mucho más simple
@@ -179,6 +193,7 @@ con un modelo más chico y sale bastante menos: poné `ANTHROPIC_MODEL` en
 app/
   (privado)/          Todo lo que requiere sesión, con el marco de la app
     panel/            Resumen del mes
+    cobros/           Planilla del mes: verde = abonado
     unidades/         Toda la cartera, con buscador y filtros
     contratos/        Alta, detalle y edición
     ajustes/          Aumentos pendientes de aplicar
@@ -194,7 +209,8 @@ app/
   acciones.ts         Todas las escrituras a la base (Server Actions)
 lib/
   ajustes.ts          Motor de aumentos
-  unidades.ts         Búsqueda y orden de la cartera
+  unidades.ts         Búsqueda, orden y agrupado de la cartera
+  planilla.ts         Filas y totales del mes
   punitorios.ts       Intereses por mora
   liquidacion.ts      Cobrado − honorarios − gastos
   dinero.ts fechas.ts parseo.ts

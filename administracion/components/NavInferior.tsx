@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 const SECCIONES = [
   { href: "/panel", texto: "Panel", icono: "M3 12l9-9 9 9M5 10v10h14V10" },
   { href: "/unidades", texto: "Unidades", icono: "M3 21h18M5 21V7l7-4 7 4v14M9 21v-5h6v5" },
-  { href: "/cobros", texto: "Cobros", icono: "M3 7h18v10H3zM7 12h.01M17 12h.01" },
+  { href: "/cobros", texto: "Planilla", icono: "M3 7h18v10H3zM7 12h.01M17 12h.01" },
   { href: "/liquidaciones", texto: "Liquidar", icono: "M6 3h12v18l-3-2-3 2-3-2-3 2V3zm3 5h6M9 12h6" },
   { href: "/mas", texto: "Más", icono: "M4 6h16M4 12h16M4 18h16" },
 ];

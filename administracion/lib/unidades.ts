@@ -53,7 +53,7 @@ export function coincide(unidad: Unidad, busqueda: string): boolean {
 
 const comparador = new Intl.Collator("es-AR", { numeric: true, sensitivity: "base" });
 
-export function ordenar(unidades: Unidad[], orden: Orden): Unidad[] {
+export function ordenar<T extends Unidad>(unidades: T[], orden: Orden): T[] {
   const lista = [...unidades];
 
   switch (orden) {
@@ -102,12 +102,12 @@ export function ordenar(unidades: Unidad[], orden: Orden): Unidad[] {
 
 export type Agrupado = "ninguno" | "propietario" | "edificio";
 
-export type Grupo = {
+export type Grupo<T extends Unidad = Unidad> = {
   clave: string;
   titulo: string;
   subtitulo: string | null;
   href: string | null;
-  unidades: Unidad[];
+  unidades: T[];
   renta: number;
   alquiladas: number;
   vacantes: number;
@@ -136,14 +136,14 @@ function plural(cantidad: number, singular: string, plural: string): string {
   return `${cantidad} ${cantidad === 1 ? singular : plural}`;
 }
 
-export function agrupar(
-  unidades: Unidad[],
+export function agrupar<T extends Unidad>(
+  unidades: T[],
   criterio: Agrupado,
   orden: Orden
-): Grupo[] {
+): Grupo<T>[] {
   if (criterio === "ninguno") return [];
 
-  const cajones = new Map<string, Unidad[]>();
+  const cajones = new Map<string, T[]>();
 
   for (const unidad of unidades) {
     const clave =
@@ -156,7 +156,7 @@ export function agrupar(
     else cajones.set(clave, [unidad]);
   }
 
-  const grupos: Grupo[] = [];
+  const grupos: Grupo<T>[] = [];
 
   for (const [clave, delGrupo] of cajones) {
     const ordenadas = ordenar(delGrupo, orden);
@@ -197,7 +197,7 @@ export function agrupar(
 
   // Los grupos se ordenan con el mismo criterio que las unidades: por plata
   // cuando se ordena por plata, alfabético en el resto de los casos.
-  const alfabetico = (a: Grupo, b: Grupo) => comparador.compare(a.titulo, b.titulo);
+  const alfabetico = (a: Grupo<T>, b: Grupo<T>) => comparador.compare(a.titulo, b.titulo);
 
   if (orden === "precio_desc") return grupos.sort((a, b) => b.renta - a.renta || alfabetico(a, b));
   if (orden === "precio_asc") return grupos.sort((a, b) => a.renta - b.renta || alfabetico(a, b));

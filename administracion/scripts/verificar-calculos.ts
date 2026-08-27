@@ -5,6 +5,8 @@ import { calcularPunitorios, diasDeAtraso } from "@/lib/punitorios";
 import { calcularTotales, honorariosDe, armarDetalle } from "@/lib/liquidacion";
 import { agrupar, claveDeEdificio, coincide, ordenar, type Unidad } from "@/lib/unidades";
 import { armarFila, contarMesesAdeudados, estadoDeFila, totales as totalesPlanilla } from "@/lib/planilla";
+import { normalizarTelefono, linkWhatsApp } from "@/lib/whatsapp";
+import { avisoDeVencimiento, avisoDeAumento, avisoDeLiquidacion } from "@/lib/avisos";
 
 let fallos = 0;
 function chequear(nombre: string, obtenido: unknown, esperado: unknown) {
@@ -242,6 +244,66 @@ chequear("saldos: lo que quedo a medias", tp.saldos, 0);
 // El recibo puede traer expensas y punitorios: el cobrado supera al alquiler y
 // los honorarios se calculan sobre ese total, que es como se liquida.
 chequear("cobrado puede superar al alquiler pactado", planilla[0].cobrado! > planilla[0].monto!, true);
+
+console.log("--- Telefonos para WhatsApp ---");
+chequear("como lo escribe la gente", normalizarTelefono("381 415-8877"), "5493814158877");
+chequear("con el 0 adelante", normalizarTelefono("0381 415 8877"), "5493814158877");
+chequear("con el 15 viejo", normalizarTelefono("0381 15 415 8877"), "5493814158877");
+chequear("ya en formato internacional", normalizarTelefono("+54 9 381 415 8877"), "5493814158877");
+chequear("de Buenos Aires", normalizarTelefono("11 5555-4444"), "5491155554444");
+chequear("sin telefono", normalizarTelefono(null), null);
+chequear("basura no pasa", normalizarTelefono("123"), null);
+chequear("sin numero igual abre WhatsApp", linkWhatsApp(null, "hola").startsWith("https://wa.me/?text="), true);
+chequear("con numero apunta al chat", linkWhatsApp("381 415-8877", "hola"), "https://wa.me/5493814158877?text=hola");
+
+console.log("--- Textos de los avisos ---");
+const recordatorio = avisoDeVencimiento({
+  inquilino: "María Fernanda Gutiérrez", direccion: "Mitre 450 2ºB", periodo: "2026-08-01",
+  vencimiento: "2026-08-10", monto: 612000, moneda: "ARS", diasDeAtraso: 0,
+});
+chequear("usa el nombre de pila", recordatorio.startsWith("Hola María,"), true);
+chequear("antes del vencimiento es un recordatorio", recordatorio.includes("vence el 10/08/2026"), true);
+chequear("y no habla de atraso", recordatorio.includes("atraso"), false);
+
+const atrasado = avisoDeVencimiento({
+  inquilino: "Diego Sosa", direccion: "Alsina 670 1ºC", periodo: "2026-08-01",
+  vencimiento: "2026-08-10", monto: 585500, moneda: "ARS", diasDeAtraso: 8,
+});
+chequear("pasado el vencimiento cambia el tono", atrasado.includes("todavía figura impago"), true);
+chequear("y dice cuantos dias", atrasado.includes("Van 8 días de atraso"), true);
+
+const unDia = avisoDeVencimiento({
+  inquilino: "Ana Vera", direccion: "Rivadavia 2340 1ºA", periodo: "2026-08-01",
+  vencimiento: "2026-08-10", monto: 400000, moneda: "ARS", diasDeAtraso: 1,
+});
+chequear("un solo dia va en singular", unDia.includes("Van 1 día de atraso"), true);
+
+const aumento = avisoDeAumento({
+  inquilino: "Carlos Alberto Ruiz", direccion: "Belgrano 1287", montoAnterior: 380000,
+  montoNuevo: 448500, moneda: "ARS", desde: "2026-09-01", indice: "ICL",
+});
+chequear("el aumento dice el monto nuevo primero", /pasa a \$\s448\.500,00/.test(aumento), true);
+chequear("y explica contra que indice", aumento.includes("según ICL"), true);
+
+const fijo = avisoDeAumento({
+  inquilino: "Rocío Konsorki", direccion: "Rivadavia 2340 3ºA", montoAnterior: 430000,
+  montoNuevo: 481600, moneda: "ARS", desde: "2026-09-01", indice: "FIJO",
+});
+chequear("con porcentaje pactado no nombra un indice", fijo.includes("porcentaje de actualización"), true);
+
+const rendicion = avisoDeLiquidacion({
+  propietario: "Nélida Ferrari", periodo: "2026-08-01", neto: 1432775,
+  moneda: "ARS", unidades: 4, metodoPago: "efectivo",
+});
+chequear("al que cobra en efectivo lo invita a la oficina", rendicion.includes("pasás por la oficina"), true);
+chequear("y dice cuantas unidades", rendicion.includes("4 unidades"), true);
+
+const unaSola = avisoDeLiquidacion({
+  propietario: "Roberto Peña", periodo: "2026-08-01", neto: 563040,
+  moneda: "ARS", unidades: 1, metodoPago: "transferencia",
+});
+chequear("una unidad va en singular", unaSola.includes("1 unidad ·"), true);
+chequear("al que cobra por transferencia se le avisa la transferencia", unaSola.includes("hacemos la transferencia"), true);
 
 console.log("--- Formato ---");
 chequear("dias entre vencimiento y pago", diasEntre("2026-08-10", "2026-09-09"), 30);

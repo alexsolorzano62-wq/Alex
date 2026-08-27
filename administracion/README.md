@@ -34,6 +34,12 @@ El ciclo del mes, que es de lo que vive la administración:
 6. **Cerrar.** El panel muestra cobrado contra pendiente, honorarios generados
    y qué contratos vencen.
 
+Y cuando algo hay que comunicar, **Avisos**: la app arma el mensaje de
+WhatsApp —recordatorio de pago, aviso de aumento, liquidación lista— y abre el
+chat con el texto escrito. La persona toca enviar. No se manda nada solo, no
+cuesta nada por mensaje y no hace falta trámite con Meta; queda registrado a
+quién se le avisó y cuándo.
+
 Y transversal a todo eso, **Unidades**: la cartera completa en una lista, con
 buscador por dirección, propietario o inquilino, filtros por estado, tipo y
 orden (alfabético, o del alquiler más caro al más barato), y **agrupado por
@@ -87,6 +93,15 @@ alquiler pactado.** Un recibo puede traer expensas y punitorios además del
 alquiler, y es sobre ese total que se liquida. Es la misma cuenta que hace la
 liquidación al propietario, para que los dos números coincidan.
 
+**Los recordatorios de pago se avisan recién dos días antes del vencimiento.**
+Mandar el aviso el día 1 para algo que vence el 10 solo enseña a ignorarlo.
+Pasado el vencimiento el texto cambia de tono y dice cuántos días van.
+
+**Los textos de los avisos viven en `lib/avisos.ts` y no dentro de las
+pantallas**, para que se puedan leer todos juntos: el tono de lo que la
+inmobiliaria le manda a sus inquilinos es una decisión del negocio, no un
+detalle de implementación.
+
 **El buscador y los filtros viven en la URL, y filtran en memoria.** Con ~100
 unidades, traer todo y filtrar en JavaScript sale más barato y mucho más simple
 que pelear con la consulta para buscar por campos de tablas relacionadas. Si
@@ -136,6 +151,7 @@ En **SQL Editor → New query**, correr en orden el contenido de
 3. `0003_cobros_gastos.sql` — recibos (con su inmutabilidad) y gastos.
 4. `0004_liquidaciones.sql` — liquidaciones al propietario y su detalle.
 5. `0005_edificios.sql` — el nombre de edificio, para agrupar la cartera.
+6. `0006_avisos.sql` — registro de los avisos de WhatsApp enviados.
 
 ### 3. Crear el primer usuario
 
@@ -223,6 +239,7 @@ app/
   (privado)/          Todo lo que requiere sesión, con el marco de la app
     panel/            Resumen del mes
     cobros/           Planilla del mes: verde, amarillo y naranja
+    avisos/           Mensajes de WhatsApp listos para enviar
     unidades/         Toda la cartera, con buscador y filtros
     contratos/        Alta, detalle y edición
     ajustes/          Aumentos pendientes de aplicar
@@ -240,6 +257,8 @@ lib/
   ajustes.ts          Motor de aumentos
   unidades.ts         Búsqueda, orden y agrupado de la cartera
   planilla.ts         Filas, estados (abonado/saldo/impago) y totales del mes
+  avisos.ts           Los textos de cada tipo de aviso
+  whatsapp.ts         Teléfonos argentinos y enlaces a wa.me
   punitorios.ts       Intereses por mora
   liquidacion.ts      Cobrado − honorarios − gastos
   dinero.ts fechas.ts parseo.ts

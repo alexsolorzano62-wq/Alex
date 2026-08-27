@@ -9,6 +9,7 @@ const SECCIONES = [
   { href: "/contratos", texto: "Contratos" },
   { href: "/cobros", texto: "Planilla" },
   { href: "/gastos", texto: "Gastos" },
+  { href: "/avisos", texto: "Avisos" },
   { href: "/liquidaciones", texto: "Liquidaciones" },
 ];
 

@@ -852,3 +852,33 @@ export async function anularLiquidacion(formData: FormData) {
   revalidatePath("/liquidaciones");
   revalidatePath(`/liquidaciones/${id}`);
 }
+
+// ---------------------------------------------------------------- avisos --
+
+// Los avisos salen del WhatsApp de la inmobiliaria: la app arma el mensaje y
+// abre el chat, la persona toca enviar. Esto solo deja registrado que ese
+// aviso ya salió, para no repetirlo y para poder decir cuándo se avisó.
+export async function registrarAviso(formData: FormData) {
+  const { supabase, user } = await sesion();
+
+  const contratoId = textoONulo(formData.get("contrato_id"));
+  const liquidacionId = textoONulo(formData.get("liquidacion_id"));
+  if (!contratoId && !liquidacionId) {
+    throw new Error("El aviso tiene que colgar de un contrato o de una liquidación.");
+  }
+
+  const periodoCrudo = textoONulo(formData.get("periodo"));
+
+  const { error } = await supabase.from("avisos_enviados").insert({
+    tipo: String(formData.get("tipo")),
+    contrato_id: contratoId,
+    liquidacion_id: liquidacionId,
+    periodo: periodoCrudo ? primerDiaDelMes(periodoCrudo) : null,
+    destino: textoONulo(formData.get("destino")),
+    enviado_por: user.id,
+  });
+
+  if (error) throw new Error(`No se pudo registrar el aviso: ${error.message}`);
+
+  revalidatePath("/avisos");
+}

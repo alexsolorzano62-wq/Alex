@@ -159,7 +159,19 @@ npm install
 npm run dev
 ```
 
-### 5. Cargar los índices
+### 5. Ver la app funcionando, sin cargar nada
+
+Antes de tocar la cartera real conviene probar el ciclo completo con datos
+inventados. Pegá en el SQL Editor el contenido de `supabase/semilla.sql`:
+carga 10 unidades de 3 propietarios —uno con unidades sueltas, otro con un
+edificio entero, otro con un local—, sus contratos con índices y porcentajes
+distintos, y el mes en curso a medio cobrar, con los tres colores de la
+planilla representados.
+
+Al final del archivo está la consulta para borrar todo y dejar la base limpia
+cuando termines de probar.
+
+### 6. Cargar los índices
 
 Entrá a **Más → Índices** y tocá *Actualizar ICL*. Baja la serie diaria del
 BCRA desde 2020. Sin esto, los aumentos por índice no se pueden calcular.
@@ -234,6 +246,7 @@ lib/
   pdf/                Recibo (dos por hoja A4) y liquidación, con marca de agua
   supabase/           Clientes de conexión y perfil
 supabase/migrations/  El esquema, con RLS y triggers de inmutabilidad
+supabase/semilla.sql  Datos de prueba: 10 unidades y un mes a medio cobrar
 scripts/              Verificación de los cálculos (npm test)
 ```
 
@@ -242,6 +255,11 @@ scripts/              Verificación de los cálculos (npm test)
 ```bash
 npm run dev     # desarrollo
 npm run build   # compilar
-npm test        # verificar los cálculos
+npm test        # verificar los cálculos y la sintaxis de la SQL
 npm run lint
 ```
+
+`npm test` corre dos cosas: los chequeos de los cálculos puros y un parseo de
+todas las migraciones y de la semilla contra el parser de PostgreSQL de verdad.
+Lo segundo no prueba que las columnas existan, pero sí que nada de lo que vas a
+pegar en la consola de Supabase se rompa por una coma.

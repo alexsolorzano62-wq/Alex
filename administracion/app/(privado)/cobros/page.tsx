@@ -8,7 +8,10 @@ import {
   vencimientoDelPeriodo,
 } from "@/lib/fechas";
 import { TIPOS_PROPIEDAD, etiqueta } from "@/lib/types";
-import { agrupar, coincide, ordenar, type Agrupado, type Orden, type Unidad } from "@/lib/unidades";
+import {
+  agrupar, coincide, mapearUnidad, ordenar,
+  type Agrupado, type Orden, type PropiedadConsultada,
+} from "@/lib/unidades";
 import {
   armarFila, contarMesesAdeudados, estadoDeFila, totales,
   ETIQUETA_ESTADO, type EstadoFila, type FilaPlanilla,
@@ -28,16 +31,7 @@ type FilaContrato = {
   fecha_proximo_ajuste: string | null;
   observaciones: string | null;
   inquilinos: { nombre: string } | null;
-  propiedades: {
-    id: string;
-    direccion: string;
-    piso_depto: string | null;
-    localidad: string | null;
-    tipo: string;
-    estado: string;
-    edificio: string | null;
-    propietarios: { id: string; nombre: string } | null;
-  } | null;
+  propiedades: PropiedadConsultada | null;
 };
 
 // Los colores de la planilla de Excel: verde abonado, amarillo con saldo,
@@ -190,13 +184,15 @@ export default async function Planilla({
       .from("cobros")
       .select("id, contrato_id, total, medio_pago, fecha_pago, cobro_conceptos(tipo, monto)")
       .eq("periodo", periodo)
-      .is("anulado_at", null),
+      .is("anulado_at", null)
+      .limit(2000),
     supabase
       .from("cobros")
       .select("contrato_id, periodo")
       .gte("periodo", desde)
       .lt("periodo", periodo)
-      .is("anulado_at", null),
+      .is("anulado_at", null)
+      .limit(10000),
   ]);
 
   type CobroDelMes = {
@@ -217,27 +213,7 @@ export default async function Planilla({
   }
 
   const filas: FilaPlanilla[] = ((contratos ?? []) as unknown as FilaContrato[]).map((c) => {
-    const p = c.propiedades;
-    const unidad: Unidad = {
-      id: p?.id ?? c.id,
-      direccion: p?.direccion ?? "",
-      pisoDepto: p?.piso_depto ?? null,
-      direccionCompleta: `${p?.direccion ?? ""}${p?.piso_depto ? ` ${p.piso_depto}` : ""}`,
-      localidad: p?.localidad ?? null,
-      tipo: p?.tipo ?? "otro",
-      estado: p?.estado ?? "alquilado",
-      edificio: p?.edificio ?? null,
-      propietarioId: p?.propietarios?.id ?? null,
-      propietario: p?.propietarios?.nombre ?? "",
-      contratoId: c.id,
-      inquilino: c.inquilinos?.nombre ?? null,
-      monto: Number(c.monto_actual),
-      moneda: c.moneda,
-      indice: c.indice,
-      honorarios: Number(c.honorarios_porcentaje),
-      fechaFin: c.fecha_fin,
-      proximoAjuste: c.fecha_proximo_ajuste,
-    };
+    const unidad = mapearUnidad(c.propiedades, c, c.id);
 
     const cobro = cobroPorContrato.get(c.id);
     const alquilerCobrado = (cobro?.cobro_conceptos ?? [])

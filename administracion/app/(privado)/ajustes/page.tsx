@@ -3,9 +3,9 @@ import { createClient } from "@/lib/supabase/server";
 import { aplicarAjuste } from "@/app/acciones";
 import { Titulo, Vacio } from "@/components/Ui";
 import { formatearMoneda } from "@/lib/dinero";
-import { formatearFecha, hoyISO } from "@/lib/fechas";
+import { formatearFecha, hoyISO, sumarMeses } from "@/lib/fechas";
 import { calcularAjuste } from "@/lib/ajustes";
-import { valorDeIndice } from "@/lib/indices";
+import { serieDeIndice, valorEnSerie } from "@/lib/indices";
 import type { Indice } from "@/lib/types";
 import { FilaAjuste } from "@/components/FilaAjuste";
 
@@ -42,10 +42,34 @@ export default async function Ajustes() {
 
   const contratos = (data ?? []) as unknown as ContratoAjuste[];
 
-  // Se calcula cada aumento contra la serie guardada. Si falta el valor del
-  // índice, se dice cuál falta en vez de inventar un número.
-  const propuestas = await Promise.all(
-    contratos.map(async (c) => {
+  // Antes esto pedía dos valores de índice por contrato: con 30 contratos en
+  // la tanda del mes eran 60 consultas. Ahora se baja una vez la serie de cada
+  // índice que se usa y los valores se resuelven en memoria.
+  const indicesUsados = [...new Set(
+    contratos.map((c) => c.indice).filter((i) => i !== "FIJO" && i !== "SIN_AJUSTE")
+  )];
+
+  // La fecha base más vieja de la tanda marca desde dónde hace falta la serie,
+  // con un mes de margen: el ICL no publica sábados, domingos ni feriados, y
+  // para una fecha base sin publicación hay que poder mirar hacia atrás.
+  const baseMasVieja = contratos.reduce<string>(
+    (masVieja, c) => {
+      const base = c.fecha_ultimo_ajuste ?? c.fecha_inicio;
+      return base < masVieja ? base : masVieja;
+    },
+    hoy
+  );
+  const desdeLaSerie = sumarMeses(baseMasVieja, -1);
+
+  const series = new Map(
+    await Promise.all(
+      indicesUsados.map(async (indice) =>
+        [indice, await serieDeIndice(supabase, indice, desdeLaSerie)] as const
+      )
+    )
+  );
+
+  const propuestas = contratos.map((c) => {
       const desde = c.fecha_ultimo_ajuste ?? c.fecha_inicio;
       const hasta = c.fecha_proximo_ajuste;
 
@@ -65,10 +89,9 @@ export default async function Ajustes() {
         }
       }
 
-      const [base, final] = await Promise.all([
-        valorDeIndice(supabase, c.indice, desde),
-        valorDeIndice(supabase, c.indice, hasta),
-      ]);
+      const serie = series.get(c.indice) ?? [];
+      const base = valorEnSerie(serie, desde);
+      const final = valorEnSerie(serie, hasta);
 
       if (base == null || final == null) {
         return {
@@ -87,8 +110,7 @@ export default async function Ajustes() {
         }),
         base, final, problema: null,
       };
-    })
-  );
+  });
 
   return (
     <div>

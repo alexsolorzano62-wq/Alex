@@ -6,32 +6,15 @@ import { formatearMoneda, formatearCorto } from "@/lib/dinero";
 import { formatearFecha, hoyISO } from "@/lib/fechas";
 import { TIPOS_PROPIEDAD, etiqueta } from "@/lib/types";
 import {
-  agrupar, coincide, ordenar,
-  type Agrupado, type Grupo, type Orden, type Unidad,
+  agrupar, coincide, mapearUnidad, ordenar,
+  type Agrupado, type ContratoConsultado, type Grupo, type Orden,
+  type PropiedadConsultada, type Unidad,
 } from "@/lib/unidades";
 
 export const dynamic = "force-dynamic";
 
-type FilaPropiedad = {
-  id: string;
-  direccion: string;
-  piso_depto: string | null;
-  localidad: string | null;
-  tipo: string;
-  estado: string;
-  edificio: string | null;
-  propietarios: { id: string; nombre: string } | null;
-  contratos: {
-    id: string;
-    estado: string;
-    monto_actual: number;
-    moneda: "ARS" | "USD";
-    indice: string;
-    honorarios_porcentaje: number;
-    fecha_fin: string;
-    fecha_proximo_ajuste: string | null;
-    inquilinos: { nombre: string } | null;
-  }[];
+type FilaPropiedad = PropiedadConsultada & {
+  contratos: (ContratoConsultado & { estado: string })[];
 };
 
 function FilaUnidad({ unidad, hoy }: { unidad: Unidad; hoy: string }) {
@@ -136,29 +119,9 @@ export default async function Unidades({
 
   const filas = (data ?? []) as unknown as FilaPropiedad[];
 
-  const unidades: Unidad[] = filas.map((p) => {
-    const activo = (p.contratos ?? []).find((c) => c.estado === "activo") ?? null;
-    return {
-      id: p.id,
-      direccion: p.direccion,
-      pisoDepto: p.piso_depto,
-      direccionCompleta: `${p.direccion}${p.piso_depto ? ` ${p.piso_depto}` : ""}`,
-      localidad: p.localidad,
-      tipo: p.tipo,
-      estado: p.estado,
-      edificio: p.edificio,
-      propietarioId: p.propietarios?.id ?? null,
-      propietario: p.propietarios?.nombre ?? "",
-      contratoId: activo?.id ?? null,
-      inquilino: activo?.inquilinos?.nombre ?? null,
-      monto: activo ? Number(activo.monto_actual) : null,
-      moneda: activo?.moneda ?? "ARS",
-      indice: activo?.indice ?? null,
-      honorarios: activo ? Number(activo.honorarios_porcentaje) : null,
-      fechaFin: activo?.fecha_fin ?? null,
-      proximoAjuste: activo?.fecha_proximo_ajuste ?? null,
-    };
-  });
+  const unidades: Unidad[] = filas.map((p) =>
+    mapearUnidad(p, (p.contratos ?? []).find((c) => c.estado === "activo") ?? null)
+  );
 
   const filtradas = unidades
     .filter((u) => (estado === "todos" ? true : u.estado === estado))

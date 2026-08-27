@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getPerfil } from "@/lib/supabase/perfil";
 import { parsearMonto, parsearPorcentaje, textoONulo, enteroONulo } from "@/lib/parseo";
 import { calcularAjuste, proximoAjuste } from "@/lib/ajustes";
-import { primerDiaDelMes, vencimientoDelPeriodo, hoyISO, nombreDelPeriodo } from "@/lib/fechas";
+import { primerDiaDelMes, vencimientoDelPeriodo, hoyISO, nombreDelPeriodo, sumarMeses } from "@/lib/fechas";
 import { calcularTotales, armarDetalle } from "@/lib/liquidacion";
 import { redondear } from "@/lib/dinero";
 import type { Indice, Moneda } from "@/lib/types";
@@ -637,10 +637,12 @@ async function juntarMovimientos(
     .eq("periodo", periodo)
     .is("anulado_at", null);
 
-  const { data: yaLiquidados } = await supabase
-    .from("liquidacion_detalle")
-    .select("cobro_id")
-    .in("cobro_id", (cobros ?? []).map((c) => c.id));
+  // Un .in() con lista vacía es una consulta inválida, así que se pregunta
+  // solo si hay algo por lo que preguntar.
+  const idsCobro = (cobros ?? []).map((c) => c.id);
+  const { data: yaLiquidados } = idsCobro.length
+    ? await supabase.from("liquidacion_detalle").select("cobro_id").in("cobro_id", idsCobro)
+    : { data: [] };
 
   const cobrosUsados = new Set((yaLiquidados ?? []).map((d) => d.cobro_id));
 
@@ -652,7 +654,9 @@ async function juntarMovimientos(
     .is("liquidacion_id", null)
     .is("cobro_id", null)
     .is("deleted_at", null)
-    .lte("fecha", periodo.slice(0, 8) + "28");
+    // Menor al primer día del mes siguiente: así entran los días 29, 30 y 31,
+    // que con un tope fijo en el 28 quedaban afuera para siempre.
+    .lt("fecha", sumarMeses(periodo, 1));
 
   const porMoneda = new Map<Moneda, RenglonPreparado>();
   const asegurar = (moneda: Moneda) => {

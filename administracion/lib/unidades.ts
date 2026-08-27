@@ -204,3 +204,61 @@ export function agrupar<T extends Unidad>(
   if (orden === "direccion_desc") return grupos.sort((a, b) => -alfabetico(a, b));
   return grupos.sort(alfabetico);
 }
+
+// ---------------------------------------------------------------------------
+// De lo que devuelve la base a una Unidad.
+//
+// La escriben dos pantallas —el listado de unidades y la planilla del mes— y
+// tenerlo dos veces garantizaba que en algún momento se desincronizaran.
+// ---------------------------------------------------------------------------
+
+export type PropiedadConsultada = {
+  id: string;
+  direccion: string;
+  piso_depto: string | null;
+  localidad: string | null;
+  tipo: string;
+  estado: string;
+  edificio: string | null;
+  propietarios: { id: string; nombre: string } | null;
+};
+
+export type ContratoConsultado = {
+  id: string;
+  monto_actual: number;
+  moneda: "ARS" | "USD";
+  indice: string;
+  honorarios_porcentaje: number;
+  fecha_fin: string;
+  fecha_proximo_ajuste: string | null;
+  inquilinos: { nombre: string } | null;
+};
+
+export function mapearUnidad(
+  propiedad: PropiedadConsultada | null,
+  contrato: ContratoConsultado | null,
+  idSiFaltaLaPropiedad?: string
+): Unidad {
+  return {
+    id: propiedad?.id ?? idSiFaltaLaPropiedad ?? "",
+    direccion: propiedad?.direccion ?? "",
+    pisoDepto: propiedad?.piso_depto ?? null,
+    direccionCompleta: `${propiedad?.direccion ?? ""}${
+      propiedad?.piso_depto ? ` ${propiedad.piso_depto}` : ""
+    }`,
+    localidad: propiedad?.localidad ?? null,
+    tipo: propiedad?.tipo ?? "otro",
+    estado: propiedad?.estado ?? "alquilado",
+    edificio: propiedad?.edificio ?? null,
+    propietarioId: propiedad?.propietarios?.id ?? null,
+    propietario: propiedad?.propietarios?.nombre ?? "",
+    contratoId: contrato?.id ?? null,
+    inquilino: contrato?.inquilinos?.nombre ?? null,
+    monto: contrato ? Number(contrato.monto_actual) : null,
+    moneda: contrato?.moneda ?? "ARS",
+    indice: contrato?.indice ?? null,
+    honorarios: contrato ? Number(contrato.honorarios_porcentaje) : null,
+    fechaFin: contrato?.fecha_fin ?? null,
+    proximoAjuste: contrato?.fecha_proximo_ajuste ?? null,
+  };
+}

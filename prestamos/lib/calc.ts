@@ -1,5 +1,7 @@
 import { diasEntre, sumarMeses } from "@/lib/fechas";
 import { cuotaSemanal } from "@/lib/planes";
+import { datosFrecuencia } from "@/lib/periodos";
+import type { Frecuencia } from "@/lib/types";
 import type { Modalidad, Pago, Prestamo } from "@/lib/types";
 
 /** Dias antes del vencimiento en los que un prestamo empieza a avisar. */
@@ -53,12 +55,34 @@ export function calcularPlan(datos: {
   totalManual?: number | null;
   /** Cuota escrita a mano, para plazos semanales fuera de la lista. */
   cuotaManual?: number | null;
+  /** Solo en "personalizado": cada cuánto paga y por cuántos meses. */
+  frecuencia?: Frecuencia | null;
+  plazoMeses?: number | null;
 }): { interes: number; total: number; cuotaMonto: number | null } {
   const capital = pesos(datos.capital);
 
   if (datos.modalidad === "mensual") {
     const interes = pesos((capital * datos.tasa) / 100);
     return { interes, total: capital + interes, cuotaMonto: null };
+  }
+
+  if (datos.modalidad === "personalizado") {
+    const meses = Math.max(1, datos.plazoMeses ?? 1);
+    const { porMes } = datosFrecuencia(datos.frecuencia ?? "mensual");
+    const cantidad = Math.max(1, Math.round(meses * porMes));
+
+    // Interés simple sobre el plazo: la tasa es por mes y no se capitaliza.
+    const total = pesos(capital * (1 + (datos.tasa / 100) * meses));
+
+    // La cuota se redondea al cien y el total sale de ella, así el número que
+    // se le dice al cliente es exactamente el que va a pagar.
+    const cuota =
+      datos.cuotaManual && datos.cuotaManual > 0
+        ? pesos(datos.cuotaManual)
+        : Math.round(total / cantidad / 100) * 100;
+    const totalReal = pesos(cuota * cantidad);
+
+    return { interes: totalReal - capital, total: totalReal, cuotaMonto: cuota };
   }
 
   if (datos.modalidad === "semanal") {

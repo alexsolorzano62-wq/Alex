@@ -1,6 +1,7 @@
 import type { ResumenPrestamo } from "@/lib/calc";
 import { tasaImplicita } from "@/lib/calc";
 import type { Prestamo } from "@/lib/types";
+import { frecuenciaDe, textoCuotas } from "@/lib/periodos";
 
 /** "$200.000", como en la planilla: sin centavos. */
 export function plata(monto: number): string {
@@ -31,8 +32,12 @@ export function descripcionPlan(
     return `${porcentaje(prestamo.tasa_mensual)} mensual`;
   }
 
-  const unidad = prestamo.modalidad === "semanal" ? "semanas" : "cuotas";
-  return `${datos.cuotasTotal} ${unidad} de ${plata(datos.cuotaMonto ?? 0)}`;
+  // Los planes de la lista de precios se nombran por semanas, como el plan.
+  if (prestamo.modalidad === "semanal") {
+    return `${datos.cuotasTotal} semanas de ${plata(datos.cuotaMonto ?? 0)}`;
+  }
+
+  return `${textoCuotas(datos.cuotasTotal ?? 0, frecuenciaDe(prestamo))} de ${plata(datos.cuotaMonto ?? 0)}`;
 }
 
 /** La tasa que corresponde mostrar: la pactada, o la que quedó implícita. */

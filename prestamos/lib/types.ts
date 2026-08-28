@@ -5,9 +5,14 @@ export type Modalidad =
   /** Plan cerrado en N cuotas mensuales fijas. */
   | "cuotas"
   /** Plan cerrado en N cuotas semanales, según la lista de precios. */
-  | "semanal";
+  | "semanal"
+  /** Plan armado a mano: capital, tasa por mes y cada cuánto paga. */
+  | "personalizado";
 
 export type EstadoPrestamo = "vigente" | "pagado" | "cancelado";
+
+/** Cada cuánto paga una cuota. */
+export type Frecuencia = "semanal" | "quincenal" | "mensual";
 
 export type TipoPago =
   /** Pago del interes del mes: el capital queda igual y se renueva. */
@@ -43,6 +48,8 @@ export type Prestamo = {
   cuotas_total: number | null;
   cuota_monto: number | null;
   total_a_devolver: number | null;
+  /** Cada cuánto vence una cuota. Null en la modalidad de interés mensual. */
+  frecuencia: Frecuencia | null;
   estado: EstadoPrestamo;
   observacion: string | null;
   created_at: string;

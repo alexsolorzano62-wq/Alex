@@ -20,6 +20,9 @@ todo y, si querés, les mandás el estado de cuenta por WhatsApp.
     calcula en proporción entre los dos escalones vecinos y podés pisarla a mano.
   - *Cuotas mensuales*: plan cerrado en N cuotas fijas. Podés pactar el total a
     mano y la tasa se calcula sola.
+  - *Plan personalizado*: ponés el capital, la tasa por mes y cada cuánto paga
+    (semanal, quincenal o mensual). El interés es simple sobre el plazo y la app
+    arma las cuotas: 3 meses cobrando por semana son 12 cuotas.
 - **Simulador**: ponés un monto y ves cuánto paga en cada plan, sin guardar nada.
   Si cierran, lo convertís en préstamo de un toque, o le mandás las opciones por
   WhatsApp.
@@ -35,7 +38,7 @@ todo y, si querés, les mandás el estado de cuenta por WhatsApp.
   **y cada uno tiene su versión para cada modalidad**, porque lo que el cliente
   necesita saber no es lo mismo: en un préstamo con interés mensual el número que
   importa es cuánto devuelve, y en un plan, cuántas cuotas le quedan y de cuánto.
-  Son nueve textos, con etiquetas como `{cliente}`, `{cuota}` o `{saldo}` que se
+  Son doce textos, con etiquetas como `{cliente}`, `{cuota}` o `{saldo}` que se
   reemplazan solas y vista previa en vivo.
 - **Comprobante de pago**: cada vez que registrás un cobro podés mandarle el recibo,
   con el saldo, cuántas cuotas le quedan y cuándo vence la próxima.
@@ -72,6 +75,7 @@ contenido completo de cada archivo de `supabase/migrations/`:
 3. `0003_planes_semanales.sql` — habilita la modalidad de cuotas semanales.
 4. `0004_comprobante.sql` — agrega la plantilla del comprobante de pago.
 5. `0005_plantillas_por_modalidad.sql` — un texto propio por modalidad.
+6. `0006_plan_personalizado.sql` — la modalidad personalizada y su frecuencia.
 
 Si agregás más migraciones a futuro, corrélas siempre en orden numérico.
 
@@ -128,6 +132,9 @@ Cuando publicás un cambio en Vercel, la app se actualiza sola.
   Pasa a deber 260.000 y el mes siguiente el 30% se calcula sobre 260.000
   (o sea 78.000). Interés compuesto.
 - **En cuotas**: el total queda fijo desde el día uno y cada cuota lo va bajando.
+- **Plan personalizado**: interés simple sobre el plazo (`capital × tasa × meses`),
+  repartido en cuotas según cada cuánto cobre. La cuota se redondea al cien y el
+  total sale de ella, así el número que le decís al cliente es exacto.
 - **Planes semanales**: la cuota sale de la lista de precios de `lib/planes.ts`.
   Los plazos de 8, 10 y 12 semanas van a 11,5% semanal parejo; los de 16 y 20 son
   montos pactados, con descuento por volumen para los préstamos grandes.

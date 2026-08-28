@@ -4,7 +4,9 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { calcularPlan, capitalizar, pesos, resumen, tasaImplicita } from "@/lib/calc";
-import { hoyISO, sumarMeses, sumarSemanas } from "@/lib/fechas";
+import { hoyISO, sumarMeses } from "@/lib/fechas";
+import { datosFrecuencia, frecuenciaDe, siguienteVencimiento } from "@/lib/periodos";
+import type { Frecuencia } from "@/lib/types";
 import { parsearPesos, parsearTasa } from "@/lib/parseo";
 import type { Modalidad, TipoPago } from "@/lib/types";
 
@@ -98,6 +100,9 @@ export async function crearPrestamo(
   const totalManual = parsearPesos(String(datos.get("total_manual")));
   const cuotaManual = parsearPesos(String(datos.get("cuota_manual")));
 
+  const frecuencia = (String(datos.get("frecuencia") ?? "mensual") ||
+    "mensual") as Frecuencia;
+
   const plan = calcularPlan({
     modalidad,
     capital,
@@ -105,17 +110,28 @@ export async function crearPrestamo(
     cuotas,
     totalManual,
     cuotaManual,
+    frecuencia,
+    plazoMeses,
   });
+
+  // En un plan personalizado la cantidad de cuotas sale del plazo y de cada
+  // cuánto paga: 3 meses cobrando por semana son 12 cuotas.
+  const cantidadCuotas =
+    modalidad === "personalizado"
+      ? Math.max(1, Math.round(Math.max(1, plazoMeses) * datosFrecuencia(frecuencia).porMes))
+      : cuotas;
 
   // Todo lo que no sea 'mensual' es un plan cerrado con cuotas.
   const esPlan = modalidad !== "mensual";
 
   // El primer vencimiento cae a la semana en los planes semanales, al mes en
   // los mensuales, y según el plazo elegido en la modalidad de interés mensual.
-  const fechaVencimiento =
-    modalidad === "semanal"
-      ? sumarSemanas(fechaInicio, 1)
-      : sumarMeses(fechaInicio, modalidad === "cuotas" ? 1 : Math.max(1, plazoMeses));
+  const fechaVencimiento = esPlan
+    ? siguienteVencimiento(
+        fechaInicio,
+        modalidad === "semanal" ? "semanal" : modalidad === "cuotas" ? "mensual" : frecuencia
+      )
+    : sumarMeses(fechaInicio, Math.max(1, plazoMeses));
 
   // Un plan semanal no tiene tasa escrita: se guarda la que quedó implícita,
   // para poder mostrarla después.
@@ -134,7 +150,14 @@ export async function crearPrestamo(
       tasa_mensual: tasaGuardada,
       fecha_inicio: fechaInicio,
       fecha_vencimiento: fechaVencimiento,
-      cuotas_total: esPlan ? cuotas : null,
+      cuotas_total: esPlan ? cantidadCuotas : null,
+      frecuencia: esPlan
+        ? modalidad === "semanal"
+          ? "semanal"
+          : modalidad === "cuotas"
+            ? "mensual"
+            : frecuencia
+        : null,
       cuota_monto: plan.cuotaMonto,
       total_a_devolver: esPlan ? plan.total : null,
       observacion: String(datos.get("observacion") ?? "").trim() || null,
@@ -237,10 +260,10 @@ export async function registrarPago(
       cambios.estado = "pagado";
       cambios.capital_actual = 0;
     } else {
-      cambios.fecha_vencimiento =
-        prestamo.modalidad === "semanal"
-          ? sumarSemanas(prestamo.fecha_vencimiento, 1)
-          : sumarMeses(prestamo.fecha_vencimiento, 1);
+      cambios.fecha_vencimiento = siguienteVencimiento(
+        prestamo.fecha_vencimiento,
+        frecuenciaDe(prestamo)
+      );
     }
   } else if (tipo === "total") {
     cambios.estado = "pagado";

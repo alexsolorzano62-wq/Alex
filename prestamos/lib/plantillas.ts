@@ -2,6 +2,7 @@ import { formatFecha } from "@/lib/fechas";
 import { descripcionPlan, plata, porcentaje, tasaMostrada, textoVencimiento } from "@/lib/format";
 import type { ResumenPrestamo } from "@/lib/calc";
 import type { Modalidad, Pago, Prestamo } from "@/lib/types";
+import { frecuenciaDe, textoCuotas } from "@/lib/periodos";
 
 /** Los valores con los que se completa una plantilla. */
 export type Variables = Record<string, string>;
@@ -58,6 +59,7 @@ export const MODALIDADES: { modalidad: Modalidad; titulo: string }[] = [
   { modalidad: "semanal", titulo: "Plan semanal" },
   { modalidad: "mensual", titulo: "Interés mensual" },
   { modalidad: "cuotas", titulo: "Cuotas mensuales" },
+  { modalidad: "personalizado", titulo: "Plan personalizado" },
 ];
 
 /**
@@ -87,6 +89,12 @@ Prestamo confirmado ✅:
 Importe: {prestado}
 *A devolver: {cuotas} cuotas de {cuota}*
 Primer vencimiento: {vence}`,
+    personalizado: `Hola {cliente} 👋
+Prestamo confirmado ✅:
+
+Importe: {prestado}
+*A devolver: {cuotas} cuotas de {cuota}*
+Primer vencimiento: {vence}`,
   },
 
   estado_cuenta: {
@@ -103,6 +111,12 @@ Monto: {prestado}
 *Te quedan {cuotas_restantes} cuotas de {cuota}*
 Próximo vencimiento: {vence} ({dias})`,
     cuotas: `Hola {cliente} 👋
+Tu estado de cuenta al {fecha}:
+
+Monto: {prestado}
+*Te quedan {cuotas_restantes} cuotas de {cuota}*
+Próximo vencimiento: {vence} ({dias})`,
+    personalizado: `Hola {cliente} 👋
 Tu estado de cuenta al {fecha}:
 
 Monto: {prestado}
@@ -127,6 +141,14 @@ Te quedan {cuotas_restantes} cuotas de {cuota}
 *Saldo: {saldo}*
 Próximo vencimiento: {vence}`,
     cuotas: `Hola {cliente} 👋
+Recibimos tu pago ✅
+
+Importe abonado: {pago}
+Fecha: {fecha}
+Te quedan {cuotas_restantes} cuotas de {cuota}
+*Saldo: {saldo}*
+Próximo vencimiento: {vence}`,
+    personalizado: `Hola {cliente} 👋
 Recibimos tu pago ✅
 
 Importe abonado: {pago}
@@ -194,7 +216,7 @@ export function variablesDePrestamo(
   // Cómo paga, sin decir la tasa ni el total: eso es información tuya.
   const formaPago = esMensual
     ? `${plata(datos.interes)} por mes`
-    : `${datos.cuotasTotal} cuotas ${prestamo.modalidad === "semanal" ? "semanales" : "mensuales"} de ${plata(datos.cuotaMonto ?? 0)}`;
+    : `${textoCuotas(datos.cuotasTotal ?? 0, frecuenciaDe(prestamo))} de ${plata(datos.cuotaMonto ?? 0)}`;
 
   return {
     cliente: nombreCliente,
@@ -288,6 +310,27 @@ export const EJEMPLOS: Record<Modalidad, Variables> = {
     cuotas_pagadas: "1",
     inicio: "13/08/2026",
     fecha: "10/09/2026",
+    observacion: "",
+  },
+  personalizado: {
+    cliente: "Eva Madre Chueco",
+    forma_pago: "12 cuotas semanales de $31.700",
+    saldo: "$348.700",
+    cuotas_restantes: "11",
+    pago: "$31.700",
+    total: "$348.700",
+    vence: "01/09/2026",
+    dias: "faltan 7 días",
+    prestado: "$200.000",
+    capital: "$200.000",
+    interes: "$180.400",
+    tasa: "30%",
+    plan: "12 cuotas semanales de $31.700",
+    cuota: "$31.700",
+    cuotas: "12",
+    cuotas_pagadas: "1",
+    inicio: "18/08/2026",
+    fecha: "25/08/2026",
     observacion: "",
   },
 };

@@ -9,7 +9,8 @@ import { formatFecha, hoyISO, sumarMeses, sumarSemanas } from "@/lib/fechas";
 import { parsearPesos, parsearTasa } from "@/lib/parseo";
 import { plata, porcentaje } from "@/lib/format";
 import { cuotaSemanal, SEMANAS_CON_PLAN } from "@/lib/planes";
-import type { Cliente, Modalidad } from "@/lib/types";
+import type { Cliente, Frecuencia, Modalidad } from "@/lib/types";
+import { datosFrecuencia, FRECUENCIAS, siguienteVencimiento, textoCuotas } from "@/lib/periodos";
 
 const MODALIDADES: { valor: Modalidad; titulo: string; detalle: string }[] = [
   {
@@ -26,6 +27,11 @@ const MODALIDADES: { valor: Modalidad; titulo: string; detalle: string }[] = [
     valor: "cuotas",
     titulo: "Cuotas mensuales",
     detalle: "Plan cerrado en N cuotas, con el total que pactes",
+  },
+  {
+    valor: "personalizado",
+    titulo: "Plan personalizado",
+    detalle: "Ponés la tasa por mes y cada cuánto paga",
   },
 ];
 
@@ -52,6 +58,7 @@ export default function FormularioPrestamo({
   const [semanas, setSemanas] = useState(inicial?.semanas ?? String(SEMANAS_CON_PLAN[0]));
   const [totalManual, setTotalManual] = useState("");
   const [cuotaManual, setCuotaManual] = useState("");
+  const [frecuencia, setFrecuencia] = useState<Frecuencia>("semanal");
 
   const capitalNum = parsearPesos(capital) ?? 0;
   const tasaNum = parsearTasa(tasa) ?? 0;
@@ -61,7 +68,20 @@ export default function FormularioPrestamo({
   const cuotaManualNum = parsearPesos(cuotaManual);
 
   const esSemanal = modalidad === "semanal";
-  const cantidad = esSemanal ? semanasNum : cuotasNum;
+  const esPersonalizado = modalidad === "personalizado";
+  const mesesNum = Math.max(1, Number(plazoMeses) || 1);
+
+  // En un plan personalizado la cantidad de cuotas sale del plazo y de cada
+  // cuánto paga: 3 meses cobrando por semana son 12 cuotas.
+  const cuotasDelPlan = Math.max(
+    1,
+    Math.round(mesesNum * datosFrecuencia(frecuencia).porMes)
+  );
+  const cantidad = esSemanal
+    ? semanasNum
+    : esPersonalizado
+      ? cuotasDelPlan
+      : cuotasNum;
 
   // Lo mismo que va a quedar guardado, calculado mientras escribís.
   const plan = calcularPlan({
@@ -71,16 +91,17 @@ export default function FormularioPrestamo({
     cuotas: cantidad,
     totalManual: totalManualNum,
     cuotaManual: cuotaManualNum,
+    frecuencia,
+    plazoMeses: mesesNum,
   });
 
   const deLista = esSemanal ? cuotaSemanal(capitalNum, semanasNum) : null;
 
   const vencimiento = esSemanal
     ? sumarSemanas(fechaInicio || hoyISO(), 1)
-    : sumarMeses(
-        fechaInicio || hoyISO(),
-        modalidad === "cuotas" ? 1 : Math.max(1, Number(plazoMeses) || 1)
-      );
+    : esPersonalizado
+      ? siguienteVencimiento(fechaInicio || hoyISO(), frecuencia)
+      : sumarMeses(fechaInicio || hoyISO(), modalidad === "cuotas" ? 1 : mesesNum);
 
   const tasaReal =
     modalidad === "mensual"
@@ -109,6 +130,7 @@ export default function FormularioPrestamo({
     <form action={accion} className="space-y-4">
       <input type="hidden" name="modalidad" value={modalidad} />
       {esSemanal && <input type="hidden" name="cuotas" value={semanas} />}
+      {esPersonalizado && <input type="hidden" name="frecuencia" value={frecuencia} />}
 
       <CampoTexto etiqueta="Cliente">
         <select name="cliente_id" required className={claseInput} defaultValue="">
@@ -164,7 +186,7 @@ export default function FormularioPrestamo({
       <div className={esSemanal ? "" : "grid grid-cols-2 gap-3"}>
         {!esSemanal && (
           <CampoTexto
-            etiqueta={modalidad === "mensual" ? "Tasa mensual %" : "Tasa del plan %"}
+            etiqueta={modalidad === "cuotas" ? "Tasa del plan %" : "Tasa mensual %"}
           >
             <input
               name="tasa"
@@ -188,6 +210,61 @@ export default function FormularioPrestamo({
           />
         </CampoTexto>
       </div>
+
+      {esPersonalizado && (
+        <>
+          <div className="grid grid-cols-2 gap-3">
+            <CampoTexto etiqueta="Paga cada">
+              <select
+                value={frecuencia}
+                onChange={(e) => {
+                  setFrecuencia(e.target.value as Frecuencia);
+                  setCuotaManual("");
+                }}
+                className={claseInput}
+              >
+                {FRECUENCIAS.map((opcion) => (
+                  <option key={opcion.valor} value={opcion.valor}>
+                    {opcion.titulo}
+                  </option>
+                ))}
+              </select>
+            </CampoTexto>
+
+            <CampoTexto etiqueta="Durante">
+              <select
+                name="plazo_meses"
+                value={plazoMeses}
+                onChange={(e) => {
+                  setPlazoMeses(e.target.value);
+                  setCuotaManual("");
+                }}
+                className={claseInput}
+              >
+                {[1, 2, 3, 4, 5, 6, 8, 9, 10, 12].map((meses) => (
+                  <option key={meses} value={meses}>
+                    {meses === 1 ? "1 mes" : `${meses} meses`}
+                  </option>
+                ))}
+              </select>
+            </CampoTexto>
+          </div>
+
+          <CampoTexto
+            etiqueta="Cuota"
+            ayuda={`Son ${textoCuotas(cuotasDelPlan, frecuencia)}. La calculo sola, pero podés pisarla.`}
+          >
+            <input
+              name="cuota_manual"
+              value={cuotaManual}
+              onChange={(e) => setCuotaManual(e.target.value)}
+              inputMode="decimal"
+              placeholder={plan.cuotaMonto ? String(plan.cuotaMonto) : "0"}
+              className={claseInput}
+            />
+          </CampoTexto>
+        </>
+      )}
 
       {modalidad === "mensual" && (
         <CampoTexto etiqueta="Vence en" ayuda="Después lo vas renovando mes a mes.">
@@ -334,8 +411,12 @@ export default function FormularioPrestamo({
               <div className="flex justify-between">
                 <dt className="text-slate-600">Cuota</dt>
                 <dd className="tabular font-medium">
-                  {cantidad} {esSemanal ? "semanas" : "cuotas"} ×{" "}
-                  {plata(plan.cuotaMonto)}
+                  {esSemanal
+                    ? `${cantidad} semanas`
+                    : esPersonalizado
+                      ? textoCuotas(cantidad, frecuencia)
+                      : `${cantidad} cuotas`}{" "}
+                  × {plata(plan.cuotaMonto)}
                 </dd>
               </div>
             )}

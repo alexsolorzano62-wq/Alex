@@ -190,7 +190,7 @@ export default function FormularioPlantillas({
         disabled={enviando}
         className="w-full rounded-xl bg-brand-600 px-5 py-3 text-base font-semibold text-white active:bg-brand-700 disabled:opacity-60"
       >
-        {enviando ? "Guardando..." : "Guardar los nueve mensajes"}
+        {enviando ? "Guardando..." : "Guardar todos los mensajes"}
       </button>
     </form>
   );

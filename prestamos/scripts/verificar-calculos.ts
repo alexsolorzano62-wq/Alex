@@ -4,7 +4,8 @@ import { normalizarTelefono, mensajeDe } from "@/lib/whatsapp";
 import { aplicarPlantilla, plantillaDe, variablesDePrestamo, EJEMPLOS, MODALIDADES, PLANTILLAS_POR_DEFECTO, TIPOS } from "@/lib/plantillas";
 import { parsearPesos, parsearTasa } from "@/lib/parseo";
 import { cuotaSemanal, planesPara, PLANES_SEMANALES, SEMANAS_CON_PLAN } from "@/lib/planes";
-import { sumarSemanas } from "@/lib/fechas";
+import { sumarSemanas, sumarDias } from "@/lib/fechas";
+import { siguienteVencimiento, datosFrecuencia, textoCuotas } from "@/lib/periodos";
 import type { Prestamo } from "@/lib/types";
 
 let fallos = 0;
@@ -269,6 +270,56 @@ chequear(
   mensajeDe("estado_cuenta", base, resumen(base, [], "2026-08-18"), "Miriam", "2026-08-18").includes("A devolver: $260.000"),
   true
 );
+
+console.log("--- Plan personalizado: capital + tasa por mes + cada cuanto paga ---");
+// $200.000 al 30% mensual: el interes es simple sobre el plazo.
+chequear(
+  "3 meses cobrando por semana = 12 cuotas",
+  calcularPlan({ modalidad: "personalizado", capital: 200000, tasa: 30, frecuencia: "semanal", plazoMeses: 3 }),
+  { interes: 180400, total: 380400, cuotaMonto: 31700 }
+);
+chequear(
+  "3 meses por quincena = 6 cuotas",
+  calcularPlan({ modalidad: "personalizado", capital: 200000, tasa: 30, frecuencia: "quincenal", plazoMeses: 3 }),
+  { interes: 179800, total: 379800, cuotaMonto: 63300 }
+);
+chequear(
+  "3 meses por mes = 3 cuotas",
+  calcularPlan({ modalidad: "personalizado", capital: 200000, tasa: 30, frecuencia: "mensual", plazoMeses: 3 }),
+  { interes: 180100, total: 380100, cuotaMonto: 126700 }
+);
+chequear(
+  "1 mes por mes es una sola cuota igual al total",
+  calcularPlan({ modalidad: "personalizado", capital: 200000, tasa: 30, frecuencia: "mensual", plazoMeses: 1 }),
+  { interes: 60000, total: 260000, cuotaMonto: 260000 }
+);
+chequear(
+  "una cuota escrita a mano manda",
+  calcularPlan({ modalidad: "personalizado", capital: 200000, tasa: 30, frecuencia: "semanal", plazoMeses: 3, cuotaManual: 32000 }).total,
+  384000
+);
+chequear("la cuota siempre cae en un multiplo de cien", [17, 23, 31, 47].every((t) => calcularPlan({ modalidad: "personalizado", capital: 137000, tasa: t, frecuencia: "semanal", plazoMeses: 2 }).cuotaMonto! % 100 === 0), true);
+chequear(
+  "cobrar mas seguido no cambia el total pactado, solo lo parte",
+  [
+    calcularPlan({ modalidad: "personalizado", capital: 100000, tasa: 20, frecuencia: "semanal", plazoMeses: 2 }).total,
+    calcularPlan({ modalidad: "personalizado", capital: 100000, tasa: 20, frecuencia: "quincenal", plazoMeses: 2 }).total,
+    calcularPlan({ modalidad: "personalizado", capital: 100000, tasa: 20, frecuencia: "mensual", plazoMeses: 2 }).total,
+  ],
+  [140000, 140000, 140000]
+);
+
+console.log("--- Vencimientos segun cada cuanto paga ---");
+chequear("semanal: +7 dias", siguienteVencimiento("2026-08-18", "semanal"), "2026-08-25");
+chequear("quincenal: +15 dias", siguienteVencimiento("2026-08-18", "quincenal"), "2026-09-02");
+chequear("mensual: +1 mes", siguienteVencimiento("2026-08-18", "mensual"), "2026-09-18");
+chequear("quincenal cruzando fin de mes", siguienteVencimiento("2026-08-25", "quincenal"), "2026-09-09");
+chequear("mensual desde un 31 cae en el ultimo dia", siguienteVencimiento("2026-01-31", "mensual"), "2026-02-28");
+chequear("sumarDias cruza el anio", sumarDias("2026-12-28", 10), "2027-01-07");
+chequear("plural", textoCuotas(4, "semanal"), "4 cuotas semanales");
+chequear("singular", textoCuotas(1, "mensual"), "1 cuota mensual");
+chequear("singular quincenal", textoCuotas(1, "quincenal"), "1 cuota quincenal");
+chequear("cuotas por mes de cada frecuencia", [datosFrecuencia("semanal").porMes, datosFrecuencia("quincenal").porMes, datosFrecuencia("mensual").porMes], [4, 2, 1]);
 
 console.log(fallos === 0 ? "\nTODO OK" : `\n${fallos} FALLAS`);
 process.exit(fallos === 0 ? 0 : 1);

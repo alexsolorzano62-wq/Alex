@@ -1,0 +1,35 @@
+{
+  "name": "administracion-alquileres",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint .",
+    "test": "node --experimental-strip-types --import ./scripts/registrar-alias.mjs scripts/verificar-calculos.ts && node scripts/verificar-sql.mjs"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.120.0",
+    "@supabase/ssr": "^0.5.2",
+    "@supabase/supabase-js": "^2.45.4",
+    "next": "16.3.0",
+    "pdf-lib": "^1.17.1",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "server-only": "^0.0.1",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.9",
+    "@types/react": "^19.2.4",
+    "@types/react-dom": "^19.2.4",
+    "autoprefixer": "^10.4.19",
+    "eslint": "^9.17.0",
+    "eslint-config-next": "16.3.0",
+    "libpg-query": "^17.7.4",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^3.4.4",
+    "typescript": "^5.5.3"
+  }
+}

@@ -1,0 +1,85 @@
+# Copia diaria de la base de administración de alquileres.
+#
+# Por qué acá y no dentro de Supabase: si el problema es Supabase —el proyecto
+# se pausa, hay un incidente, se borra la cuenta— un respaldo guardado adentro
+# de Supabase no sirve de nada. Esta copia vive en GitHub, que es otro lado.
+#
+# Qué NO cubre: los archivos subidos (contratos escaneados, comprobantes). Eso
+# vive en Supabase Storage y se sincroniza aparte.
+#
+# Hace falta un secret del repositorio llamado SUPABASE_DB_URL, con la cadena
+# de conexión que figura en Supabase → Project Settings → Database.
+
+name: Respaldo de la base
+
+on:
+  schedule:
+    # Todos los días a las 06:00 UTC, que son las 3 de la mañana en Argentina.
+    - cron: "0 6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: respaldo-administracion
+  cancel-in-progress: false
+
+jobs:
+  respaldar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Traer la rama de respaldos
+        uses: actions/checkout@v4
+        with:
+          ref: respaldos
+          # Si la rama todavía no existe, el checkout falla y el paso siguiente
+          # la crea desde cero.
+          fetch-depth: 1
+        continue-on-error: true
+
+      - name: Preparar la carpeta
+        run: |
+          if [ ! -d .git ]; then
+            git init -b respaldos
+            git remote add origin "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git"
+          fi
+          mkdir -p respaldos
+
+      - name: Volcar la base
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          if [ -z "$SUPABASE_DB_URL" ]; then
+            echo "Falta el secret SUPABASE_DB_URL. Cargalo en Settings → Secrets."
+            exit 1
+          fi
+
+          FECHA=$(date -u +%Y-%m-%d)
+
+          # pg_dump corre en un contenedor con la misma versión mayor que el
+          # servidor, para que no se queje por diferencia de versiones.
+          docker run --rm postgres:17-alpine \
+            pg_dump "$SUPABASE_DB_URL" \
+              --schema=public \
+              --no-owner \
+              --no-privileges \
+              --format=plain \
+            | gzip -9 > "respaldos/administracion-${FECHA}.sql.gz"
+
+          TAMANO=$(du -h "respaldos/administracion-${FECHA}.sql.gz" | cut -f1)
+          echo "Respaldo del ${FECHA}: ${TAMANO}"
+
+      - name: Guardar la copia
+        run: |
+          git config user.name "Respaldo automático"
+          git config user.email "actions@github.com"
+          git add respaldos/
+
+          if git diff --staged --quiet; then
+            echo "Sin cambios: la base está igual que ayer."
+            exit 0
+          fi
+
+          git commit -m "Respaldo de la base — $(date -u +%Y-%m-%d)"
+          git push origin respaldos

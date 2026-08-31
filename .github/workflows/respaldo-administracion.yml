@@ -44,6 +44,15 @@ jobs:
             git init -b respaldos
             git remote add origin "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git"
           fi
+
+          # Cuando la rama todavía no existe, el checkout falla recién al
+          # buscarla: el repositorio ya quedó inicializado y HEAD apuntando a la
+          # rama por defecto. Si lo dejamos así, el commit se hace en "master" y
+          # el push termina en "src refspec respaldos does not match any".
+          if [ "$(git symbolic-ref --short HEAD)" != "respaldos" ]; then
+            git checkout -B respaldos
+          fi
+
           mkdir -p respaldos
 
       - name: Volcar la base

@@ -10,12 +10,14 @@ export function FormularioLogin() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [detalle, setDetalle] = useState<string | null>(null);
   const [entrando, setEntrando] = useState(false);
 
   async function entrar(evento: React.FormEvent) {
     evento.preventDefault();
     setEntrando(true);
     setError(null);
+    setDetalle(null);
 
     const { error } = await createClient().auth.signInWithPassword({
       email: email.trim(),
@@ -24,6 +26,12 @@ export function FormularioLogin() {
 
     if (error) {
       setError("Email o contraseña incorrectos.");
+      // El mensaje de arriba tapa por igual la clave mal escrita, el correo sin
+      // confirmar y el corte por intentos repetidos. Mostramos abajo lo que
+      // devuelve Supabase para no tener que adivinar cuál de los tres fue.
+      setDetalle(
+        [error.status, error.code, error.message].filter(Boolean).join(" · ")
+      );
       setEntrando(false);
       return;
     }
@@ -61,7 +69,14 @@ export function FormularioLogin() {
       </div>
 
       {error && (
-        <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
+        <div className="rounded-lg bg-red-50 px-3 py-2">
+          <p className="text-sm text-red-700">{error}</p>
+          {detalle && (
+            <p className="mt-1 break-words font-mono text-[11px] text-red-500">
+              {detalle}
+            </p>
+          )}
+        </div>
       )}
 
       <button type="submit" className="boton w-full" disabled={entrando}>

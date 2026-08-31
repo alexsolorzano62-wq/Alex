@@ -9,7 +9,32 @@ const MANTENIMIENTO_PERMITIDOS = (process.env.MAINTENANCE_ALLOW_EMAILS ?? "")
   .map((email) => email.trim().toLowerCase())
   .filter(Boolean);
 
+// Sin estas dos, `createServerClient` tira una excepción y, como esto corre
+// antes de cada página, el sitio entero responde 500 sin decir por qué. Mejor
+// cortar acá con un cartel que nombre la variable que falta.
+function faltanVariables(): string[] {
+  return (["NEXT_PUBLIC_SUPABASE_URL", "NEXT_PUBLIC_SUPABASE_ANON_KEY"] as const)
+    .filter((nombre) => !process.env[nombre]);
+}
+
+function avisoDeConfiguracion(faltantes: string[]) {
+  return new NextResponse(
+    `<!doctype html><meta charset="utf-8">
+     <title>Falta configurar</title>
+     <div style="font:16px/1.5 system-ui;max-width:34rem;margin:15vh auto;padding:0 1.5rem">
+       <h1 style="font-size:1.25rem">Falta configurar la conexión</h1>
+       <p>La aplicación se construyó sin estas variables de entorno:</p>
+       <ul><li><code>${faltantes.join("</code></li><li><code>")}</code></li></ul>
+       <p>Cargalas en el proyecto de Vercel y volvé a deployar.</p>
+     </div>`,
+    { status: 503, headers: { "content-type": "text/html; charset=utf-8" } }
+  );
+}
+
 export async function proxy(request: NextRequest) {
+  const faltantes = faltanVariables();
+  if (faltantes.length > 0) return avisoDeConfiguracion(faltantes);
+
   let response = NextResponse.next({ request });
 
   const supabase = createServerClient(
@@ -33,7 +58,12 @@ export async function proxy(request: NextRequest) {
     }
   );
 
-  const { data: { user } } = await supabase.auth.getUser();
+  // Si Supabase no contesta, tratamos la sesión como ausente: el guardia manda
+  // al login en vez de tumbar la request entera.
+  const user = await supabase.auth
+    .getUser()
+    .then(({ data }) => data.user)
+    .catch(() => null);
 
   const ruta = request.nextUrl.pathname;
   const esPublica = RUTAS_PUBLICAS.some((p) => ruta.startsWith(p));

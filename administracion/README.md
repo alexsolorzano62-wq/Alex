@@ -192,6 +192,16 @@ cuando termines de probar.
 Entrá a **Más → Índices** y tocá *Actualizar ICL*. Baja la serie diaria del
 BCRA desde 2020. Sin esto, los aumentos por índice no se pueden calcular.
 
+### 7. Dejar los índices al día solos
+
+`.github/workflows/indices-diarios.yml` llama todas las mañanas al mismo
+endpoint que usa el botón, así nadie tiene que acordarse. Como el proceso no
+tiene sesión, se identifica con la variable `CRON_SECRET`: inventá una tira
+larga al azar, cargala en las variables del hosting y como secret del
+repositorio, junto con `URL_APP` (la dirección de la app, sin barra final).
+
+Con `CRON_SECRET` vacía la puerta queda cerrada y solo funciona el botón.
+
 ## Hosting
 
 El plan gratuito de Vercel **prohíbe el uso comercial**, y administrar

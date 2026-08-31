@@ -1,3 +1,4 @@
+import { timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getPerfil } from "@/lib/supabase/perfil";
@@ -32,13 +33,32 @@ const FUENTES: Record<string, (desde: string) => Promise<{ fecha: string; valor:
   },
 };
 
+// La descarga la dispara una persona desde la pantalla de Índices, o el
+// proceso que corre todas las noches. El proceso no tiene sesión, así que se
+// identifica con una clave. La comparación es de tiempo constante para que no
+// se pueda adivinar la clave midiendo cuánto tarda en responder.
+function esElProcesoNocturno(request: Request): boolean {
+  const esperada = process.env.CRON_SECRET;
+  if (!esperada) return false;
+
+  const recibida = request.headers.get("x-clave-cron");
+  if (!recibida) return false;
+
+  const a = Buffer.from(recibida);
+  const b = Buffer.from(esperada);
+  return a.length === b.length && timingSafeEqual(a, b);
+}
+
 export async function POST(request: Request) {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "Sesión vencida." }, { status: 401 });
 
-  const perfil = await getPerfil(supabase, user.id);
-  if (!perfil) return NextResponse.json({ error: "Sin acceso." }, { status: 403 });
+  if (!esElProcesoNocturno(request)) {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return NextResponse.json({ error: "Sesión vencida." }, { status: 401 });
+
+    const perfil = await getPerfil(supabase, user.id);
+    if (!perfil) return NextResponse.json({ error: "Sin acceso." }, { status: 403 });
+  }
 
   const { searchParams } = new URL(request.url);
   const indice = (searchParams.get("indice") ?? "ICL").toUpperCase();

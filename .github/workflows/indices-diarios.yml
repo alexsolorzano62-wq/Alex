@@ -1,0 +1,69 @@
+# Baja las series de índices sin que nadie tenga que apretar un botón.
+#
+# El ICL lo publica el BCRA todos los días hábiles y el IPC el INDEC una vez
+# por mes. La descarga es incremental —pide solo lo que falta desde el último
+# día guardado—, así que correrla a diario no duplica nada: los días sin
+# novedades responden "Ya estaba al día".
+#
+# Por qué a diario y no una vez por mes: si un día falla (la API del BCRA no
+# responde, la app está reconstruyéndose), al otro día se recupera solo. Con
+# una corrida mensual, una falla te deja sin índices hasta el mes siguiente.
+#
+# Hacen falta dos secrets del repositorio:
+#   URL_APP     la dirección de la app, sin barra final
+#   CRON_SECRET la misma clave que está cargada en las variables de Vercel
+
+name: Índices al día
+
+on:
+  schedule:
+    # Todos los días a las 09:00 UTC, 6 de la mañana en Argentina: el BCRA ya
+    # publicó el valor del día hábil anterior.
+    - cron: "0 9 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: indices-diarios
+  cancel-in-progress: false
+
+jobs:
+  bajar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Bajar ICL e IPC
+        env:
+          URL_APP: ${{ secrets.URL_APP }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          set -u
+          if [ -z "${URL_APP}" ] || [ -z "${CRON_SECRET}" ]; then
+            echo "Faltan los secrets URL_APP o CRON_SECRET."
+            exit 1
+          fi
+
+          fallo=0
+          for indice in ICL IPC; do
+            echo "── ${indice} ─────────────────────────────"
+
+            # --max-time corta un pedido colgado; el reintento cubre el caso de
+            # que la app esté despertando de un deploy.
+            for intento in 1 2 3; do
+              cuerpo=$(mktemp)
+              codigo=$(curl -s -o "${cuerpo}" -w "%{http_code}" \
+                --max-time 90 -X POST \
+                -H "x-clave-cron: ${CRON_SECRET}" \
+                "${URL_APP}/api/indices/actualizar?indice=${indice}") || codigo="000"
+
+              if [ "${codigo}" = "200" ]; then
+                cat "${cuerpo}"; echo
+                break
+              fi
+
+              echo "intento ${intento}: HTTP ${codigo}"
+              cat "${cuerpo}"; echo
+              if [ "${intento}" = "3" ]; then fallo=1; fi
+              sleep 20
+            done
+          done
+
+          exit "${fallo}"

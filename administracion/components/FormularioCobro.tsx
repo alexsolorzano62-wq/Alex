@@ -17,8 +17,10 @@ type GastoPendiente = {
 
 type Extra = { id: number; tipo: string; descripcion: string; monto: string };
 
+type CargoFijo = { id: string; tipo: string; descripcion: string; monto: number };
+
 export function FormularioCobro({
-  accion, contrato, periodo, vencimiento, gastosPendientes, hoy,
+  accion, contrato, periodo, vencimiento, gastosPendientes, cargosFijos, saldoAnterior, hoy,
 }: {
   accion: (formData: FormData) => Promise<void>;
   contrato: {
@@ -34,11 +36,19 @@ export function FormularioCobro({
   periodo: string;
   vencimiento: string;
   gastosPendientes: GastoPendiente[];
+  // Lo que esta unidad paga todos los meses además del alquiler.
+  cargosFijos: CargoFijo[];
+  // Lo que quedó del mes pasado. Positivo: a favor. Negativo: debe.
+  saldoAnterior: number;
   hoy: string;
 }) {
   const [fechaPago, setFechaPago] = useState(hoy);
   const [alquiler, setAlquiler] = useState(String(contrato.monto_actual));
   const [gastosElegidos, setGastosElegidos] = useState<string[]>([]);
+  // Vienen tildados: si esta unidad paga el agua todos los meses, este mes
+  // también. Destildar es la excepción, y por eso es lo que cuesta un clic.
+  const [cargosElegidos, setCargosElegidos] = useState<string[]>(cargosFijos.map((c) => c.id));
+  const [pagado, setPagado] = useState("");
   const [extras, setExtras] = useState<Extra[]>([]);
   const [proximoId, setProximoId] = useState(1);
 
@@ -58,12 +68,23 @@ export function FormularioCobro({
   );
 
   const gastosSeleccionados = gastosPendientes.filter((g) => gastosElegidos.includes(g.id));
+  const cargosSeleccionados = cargosFijos.filter((c) => cargosElegidos.includes(c.id));
+
+  // El saldo entra con el signo dado vuelta: lo que quedó a favor descuenta,
+  // lo que quedó debiendo suma.
+  const renglonSaldo = -saldoAnterior;
 
   const total =
     (parsearMonto(alquiler) ?? 0) +
     punitorios.monto +
+    cargosSeleccionados.reduce((s, c) => s + Number(c.monto), 0) +
     gastosSeleccionados.reduce((s, g) => s + Number(g.monto), 0) +
-    extras.reduce((s, e) => s + (parsearMonto(e.monto) ?? 0), 0);
+    extras.reduce((s, e) => s + (parsearMonto(e.monto) ?? 0), 0) +
+    renglonSaldo;
+
+  // Si no se aclara cuánto entregó, se asume que pagó todo.
+  const entregado = parsearMonto(pagado) ?? total;
+  const saldoResultante = entregado - total;
 
   return (
     <form action={accion} className="space-y-6">
@@ -126,6 +147,75 @@ export function FormularioCobro({
             />
           </div>
         </div>
+
+        {cargosFijos.length > 0 && (
+          <div>
+            <div className="etiqueta">Cobros fijos de esta unidad</div>
+            <ul className="space-y-2">
+              {cargosFijos.map((c) => {
+                const elegido = cargosElegidos.includes(c.id);
+                return (
+                  <li key={c.id}>
+                    <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-stone-200 p-2.5 hover:bg-stone-50">
+                      <input
+                        type="checkbox"
+                        className="h-4 w-4 accent-marca-600"
+                        checked={elegido}
+                        onChange={(e) =>
+                          setCargosElegidos((previos) =>
+                            e.target.checked
+                              ? [...previos, c.id]
+                              : previos.filter((id) => id !== c.id)
+                          )
+                        }
+                      />
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-sm">{c.descripcion}</span>
+                        <span className="text-xs text-stone-500">{etiqueta(c.tipo)} · todos los meses</span>
+                      </span>
+                      <span className="tabular shrink-0 text-sm font-semibold">
+                        {formatearMoneda(Number(c.monto), contrato.moneda)}
+                      </span>
+                      {elegido && (
+                        <>
+                          <input type="hidden" name="concepto_tipo" value={c.tipo} />
+                          <input type="hidden" name="concepto_descripcion" value={c.descripcion} />
+                          <input type="hidden" name="concepto_monto" value={c.monto} />
+                        </>
+                      )}
+                    </label>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        )}
+
+        {saldoAnterior !== 0 && (
+          <div
+            className={`rounded-lg border p-3 ${
+              saldoAnterior > 0
+                ? "border-marca-200 bg-marca-50"
+                : "border-orange-200 bg-orange-50"
+            }`}
+          >
+            <input type="hidden" name="concepto_tipo" value="saldo_anterior" />
+            <input
+              type="hidden"
+              name="concepto_descripcion"
+              value={saldoAnterior > 0 ? "Saldo a favor del mes anterior" : "Deuda del mes anterior"}
+            />
+            <input type="hidden" name="concepto_monto" value={renglonSaldo} />
+            <div className="flex items-center justify-between gap-3 text-sm">
+              <span className={saldoAnterior > 0 ? "text-marca-800" : "text-orange-900"}>
+                {saldoAnterior > 0 ? "Saldo a favor del mes anterior" : "Deuda del mes anterior"}
+              </span>
+              <span className={`tabular font-semibold ${saldoAnterior > 0 ? "text-marca-800" : "text-orange-900"}`}>
+                {formatearMoneda(renglonSaldo, contrato.moneda)}
+              </span>
+            </div>
+          </div>
+        )}
 
         {punitorios.monto > 0 && (
           <div className="rounded-lg border border-amber-200 bg-amber-50 p-3">
@@ -257,11 +347,53 @@ export function FormularioCobro({
         </button>
       </section>
 
-      <section className="tarjeta flex items-center justify-between gap-4 border-marca-200 bg-marca-50">
-        <span className="font-titulo text-lg font-bold">Total del recibo</span>
-        <span className="tabular font-titulo text-2xl font-bold text-marca-700">
-          {formatearMoneda(total, contrato.moneda)}
-        </span>
+      <input type="hidden" name="saldo_anterior" value={saldoAnterior} />
+
+      <section className="tarjeta space-y-4 border-marca-200 bg-marca-50">
+        <div className="flex items-center justify-between gap-4">
+          <span className="font-titulo text-lg font-bold">Total del recibo</span>
+          <span className="tabular font-titulo text-2xl font-bold text-marca-700">
+            {formatearMoneda(total, contrato.moneda)}
+          </span>
+        </div>
+
+        <div>
+          <label className="etiqueta" htmlFor="pagado">Cuánto entregó</label>
+          <input
+            id="pagado"
+            name="pagado"
+            className="campo tabular text-right"
+            inputMode="decimal"
+            placeholder={String(total)}
+            value={pagado}
+            onChange={(e) => setPagado(e.target.value)}
+          />
+          <p className="mt-1 text-xs text-stone-500">
+            Dejalo vacío si pagó justo. Si pagó de más o de menos, escribí lo
+            que entregó y la diferencia se arrastra al mes que viene.
+          </p>
+        </div>
+
+        {saldoResultante !== 0 && (
+          <div
+            className={`rounded-lg border p-3 text-sm ${
+              saldoResultante > 0
+                ? "border-marca-300 bg-white text-marca-800"
+                : "border-orange-300 bg-white text-orange-900"
+            }`}
+          >
+            <div className="flex items-center justify-between gap-3">
+              <span>
+                {saldoResultante > 0
+                  ? "Le queda a favor para el mes que viene"
+                  : "Queda debiendo"}
+              </span>
+              <span className="tabular font-semibold">
+                {formatearMoneda(Math.abs(saldoResultante), contrato.moneda)}
+              </span>
+            </div>
+          </div>
+        )}
       </section>
 
       <div>

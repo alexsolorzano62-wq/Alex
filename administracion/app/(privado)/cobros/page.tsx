@@ -126,6 +126,14 @@ function Fila({ fila, periodo }: { fila: FilaPlanilla; periodo: string }) {
             {vence < hoyISO() ? "Cobrar · atrasado" : "Cobrar"}
           </Link>
         )}
+        {fila.contratoId && (
+          <Link
+            href={`/tareas/nueva?contrato=${fila.contratoId}&volver=/cobros?periodo=${periodo}`}
+            className="mt-1 block text-[11px] text-stone-500 hover:text-marca-700 hover:underline"
+          >
+            + Anotar tarea
+          </Link>
+        )}
       </td>
     </tr>
   );

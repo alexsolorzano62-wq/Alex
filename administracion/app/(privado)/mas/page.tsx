@@ -15,6 +15,8 @@ const SECCIONES = [
   { href: "/avisos", texto: "Avisos", detalle: "Mensajes de WhatsApp listos para enviar" },
   { href: "/ajustes", texto: "Aumentos", detalle: "Contratos que cumplieron período" },
   { href: "/indices", texto: "Índices", detalle: "Series de ICL, IPC y demás" },
+  { href: "/feriados", texto: "Feriados", detalle: "Cuándo se corre el vencimiento" },
+  { href: "/tareas", texto: "Tareas", detalle: "Lo que hay que hacer" },
 ];
 
 export default async function Mas() {

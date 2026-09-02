@@ -1,5 +1,7 @@
 import { redondear, formatearMoneda } from "@/lib/dinero";
-import { sumarMeses, diasEntre, vencimientoDelPeriodo, primerDiaDelMes, nombreDelPeriodo } from "@/lib/fechas";
+import { sumarMeses, diasEntre, vencimientoDelPeriodo, primerDiaDelMes, nombreDelPeriodo,
+         diaDeLaSemana, sumarDias, proximoDiaHabil, vencimientoHabilDelPeriodo } from "@/lib/fechas";
+import { armarRecibo } from "@/lib/recibo";
 import { calcularAjuste, coeficientePorIndice, coeficienteFijo, proximoAjuste, tocaAjustar } from "@/lib/ajustes";
 import { calcularPunitorios, diasDeAtraso } from "@/lib/punitorios";
 import { calcularTotales, honorariosDe, armarDetalle } from "@/lib/liquidacion";
@@ -304,6 +306,80 @@ const unaSola = avisoDeLiquidacion({
 });
 chequear("una unidad va en singular", unaSola.includes("1 unidad ·"), true);
 chequear("al que cobra por transferencia se le avisa la transferencia", unaSola.includes("hacemos la transferencia"), true);
+
+console.log("--- Vencimiento cuando cae domingo o feriado ---");
+// El 10 de mayo de 2026 es domingo; el 11 es lunes hábil.
+chequear("10/5/2026 es domingo", diaDeLaSemana("2026-05-10"), 0);
+chequear("un domingo corre al lunes", proximoDiaHabil("2026-05-10"), "2026-05-11");
+chequear("un sábado NO corre", proximoDiaHabil("2026-05-09"), "2026-05-09");
+
+const FERIADOS = new Set(["2026-07-09", "2026-05-25", "2026-05-01"]);
+chequear("un feriado corre al día siguiente", proximoDiaHabil("2026-07-09", FERIADOS), "2026-07-10");
+// El 24/5/2026 es domingo y el 25 es feriado: hay que saltar los dos.
+chequear("domingo pegado a feriado salta los dos", proximoDiaHabil("2026-05-24", FERIADOS), "2026-05-26");
+chequear("un día común queda donde está", proximoDiaHabil("2026-08-10", FERIADOS), "2026-08-10");
+chequear("el vencimiento del período se corre solo",
+  vencimientoHabilDelPeriodo("2026-05-01", 10, FERIADOS), "2026-05-11");
+chequear("sumar días cruza de mes", sumarDias("2026-01-31", 1), "2026-02-01");
+
+console.log("--- El recibo del mes ---");
+const CONTRATO = {
+  periodo: "2026-08-01",
+  alquiler: 500000,
+  vencimiento: "2026-08-10",
+  punitorio: { tipo: "porcentaje_diario" as const, valor: 1 },
+};
+
+const alDia = armarRecibo({ ...CONTRATO, fechaPago: "2026-08-10" });
+chequear("pagando el día del vencimiento no hay punitorios", alDia.punitorios.monto, 0);
+chequear("y el total es el alquiler solo", alDia.totalDebido, 500000);
+chequear("si pagó todo no queda saldo", alDia.saldoResultante, 0);
+
+// La regla que pidió Alex: el 11 es 1%, el 12 es 2%.
+const dia11 = armarRecibo({ ...CONTRATO, fechaPago: "2026-08-11" });
+chequear("el día 11 suma 1% del alquiler", dia11.punitorios.monto, 5000);
+chequear("y el total sube a 505.000", dia11.totalDebido, 505000);
+const dia12 = armarRecibo({ ...CONTRATO, fechaPago: "2026-08-12" });
+chequear("el día 12 suma 2%", dia12.punitorios.monto, 10000);
+
+// Con cobros fijos, el punitorio sigue saliendo del alquiler solo.
+const conAgua = armarRecibo({
+  ...CONTRATO,
+  fechaPago: "2026-08-11",
+  cargosFijos: [{ tipo: "agua", descripcion: "SAT", monto: 40000 }],
+});
+chequear("el agua entra en el total", conAgua.totalDebido, 545000);
+chequear("pero no genera punitorios", conAgua.punitorios.monto, 5000);
+chequear("el recibo muestra tres renglones", conAgua.renglones.length, 3);
+
+// Saldo a favor y deuda arrastrada.
+const conFavor = armarRecibo({ ...CONTRATO, fechaPago: "2026-08-10", saldoAnterior: 20000 });
+chequear("un saldo a favor descuenta", conFavor.totalDebido, 480000);
+chequear("y se ve como renglón negativo", conFavor.renglones.at(-1)?.monto, -20000);
+
+const conDeuda = armarRecibo({ ...CONTRATO, fechaPago: "2026-08-10", saldoAnterior: -30000 });
+chequear("una deuda anterior suma", conDeuda.totalDebido, 530000);
+chequear("y se ve como renglón positivo", conDeuda.renglones.at(-1)?.monto, 30000);
+
+// Pagos parciales y de más.
+const aCuenta = armarRecibo({ ...CONTRATO, fechaPago: "2026-08-10", pagado: 400000 });
+chequear("pagar de menos deja deuda", aCuenta.saldoResultante, -100000);
+const dePlus = armarRecibo({ ...CONTRATO, fechaPago: "2026-08-10", pagado: 520000 });
+chequear("pagar de más deja saldo a favor", dePlus.saldoResultante, 20000);
+
+// El caso completo del mes siguiente: arrastra la deuda y paga tarde.
+const siguiente = armarRecibo({
+  periodo: "2026-09-01",
+  alquiler: 500000,
+  vencimiento: "2026-09-10",
+  fechaPago: "2026-09-13",
+  punitorio: { tipo: "porcentaje_diario", valor: 1 },
+  cargosFijos: [{ tipo: "agua", descripcion: "SAT", monto: 40000 }],
+  saldoAnterior: -100000,
+  pagado: 600000,
+});
+chequear("alquiler + agua + 3% + deuda", siguiente.totalDebido, 655000);
+chequear("y queda debiendo la diferencia", siguiente.saldoResultante, -55000);
 
 console.log("--- Formato ---");
 chequear("dias entre vencimiento y pago", diasEntre("2026-08-10", "2026-09-09"), 30);

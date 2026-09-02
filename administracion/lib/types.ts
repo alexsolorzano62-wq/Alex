@@ -28,11 +28,26 @@ export const TIPOS_GASTO = [
 
 export const TIPOS_CONCEPTO = [
   "alquiler", "expensas", "abl", "luz", "gas", "agua",
-  "punitorios", "reparacion", "ajuste_manual", "otro",
+  "punitorios", "reparacion", "ajuste_manual", "saldo_anterior", "otro",
 ] as const;
+
+export type TipoConcepto = (typeof TIPOS_CONCEPTO)[number];
+
+// Cobros fijos que se repiten todos los meses además del alquiler.
+export const TIPOS_CARGO = ["expensas", "abl", "luz", "gas", "agua", "otro"] as const;
+export type TipoCargo = (typeof TIPOS_CARGO)[number];
+
+export const PRIORIDADES = ["alta", "normal", "baja"] as const;
+export type Prioridad = (typeof PRIORIDADES)[number];
 
 // Etiquetas legibles para las pantallas y los PDF.
 export const ETIQUETAS: Record<string, string> = {
+  saldo_anterior: "Saldo del mes anterior",
+  alta: "Alta",
+  normal: "Normal",
+  baja: "Baja",
+  pendiente: "Pendiente",
+  hecha: "Hecha",
   departamento: "Departamento",
   casa: "Casa",
   ph: "PH",

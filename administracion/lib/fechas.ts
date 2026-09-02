@@ -63,3 +63,48 @@ export function formatearFecha(fechaISO: string): string {
   const [anio, mes, dia] = partes(fechaISO);
   return `${String(dia).padStart(2, "0")}/${String(mes).padStart(2, "0")}/${anio}`;
 }
+
+// ---------------------------------------------------------- días inhábiles --
+// El alquiler vence el día pactado, salvo que ese día sea domingo o feriado
+// nacional: ahí el vencimiento se corre al día siguiente hábil, y recién desde
+// ese día empiezan a contar los punitorios. El sábado no corre nada: se pactó
+// así y es día de pago como cualquier otro.
+
+export function diaDeLaSemana(fechaISO: string): number {
+  const [anio, mes, dia] = partes(fechaISO);
+  return new Date(Date.UTC(anio, mes - 1, dia)).getUTCDay(); // 0 = domingo
+}
+
+export function sumarDias(fechaISO: string, dias: number): string {
+  const [anio, mes, dia] = partes(fechaISO);
+  const d = new Date(Date.UTC(anio, mes - 1, dia + dias));
+  return d.toISOString().slice(0, 10);
+}
+
+export function esInhabil(fechaISO: string, feriados: ReadonlySet<string>): boolean {
+  return diaDeLaSemana(fechaISO) === 0 || feriados.has(fechaISO);
+}
+
+// Corre la fecha hacia adelante mientras caiga en domingo o feriado. El tope
+// existe por si alguien carga un mes entero de feriados: preferimos devolver
+// una fecha rara a colgarnos en un bucle.
+export function proximoDiaHabil(
+  fechaISO: string,
+  feriados: ReadonlySet<string> = new Set()
+): string {
+  let fecha = fechaISO;
+  for (let i = 0; i < 15 && esInhabil(fecha, feriados); i++) {
+    fecha = sumarDias(fecha, 1);
+  }
+  return fecha;
+}
+
+// El vencimiento real de un mes: el día pactado, recortado si el mes es más
+// corto, y corrido si cae domingo o feriado.
+export function vencimientoHabilDelPeriodo(
+  periodoISO: string,
+  diaVencimiento: number,
+  feriados: ReadonlySet<string> = new Set()
+): string {
+  return proximoDiaHabil(vencimientoDelPeriodo(periodoISO, diaVencimiento), feriados);
+}

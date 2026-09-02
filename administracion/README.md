@@ -204,14 +204,19 @@ Con `CRON_SECRET` vacía la puerta queda cerrada y solo funciona el botón.
 
 ### 8. Cargar la cartera real
 
-`supabase/carga-inicial.sql` reconstruye las 127 unidades de la planilla de
+`supabase/carga-inicial.sql` reconstruye 108 unidades de la planilla de
 agosto: dirección, piso, inquilino, monto y el porcentaje de honorarios, que
 sale de dividir la comisión por el alquiler en la misma planilla.
 
-Lo que la planilla no dice y hay que completar a mano desde la app: el
-propietario de cada unidad (salvo las de los Maldonado y Attar, que sí
-figuran), las fechas de cada contrato, el índice de ajuste y los teléfonos.
-Cada contrato importado queda marcado en Observaciones.
+Entra solo lo que la planilla daba entero. Las 20 unidades a las que les
+faltaba el inquilino o la comisión quedan afuera y están listadas al pie del
+archivo: media ficha cargada es peor que una ficha ausente, porque la ausente
+se nota y la incompleta se confunde con un dato real.
+
+Lo único que no sale de la planilla es el propietario, que la base exige: van
+todas a un marcador "A asignar" salvo las de los Maldonado y Attar, que sí
+figuran. Las fechas de contrato y el índice son provisorios y cada contrato
+lo dice en Observaciones.
 
 Se puede volver a ejecutar sin duplicar: cada inserción comprueba antes si la
 fila ya existe.

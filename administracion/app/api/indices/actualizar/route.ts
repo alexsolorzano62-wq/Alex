@@ -7,6 +7,34 @@ import { createAdminClient } from "@/lib/supabase/admin";
 // Fuentes oficiales. El ICL es la serie diaria del BCRA (variable 40 de la API
 // de Estadísticas Monetarias v4.0); el IPC sale del catálogo de series de
 // tiempo del Estado, que publica el índice del INDEC.
+//
+// Las dos fuentes pasan por acá para que un cambio de formato no se disfrace
+// de "ya estaba al día": si la respuesta trae registros y ninguno se puede
+// leer, eso es un error y hay que enterarse, no seguir de largo con cero.
+function leer<T>(
+  crudas: T[],
+  fuente: string,
+  extraer: (fila: T) => [unknown, unknown]
+): { fecha: string; valor: number }[] {
+  const filas = crudas
+    .map(extraer)
+    .filter(([fecha, valor]) => typeof fecha === "string" && fecha
+      && Number.isFinite(Number(valor)))
+    .map(([fecha, valor]) => ({
+      fecha: String(fecha).slice(0, 10),
+      valor: Number(valor),
+    }));
+
+  if (crudas.length > 0 && filas.length === 0) {
+    throw new Error(
+      `${fuente} devolvió ${crudas.length} registros y ninguno se pudo leer: ` +
+      "seguramente cambió el formato de la respuesta"
+    );
+  }
+
+  return filas;
+}
+
 const FUENTES: Record<string, (desde: string) => Promise<{ fecha: string; valor: number }[]>> = {
   ICL: async (desde) => {
     const url = `https://api.bcra.gob.ar/estadisticas/v4.0/monetarias/40?desde=${desde}&limit=3000`;
@@ -14,10 +42,16 @@ const FUENTES: Record<string, (desde: string) => Promise<{ fecha: string; valor:
     if (!respuesta.ok) throw new Error(`El BCRA respondió ${respuesta.status}`);
 
     const json = await respuesta.json();
-    const filas = (json?.results ?? []) as { fecha: string; valor: number }[];
-    return filas
-      .filter((f) => f?.fecha && Number.isFinite(Number(f.valor)))
-      .map((f) => ({ fecha: f.fecha, valor: Number(f.valor) }));
+
+    // La v4.0 anida los valores: results es una lista de variables y cada una
+    // trae los suyos en `detalle`. Versiones anteriores los devolvían sueltos
+    // en results, así que aceptamos las dos formas.
+    const bruto = (json?.results ?? []) as Record<string, unknown>[];
+    const crudas = bruto.flatMap((item) =>
+      Array.isArray(item?.detalle) ? item.detalle : [item]
+    ) as { fecha?: string; valor?: unknown }[];
+
+    return leer(crudas, "el BCRA", (f) => [f.fecha, f.valor]);
   },
 
   IPC: async (desde) => {
@@ -26,10 +60,9 @@ const FUENTES: Record<string, (desde: string) => Promise<{ fecha: string; valor:
     if (!respuesta.ok) throw new Error(`La API de series respondió ${respuesta.status}`);
 
     const json = await respuesta.json();
-    const filas = (json?.data ?? []) as [string, number][];
-    return filas
-      .filter(([fecha, valor]) => fecha && Number.isFinite(Number(valor)))
-      .map(([fecha, valor]) => ({ fecha: fecha.slice(0, 10), valor: Number(valor) }));
+    const crudas = (json?.data ?? []) as [string, number][];
+
+    return leer(crudas, "la API de series", ([fecha, valor]) => [fecha, valor]);
   },
 };
 

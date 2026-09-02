@@ -202,6 +202,20 @@ repositorio, junto con `URL_APP` (la dirección de la app, sin barra final).
 
 Con `CRON_SECRET` vacía la puerta queda cerrada y solo funciona el botón.
 
+### 8. Cargar la cartera real
+
+`supabase/carga-inicial.sql` reconstruye las 127 unidades de la planilla de
+agosto: dirección, piso, inquilino, monto y el porcentaje de honorarios, que
+sale de dividir la comisión por el alquiler en la misma planilla.
+
+Lo que la planilla no dice y hay que completar a mano desde la app: el
+propietario de cada unidad (salvo las de los Maldonado y Attar, que sí
+figuran), las fechas de cada contrato, el índice de ajuste y los teléfonos.
+Cada contrato importado queda marcado en Observaciones.
+
+Se puede volver a ejecutar sin duplicar: cada inserción comprueba antes si la
+fila ya existe.
+
 ## Hosting
 
 El plan gratuito de Vercel **prohíbe el uso comercial**, y administrar

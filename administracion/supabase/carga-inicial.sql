@@ -2,7 +2,7 @@
 --  CARGA INICIAL — Administración de alquileres
 --  Lamelas & Chaumont · reconstruida de la planilla de agosto
 --
---  127 unidades · 122 con contrato
+--  128 unidades · 122 con contrato
 --
 --  Pegá todo esto en el SQL Editor de Supabase y tocá Run una vez.
 --  Se puede volver a ejecutar sin duplicar nada.
@@ -18,7 +18,7 @@
 begin;
 
 create temporary table _carga (
-  direccion    text,
+  direccion    text not null,   -- si falta, que falle acá y no a mitad de camino
   piso         text,
   edificio     text,
   tipo         text,
@@ -34,7 +34,7 @@ insert into _carga values
   ('Alsina 1238', null, null, 'departamento', 'Graciela del Valle Roldan', 1200000, 8, 'A asignar', false),
   ('Ampliacion Soeme', null, null, 'departamento', 'Johana', 533243, 10, 'A asignar', false),
   ('Alem 1758', 'P.3 D', null, 'departamento', 'Raquel Juarez', 476734, 10, 'A asignar', false),
-  ('Galpon', null, null, 'galpon', 'Miguel Ramos', 1834927, 8, 'A asignar', false),
+  ('Americo Vespucio 1729', 'Galpon', null, 'galpon', 'Miguel Ramos', 1834927, 8, 'A asignar', false),
   ('Bernabe Araoz 140', null, null, 'departamento', 'Omaira Gonzalez', 283734, 10, 'A asignar', false),
   ('Bulnes 1020 Block 16 M2 Pb A', null, null, 'departamento', 'Rojas Maria Josefina', 676285, 10, 'A asignar', false),
   ('B.parque Sur', null, null, 'casa', 'Gisell Rios', 520386, 10, 'A asignar', false),
@@ -55,7 +55,7 @@ insert into _carga values
   ('Corrientes 3919', null, null, 'departamento', 'Benjamin', 650000, 10, 'A asignar', true),
   ('Casa Soeme', 'Mz22 Casa 14', null, 'casa', 'Emilia', 616170, 7, 'A asignar', false),
   ('Chacho Peñaloza 551', null, null, 'departamento', 'Sergio Fonts', 1645099, 10, 'A asignar', false),
-  (null, '4 F', null, 'departamento', 'Gladis Costilla', 500000, 7, 'A asignar', false),
+  ('Chacabuco 137', '4 F', null, 'departamento', 'Gladis Costilla', 500000, 7, 'A asignar', false),
   ('Cochera Cordoba374', null, null, 'cochera', 'Cristian Conrrado', 1981918, 8, 'A asignar', false),
   ('Chacabuco 284', '3c', null, 'departamento', 'Cristian', 391502, 10, 'A asignar', false),
   ('Chacabuco 284', null, null, 'departamento', 'Vero', 384000, 7, 'A asignar', false),
@@ -111,6 +111,7 @@ insert into _carga values
   ('Uruguay 974', 'Local', null, 'local', 'Quinteros Pablo', 230571, 7, 'A asignar', false),
   ('V.d la Merced 655', 'Piso 10 Dpto A', null, 'departamento', null, 1391528, 10, 'A asignar', false),
   ('San Juan 969', '8º B', null, 'departamento', 'Lorena Canivares', 500000, 8, 'A asignar', false),
+  ('Galpon Francia 1300', null, null, 'galpon', null, null, null, 'A asignar', false),
   ('Av. Democracia y 9 de Julio', 'Dpto 1', 'Av. Democracia y 9 de Julio', 'departamento', 'Cordoba Sergio Raul', 326891, 10, 'A asignar', false),
   ('Av. Democracia y 9 de Julio', 'Dpto 2', 'Av. Democracia y 9 de Julio', 'departamento', null, null, null, 'A asignar', false),
   ('Av. Democracia y 9 de Julio', 'Dpto 3', 'Av. Democracia y 9 de Julio', 'departamento', 'Gabriela', 141233, 10, 'A asignar', false),

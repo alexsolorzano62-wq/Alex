@@ -7,8 +7,9 @@
 # Qué NO cubre: los archivos subidos (contratos escaneados, comprobantes). Eso
 # vive en Supabase Storage y se sincroniza aparte.
 #
-# Hace falta un secret del repositorio llamado SUPABASE_DB_URL, con la cadena
-# de conexión que figura en Supabase → Project Settings → Database.
+# Hace falta un secret del repositorio llamado SUPABASE_DB_URL. Sacalo de
+# Supabase → Connect → Session pooler (puerto 5432). La conexión directa no
+# sirve: es solo IPv6 y las máquinas de GitHub no la alcanzan.
 
 name: Respaldo de la base
 
@@ -29,49 +30,69 @@ jobs:
   respaldar:
     runs-on: ubuntu-latest
     steps:
-      - name: Traer la rama de respaldos
-        uses: actions/checkout@v4
-        with:
-          ref: respaldos
-          # Si la rama todavía no existe, el checkout falla y el paso siguiente
-          # la crea desde cero.
-          fetch-depth: 1
-        continue-on-error: true
-
-      - name: Preparar la carpeta
+      # No usamos actions/checkout: pedirle una rama que todavía no existe
+      # falla, y deja el repositorio a medio armar. Armamos el repo a mano, que
+      # además nos deja tratar igual el primer respaldo y todos los siguientes.
+      - name: Preparar el repositorio
         run: |
-          if [ ! -d .git ]; then
-            git init -b respaldos
-            git remote add origin "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git"
+          set -euo pipefail
+          git init -q .
+          git remote add origin \
+            "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git"
+
+          if git ls-remote --exit-code --heads origin respaldos >/dev/null 2>&1; then
+            echo "La rama respaldos ya existe: traigo el último commit."
+            git fetch -q --depth=1 origin respaldos
+            git checkout -q -b respaldos FETCH_HEAD
+          else
+            echo "Primer respaldo: creo la rama desde cero."
+            git checkout -q -b respaldos
           fi
+
           mkdir -p respaldos
 
       - name: Volcar la base
         env:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
         run: |
-          if [ -z "$SUPABASE_DB_URL" ]; then
+          set -euo pipefail
+
+          if [ -z "${SUPABASE_DB_URL}" ]; then
             echo "Falta el secret SUPABASE_DB_URL. Cargalo en Settings → Secrets."
             exit 1
           fi
 
           FECHA=$(date -u +%Y-%m-%d)
+          ARCHIVO="respaldos/administracion-${FECHA}.sql.gz"
 
           # pg_dump corre en un contenedor con la misma versión mayor que el
           # servidor, para que no se queje por diferencia de versiones.
+          #
+          # `set -o pipefail` (arriba) es lo que hace que un pg_dump fallido
+          # rompa el paso: sin eso gzip termina bien igual y el respaldo queda
+          # vacío sin que nadie se entere, que es peor que no tener respaldo.
           docker run --rm postgres:17-alpine \
-            pg_dump "$SUPABASE_DB_URL" \
+            pg_dump "${SUPABASE_DB_URL}" \
               --schema=public \
               --no-owner \
               --no-privileges \
               --format=plain \
-            | gzip -9 > "respaldos/administracion-${FECHA}.sql.gz"
+            | gzip -9 > "${ARCHIVO}"
 
-          TAMANO=$(du -h "respaldos/administracion-${FECHA}.sql.gz" | cut -f1)
-          echo "Respaldo del ${FECHA}: ${TAMANO}"
+          # Un volcado de un esquema vacío ronda el kilobyte; menos que eso
+          # significa que salió cualquier cosa.
+          BYTES=$(stat -c%s "${ARCHIVO}")
+          if [ "${BYTES}" -lt 200 ]; then
+            echo "El respaldo pesa ${BYTES} bytes: algo salió mal."
+            gzip -dc "${ARCHIVO}" | head -20
+            exit 1
+          fi
+
+          echo "Respaldo del ${FECHA}: $(du -h "${ARCHIVO}" | cut -f1)"
 
       - name: Guardar la copia
         run: |
+          set -euo pipefail
           git config user.name "Respaldo automático"
           git config user.email "actions@github.com"
           git add respaldos/
@@ -81,5 +102,6 @@ jobs:
             exit 0
           fi
 
-          git commit -m "Respaldo de la base — $(date -u +%Y-%m-%d)"
-          git push origin respaldos
+          git commit -q -m "Respaldo de la base — $(date -u +%Y-%m-%d)"
+          git push -q origin respaldos
+          echo "Subido a la rama respaldos."

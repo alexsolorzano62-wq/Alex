@@ -4,7 +4,9 @@ import { createClient } from "@/lib/supabase/server";
 import { Estado, Dato } from "@/components/Ui";
 import { formatearMoneda } from "@/lib/dinero";
 import { formatearFecha, nombreDelPeriodo, primerDiaDelMes, hoyISO } from "@/lib/fechas";
-import { etiqueta, INDICES } from "@/lib/types";
+import { etiqueta, INDICES, TIPOS_CARGO } from "@/lib/types";
+import { agregarCargo, cambiarCargo } from "@/app/acciones";
+import { Campo, Selector } from "@/components/Ui";
 
 export const dynamic = "force-dynamic";
 
@@ -16,7 +18,7 @@ export default async function DetalleContrato({
   const { id } = await params;
   const supabase = await createClient();
 
-  const [{ data: contrato }, { data: cobros }, { data: ajustes }] = await Promise.all([
+  const [{ data: contrato }, { data: cobros }, { data: ajustes }, { data: cargos }] = await Promise.all([
     supabase
       .from("contratos")
       .select(
@@ -35,6 +37,13 @@ export default async function DetalleContrato({
       .select("id, fecha_aplicacion, indice, monto_anterior, monto_nuevo, coeficiente")
       .eq("contrato_id", id)
       .order("fecha_aplicacion", { ascending: false }),
+    supabase
+      .from("contrato_cargos")
+      .select("id, tipo, descripcion, monto, activo")
+      .eq("contrato_id", id)
+      .is("deleted_at", null)
+      .order("activo", { ascending: false })
+      .order("descripcion"),
   ]);
 
   if (!contrato) notFound();
@@ -162,6 +171,58 @@ export default async function DetalleContrato({
           </dl>
         </section>
       </div>
+
+      <section className="tarjeta">
+        <h2 className="font-titulo text-lg font-bold">Cobros fijos, además del alquiler</h2>
+        <p className="mt-1 text-sm text-stone-500">
+          El agua, el CISI, la luz: lo que esta unidad paga todos los meses.
+          Aparece tildado solo al registrar el cobro.
+        </p>
+
+        {cargos && cargos.length > 0 && (
+          <ul className="mt-4 space-y-2">
+            {cargos.map((c) => (
+              <li
+                key={c.id}
+                className={`flex items-center gap-3 rounded-lg border p-2.5 ${
+                  c.activo ? "border-stone-200" : "border-stone-100 bg-stone-50 opacity-60"
+                }`}
+              >
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm font-medium">{c.descripcion}</span>
+                  <span className="text-xs text-stone-500">
+                    {etiqueta(c.tipo)}{!c.activo && " · apagado"}
+                  </span>
+                </span>
+                <span className="tabular shrink-0 text-sm font-semibold">
+                  {formatearMoneda(Number(c.monto), contrato.moneda)}
+                </span>
+                <form action={cambiarCargo}>
+                  <input type="hidden" name="id" value={c.id} />
+                  <input type="hidden" name="contrato_id" value={id} />
+                  <input type="hidden" name="activo" value={c.activo ? "false" : "true"} />
+                  <button type="submit" className="text-xs text-stone-400 hover:text-stone-700">
+                    {c.activo ? "Apagar" : "Encender"}
+                  </button>
+                </form>
+              </li>
+            ))}
+          </ul>
+        )}
+
+        <form action={agregarCargo} className="mt-4 grid gap-3 sm:grid-cols-[8rem_1fr_9rem_auto] sm:items-end">
+          <input type="hidden" name="contrato_id" value={id} />
+          <Selector
+            rotulo="Tipo"
+            nombre="tipo"
+            valor="agua"
+            opciones={TIPOS_CARGO.map((t) => ({ valor: t, texto: etiqueta(t) }))}
+          />
+          <Campo rotulo="Cómo se llama" nombre="descripcion" />
+          <Campo rotulo="Monto" nombre="monto" />
+          <button type="submit" className="boton-secundario h-[42px]">Agregar</button>
+        </form>
+      </section>
 
       <section className="tarjeta">
         <div className="flex items-center justify-between gap-3">

@@ -6,7 +6,9 @@ import { createClient } from "@/lib/supabase/server";
 import { getPerfil } from "@/lib/supabase/perfil";
 import { parsearMonto, parsearPorcentaje, textoONulo, enteroONulo } from "@/lib/parseo";
 import { calcularAjuste, proximoAjuste } from "@/lib/ajustes";
-import { primerDiaDelMes, vencimientoDelPeriodo, hoyISO, nombreDelPeriodo, sumarMeses } from "@/lib/fechas";
+import { primerDiaDelMes, vencimientoDelPeriodo, vencimientoHabilDelPeriodo,
+         hoyISO, nombreDelPeriodo, sumarMeses } from "@/lib/fechas";
+import { feriadosDelAnio } from "@/lib/feriados";
 import { calcularTotales, armarDetalle } from "@/lib/liquidacion";
 import { redondear } from "@/lib/dinero";
 import type { Indice, Moneda } from "@/lib/types";
@@ -423,6 +425,12 @@ export async function registrarCobro(formData: FormData) {
 
   if (errorContrato || !contrato) throw new Error("No se encontró el contrato.");
 
+  // El vencimiento se recalcula acá y no se toma del formulario: si viniera de
+  // la pantalla, bastaría con un POST armado a mano para fabricar un
+  // vencimiento tardío y hacer desaparecer los punitorios.
+  const feriados = await feriadosDelAnio(supabase, Number(periodo.slice(0, 4)));
+  const vencimiento = vencimientoHabilDelPeriodo(periodo, contrato.dia_vencimiento, feriados);
+
   const tipos = formData.getAll("concepto_tipo").map(String);
   const descripciones = formData.getAll("concepto_descripcion").map(String);
   const montos = formData.getAll("concepto_monto").map((m) => parsearMonto(String(m)) ?? 0);
@@ -442,15 +450,22 @@ export async function registrarCobro(formData: FormData) {
 
   const total = redondear(conceptos.reduce((suma, c) => suma + c.monto, 0));
 
+  // Lo que efectivamente entregó. Si no se aclara, se asume que pagó todo: es
+  // lo que pasa en la enorme mayoría de los meses.
+  const pagado = parsearMonto(String(formData.get("pagado") ?? "")) ?? total;
+  const saldoAnterior = parsearMonto(String(formData.get("saldo_anterior") ?? "")) ?? 0;
+
   const { data: cobro, error: errorCobro } = await supabase
     .from("cobros")
     .insert({
       contrato_id: contratoId,
       periodo,
       fecha_pago: fechaPago,
-      vencimiento: vencimientoDelPeriodo(periodo, contrato.dia_vencimiento),
+      vencimiento,
       moneda: contrato.moneda,
       total,
+      saldo_anterior: saldoAnterior,
+      saldo_resultante: redondear(pagado - total),
       medio_pago: String(formData.get("medio_pago") ?? "transferencia"),
       notas: textoONulo(formData.get("notas")),
       created_by: user.id,
@@ -881,4 +896,134 @@ export async function registrarAviso(formData: FormData) {
   if (error) throw new Error(`No se pudo registrar el aviso: ${error.message}`);
 
   revalidatePath("/avisos");
+}
+
+// ============================================================ cobros fijos ==
+// Lo que una unidad paga todos los meses además del alquiler: el agua, el
+// CISI, la luz. Se declara una vez y aparece solo en cada recibo.
+
+export async function agregarCargo(formData: FormData) {
+  const { supabase, user } = await sesion();
+
+  const contratoId = String(formData.get("contrato_id"));
+  const descripcion = textoONulo(formData.get("descripcion"));
+  const monto = parsearMonto(String(formData.get("monto") ?? ""));
+
+  if (!descripcion) throw new Error("Ponele un nombre al cobro: SAT, CISI, luz.");
+  if (!monto || monto <= 0) throw new Error("El monto tiene que ser mayor a cero.");
+
+  const { error } = await supabase.from("contrato_cargos").insert({
+    contrato_id: contratoId,
+    tipo: String(formData.get("tipo") ?? "otro"),
+    descripcion,
+    monto,
+    created_by: user.id,
+  });
+
+  if (error) throw new Error(error.message);
+
+  revalidatePath(`/contratos/${contratoId}`);
+}
+
+export async function cambiarCargo(formData: FormData) {
+  const { supabase } = await sesion();
+
+  const id = String(formData.get("id"));
+  const contratoId = String(formData.get("contrato_id"));
+  // Se apaga en vez de borrarse: los recibos viejos tienen que seguir
+  // explicando por qué cobraron el agua.
+  const activo = formData.get("activo") === "true";
+
+  const { error } = await supabase
+    .from("contrato_cargos")
+    .update({ activo })
+    .eq("id", id);
+
+  if (error) throw new Error(error.message);
+
+  revalidatePath(`/contratos/${contratoId}`);
+}
+
+// ================================================================= tareas ==
+
+export async function crearTarea(formData: FormData) {
+  const { supabase, user } = await sesion();
+
+  const titulo = textoONulo(formData.get("titulo"));
+  if (!titulo) throw new Error("La tarea necesita un título.");
+
+  const { error } = await supabase.from("tareas").insert({
+    titulo,
+    detalle: textoONulo(formData.get("detalle")),
+    prioridad: String(formData.get("prioridad") ?? "normal"),
+    vence_el: textoONulo(formData.get("vence_el")),
+    propiedad_id: textoONulo(formData.get("propiedad_id")),
+    contrato_id: textoONulo(formData.get("contrato_id")),
+    inquilino_id: textoONulo(formData.get("inquilino_id")),
+    created_by: user.id,
+  });
+
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/tareas");
+  revalidatePath("/panel");
+  const volverA = textoONulo(formData.get("volver_a"));
+  if (volverA) redirect(volverA);
+}
+
+export async function cambiarEstadoTarea(formData: FormData) {
+  const { supabase } = await sesion();
+
+  const id = String(formData.get("id"));
+  const estado = String(formData.get("estado")) === "hecha" ? "hecha" : "pendiente";
+
+  // El disparador de la base pone la fecha y el autor: acá solo se cambia el
+  // estado, así no hay dos lugares que puedan discrepar.
+  const { error } = await supabase.from("tareas").update({ estado }).eq("id", id);
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/tareas");
+  revalidatePath("/panel");
+}
+
+export async function archivarTarea(formData: FormData) {
+  const { supabase } = await sesion();
+
+  const { error } = await supabase
+    .from("tareas")
+    .update({ deleted_at: new Date().toISOString() })
+    .eq("id", String(formData.get("id")));
+
+  if (error) throw new Error(error.message);
+  revalidatePath("/tareas");
+}
+
+// =============================================================== feriados ==
+
+export async function agregarFeriado(formData: FormData) {
+  const { supabase, user } = await sesion();
+
+  const fecha = textoONulo(formData.get("fecha"));
+  const nombre = textoONulo(formData.get("nombre"));
+  if (!fecha || !nombre) throw new Error("Hacen falta la fecha y el nombre.");
+
+  const { error } = await supabase
+    .from("feriados")
+    .upsert({ fecha, nombre, origen: "movible", created_by: user.id },
+            { onConflict: "fecha" });
+
+  if (error) throw new Error(error.message);
+  revalidatePath("/feriados");
+}
+
+export async function quitarFeriado(formData: FormData) {
+  const { supabase } = await sesion();
+
+  const { error } = await supabase
+    .from("feriados")
+    .delete()
+    .eq("fecha", String(formData.get("fecha")));
+
+  if (error) throw new Error(error.message);
+  revalidatePath("/feriados");
 }

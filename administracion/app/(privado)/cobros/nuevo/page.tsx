@@ -3,7 +3,8 @@ import { createClient } from "@/lib/supabase/server";
 import { registrarCobro } from "@/app/acciones";
 import { Titulo } from "@/components/Ui";
 import { FormularioCobro } from "@/components/FormularioCobro";
-import { hoyISO, primerDiaDelMes, vencimientoDelPeriodo } from "@/lib/fechas";
+import { hoyISO, primerDiaDelMes, vencimientoHabilDelPeriodo } from "@/lib/fechas";
+import { feriadosDelAnio } from "@/lib/feriados";
 import type { TipoPunitorio } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -40,6 +41,29 @@ export default async function NuevoCobro({
     .is("deleted_at", null)
     .order("fecha");
 
+  // Lo que esta unidad paga todos los meses además del alquiler.
+  const { data: cargos } = await supabase
+    .from("contrato_cargos")
+    .select("id, tipo, descripcion, monto")
+    .eq("contrato_id", contratoId)
+    .eq("activo", true)
+    .is("deleted_at", null)
+    .order("descripcion");
+
+  // Cómo quedó el mes pasado. Alcanza con el último recibo: el saldo se guarda
+  // acumulado, no como movimiento.
+  const { data: ultimo } = await supabase
+    .from("cobros")
+    .select("saldo_resultante")
+    .eq("contrato_id", contratoId)
+    .is("anulado_at", null)
+    .lt("periodo", periodo)
+    .order("periodo", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  const feriados = await feriadosDelAnio(supabase, Number(periodo.slice(0, 4)));
+
   const propiedad = contrato.propiedades as unknown as
     { direccion: string; piso_depto: string | null } | null;
   const inquilino = contrato.inquilinos as unknown as { nombre: string } | null;
@@ -51,8 +75,10 @@ export default async function NuevoCobro({
         accion={registrarCobro}
         periodo={periodo}
         hoy={hoy}
-        vencimiento={vencimientoDelPeriodo(periodo, contrato.dia_vencimiento)}
+        vencimiento={vencimientoHabilDelPeriodo(periodo, contrato.dia_vencimiento, feriados)}
         gastosPendientes={(gastos ?? []).map((g) => ({ ...g, monto: Number(g.monto) }))}
+        cargosFijos={(cargos ?? []).map((c) => ({ ...c, monto: Number(c.monto) }))}
+        saldoAnterior={Number(ultimo?.saldo_resultante ?? 0)}
         contrato={{
           id: contrato.id,
           monto_actual: Number(contrato.monto_actual),

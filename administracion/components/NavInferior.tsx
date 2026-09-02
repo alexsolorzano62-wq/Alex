@@ -7,11 +7,11 @@ const SECCIONES = [
   { href: "/panel", texto: "Panel", icono: "M3 12l9-9 9 9M5 10v10h14V10" },
   { href: "/unidades", texto: "Unidades", icono: "M3 21h18M5 21V7l7-4 7 4v14M9 21v-5h6v5" },
   { href: "/cobros", texto: "Planilla", icono: "M3 7h18v10H3zM7 12h.01M17 12h.01" },
-  { href: "/liquidaciones", texto: "Liquidar", icono: "M6 3h12v18l-3-2-3 2-3-2-3 2V3zm3 5h6M9 12h6" },
+  { href: "/tareas", texto: "Tareas", icono: "M9 11l3 3 8-8M20 12v7a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h9" },
   { href: "/mas", texto: "Más", icono: "M4 6h16M4 12h16M4 18h16" },
 ];
 
-export function NavInferior() {
+export function NavInferior({ tareasPendientes = 0 }: { tareasPendientes?: number }) {
   const ruta = usePathname();
 
   return (
@@ -27,6 +27,7 @@ export function NavInferior() {
                   activa ? "text-marca-700" : "text-stone-500"
                 }`}
               >
+                <span className="relative">
                 <svg
                   viewBox="0 0 24 24"
                   fill="none"
@@ -39,6 +40,12 @@ export function NavInferior() {
                 >
                   <path d={s.icono} />
                 </svg>
+                {s.href === "/tareas" && tareasPendientes > 0 && (
+                  <span className="absolute -right-2 -top-1 min-w-[16px] rounded-full bg-orange-500 px-1 text-[10px] font-bold leading-4 text-white">
+                    {tareasPendientes > 99 ? "99+" : tareasPendientes}
+                  </span>
+                )}
+                </span>
                 {s.texto}
               </Link>
             </li>

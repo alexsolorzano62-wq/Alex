@@ -221,6 +221,33 @@ lo dice en Observaciones.
 Se puede volver a ejecutar sin duplicar: cada inserción comprueba antes si la
 fila ya existe.
 
+## Cobros fijos, saldos, punitorios y tareas
+
+**Cobros fijos.** Cada contrato declara lo que se cobra todos los meses además
+del alquiler —el agua, el CISI, la luz— en `contrato_cargos`. Aparecen tildados
+al registrar el cobro; destildar es la excepción. Se apagan en vez de borrarse:
+los recibos viejos tienen que seguir explicando por qué cobraron el agua.
+
+**Saldos.** Cada recibo guarda el saldo que queda *después* de él, no el
+movimiento. Así, para saber cómo está alguien alcanza con mirar su último
+recibo en vez de sumar la historia entera. Positivo es plata a favor del
+inquilino, negativo es lo que debe, y el mes siguiente entra como un renglón
+con el signo dado vuelta para que el total se explique solo.
+
+**Punitorios.** Corren sobre el alquiler, nunca sobre el agua ni la luz. El
+vencimiento se corre al día siguiente hábil si cae domingo o feriado nacional;
+el sábado no lo corre. El vencimiento se recalcula en el servidor y no se toma
+del formulario: si viniera de la pantalla, un POST armado a mano podría
+fabricar un vencimiento tardío y hacer desaparecer los punitorios.
+
+**Feriados.** Los de fecha fija van cargados hasta 2030. Los que se mueven por
+decreto y los puentes turísticos no se pueden calcular: se cargan en
+Más → Feriados cuando se publican.
+
+**Tareas.** Cuelgan de la unidad, el contrato o el inquilino que las motivó, y
+se anotan desde la misma fila de la planilla. El contador del menú sale de una
+consulta con `head` en el layout: devuelve el número, no las filas.
+
 ## Hosting
 
 El plan gratuito de Vercel **prohíbe el uso comercial**, y administrar

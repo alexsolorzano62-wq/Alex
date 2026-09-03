@@ -17,6 +17,7 @@ const archivos = [
   ...(await readdir(migraciones)).sort().map((n) => path.join(migraciones, n)),
   path.join(raiz, "supabase", "semilla.sql"),
   path.join(raiz, "supabase", "carga-inicial.sql"),
+  path.join(raiz, "supabase", "migraciones-0007-0009.sql"),
 ];
 
 let fallos = 0;

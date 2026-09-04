@@ -172,8 +172,6 @@ export default async function Panel() {
         />
       </div>
 
-      <Cotizaciones />
-
       {tocanAjuste.length > 0 && (
         <section className="tarjeta border-marca-200 bg-marca-50/40">
           <div className="flex items-center justify-between gap-3">
@@ -272,6 +270,7 @@ export default async function Panel() {
           </section>
         </div>
       </div>
+      <Cotizaciones />
     </div>
   );
 }

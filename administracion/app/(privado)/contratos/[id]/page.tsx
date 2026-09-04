@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { Estado, Dato } from "@/components/Ui";
 import { formatearMoneda } from "@/lib/dinero";
 import { formatearFecha, nombreDelPeriodo, primerDiaDelMes, hoyISO } from "@/lib/fechas";
-import { etiqueta, INDICES, TIPOS_CARGO } from "@/lib/types";
+import { etiqueta, INDICES } from "@/lib/types";
 import { agregarCargo, cambiarCargo } from "@/app/acciones";
 import { Campo, Selector } from "@/components/Ui";
 
@@ -18,7 +18,8 @@ export default async function DetalleContrato({
   const { id } = await params;
   const supabase = await createClient();
 
-  const [{ data: contrato }, { data: cobros }, { data: ajustes }, { data: cargos }] = await Promise.all([
+  const [{ data: contrato }, { data: cobros }, { data: ajustes }, { data: cargos },
+       { data: conceptos }] = await Promise.all([
     supabase
       .from("contratos")
       .select(
@@ -44,6 +45,12 @@ export default async function DetalleContrato({
       .is("deleted_at", null)
       .order("activo", { ascending: false })
       .order("descripcion"),
+    supabase
+      .from("conceptos")
+      .select("id, nombre, tipo")
+      .eq("activo", true)
+      .is("deleted_at", null)
+      .order("nombre"),
   ]);
 
   if (!contrato) notFound();
@@ -176,7 +183,10 @@ export default async function DetalleContrato({
         <h2 className="font-titulo text-lg font-bold">Cobros fijos, además del alquiler</h2>
         <p className="mt-1 text-sm text-stone-500">
           El agua, el CISI, la luz: lo que esta unidad paga todos los meses.
-          Aparece tildado solo al registrar el cobro.
+          Aparece tildado solo al registrar el cobro. La lista sale de{" "}
+          <Link href="/conceptos" className="font-semibold text-marca-700 hover:underline">
+            Servicios e impuestos
+          </Link>.
         </p>
 
         {cargos && cargos.length > 0 && (
@@ -210,18 +220,29 @@ export default async function DetalleContrato({
           </ul>
         )}
 
-        <form action={agregarCargo} className="mt-4 grid gap-3 sm:grid-cols-[8rem_1fr_9rem_auto] sm:items-end">
-          <input type="hidden" name="contrato_id" value={id} />
-          <Selector
-            rotulo="Tipo"
-            nombre="tipo"
-            valor="agua"
-            opciones={TIPOS_CARGO.map((t) => ({ valor: t, texto: etiqueta(t) }))}
-          />
-          <Campo rotulo="Cómo se llama" nombre="descripcion" />
-          <Campo rotulo="Monto" nombre="monto" />
-          <button type="submit" className="boton-secundario h-[42px]">Agregar</button>
-        </form>
+        {conceptos && conceptos.length > 0 ? (
+          <form action={agregarCargo} className="mt-4 grid gap-3 sm:grid-cols-[1fr_9rem_auto] sm:items-end">
+            <input type="hidden" name="contrato_id" value={id} />
+            <Selector
+              rotulo="Qué se cobra"
+              nombre="concepto_id"
+              opciones={conceptos.map((c) => ({
+                valor: c.id,
+                texto: `${c.nombre} · ${etiqueta(c.tipo)}`,
+              }))}
+            />
+            <Campo rotulo="Monto por mes" nombre="monto" />
+            <button type="submit" className="boton-secundario h-[42px]">Agregar</button>
+          </form>
+        ) : (
+          <p className="mt-4 text-sm text-stone-500">
+            Todavía no hay servicios cargados.{" "}
+            <Link href="/conceptos" className="font-bold text-marca-700 hover:underline">
+              Cargá el primero
+            </Link>{" "}
+            —el SAT, el CISI— y después volvé a asignarlo acá.
+          </p>
+        )}
       </section>
 
       <section className="tarjeta">

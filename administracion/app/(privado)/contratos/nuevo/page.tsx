@@ -13,13 +13,19 @@ export default async function NuevoContrato({
   const { propiedad } = await searchParams;
   const supabase = await createClient();
 
-  const [{ data: propiedades }, { data: inquilinos }] = await Promise.all([
+  const [{ data: propiedades }, { data: inquilinos }, { data: conceptos }] = await Promise.all([
     supabase
       .from("propiedades")
       .select("id, direccion, piso_depto")
       .is("deleted_at", null)
       .order("direccion"),
     supabase.from("inquilinos").select("id, nombre").is("deleted_at", null).order("nombre"),
+    supabase
+      .from("conceptos")
+      .select("id, nombre, tipo")
+      .eq("activo", true)
+      .is("deleted_at", null)
+      .order("nombre"),
   ]);
 
   if (!propiedades?.length || !inquilinos?.length) {
@@ -50,6 +56,7 @@ export default async function NuevoContrato({
         propiedades={propiedades}
         inquilinos={inquilinos}
         propiedadInicial={propiedad}
+        conceptos={conceptos ?? []}
         // La lectura del PDF con IA se ofrece solo si hay clave configurada.
         // Sin clave, la carga es manual y la app no muestra algo que no anda.
         conLecturaIA={Boolean(process.env.ANTHROPIC_API_KEY)}

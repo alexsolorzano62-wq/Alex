@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Campo, Selector, Area } from "@/components/Ui";
-import { INDICES, type Indice } from "@/lib/types";
+import { INDICES, etiqueta, type Indice } from "@/lib/types";
 
 type Contrato = {
   id: string;
@@ -29,7 +29,7 @@ type Contrato = {
 };
 
 export function FormularioContrato({
-  accion, contrato, sugerencia, propiedades, inquilinos, propiedadInicial,
+  accion, contrato, sugerencia, propiedades, inquilinos, propiedadInicial, conceptos = [],
 }: {
   accion: (formData: FormData) => Promise<void>;
   contrato?: Contrato;
@@ -38,6 +38,8 @@ export function FormularioContrato({
   sugerencia?: Partial<Contrato>;
   propiedades: { id: string; direccion: string; piso_depto: string | null }[];
   inquilinos: { id: string; nombre: string }[];
+  // Servicios del catálogo, para asignarlos sin salir del alta.
+  conceptos?: { id: string; nombre: string; tipo: string }[];
   propiedadInicial?: string;
 }) {
   const v = contrato ?? sugerencia;
@@ -241,6 +243,37 @@ export function FormularioContrato({
         )}
         <Area rotulo="Observaciones" nombre="observaciones" valor={v?.observaciones} />
       </section>
+
+      {conceptos.length > 0 && (
+        <section className="tarjeta space-y-4">
+          <div>
+            <h2 className="font-titulo text-lg font-bold">Qué más paga esta unidad</h2>
+            <p className="mt-1 text-sm text-stone-500">
+              Además del alquiler, todos los meses. Poné el monto de los que
+              correspondan y dejá vacíos los demás.
+            </p>
+          </div>
+
+          <ul className="space-y-2">
+            {conceptos.map((c) => (
+              <li key={c.id} className="grid grid-cols-[1fr_9rem] items-center gap-3">
+                <span className="min-w-0">
+                  <span className="block truncate text-sm font-semibold">{c.nombre}</span>
+                  <span className="text-xs text-stone-500">{etiqueta(c.tipo)}</span>
+                </span>
+                <input type="hidden" name="cargo_concepto_id" value={c.id} />
+                <input
+                  name="cargo_monto"
+                  className="campo tabular text-right"
+                  placeholder="0"
+                  inputMode="decimal"
+                  aria-label={`Monto de ${c.nombre}`}
+                />
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       <button type="submit" className="boton w-full sm:w-auto">
         {contrato ? "Guardar cambios" : "Crear contrato"}

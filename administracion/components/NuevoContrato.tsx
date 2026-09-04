@@ -29,12 +29,13 @@ type DatosLeidos = {
 };
 
 export function NuevoContrato({
-  accion, propiedades, inquilinos, propiedadInicial, conLecturaIA = false,
+  accion, propiedades, inquilinos, propiedadInicial, conceptos, conLecturaIA = false,
 }: {
   accion: (formData: FormData) => Promise<void>;
   propiedades: { id: string; direccion: string; piso_depto: string | null }[];
   inquilinos: { id: string; nombre: string }[];
   propiedadInicial?: string;
+  conceptos?: { id: string; nombre: string; tipo: string }[];
   conLecturaIA?: boolean;
 }) {
   const [leyendo, setLeyendo] = useState(false);
@@ -115,6 +116,7 @@ export function NuevoContrato({
       )}
 
       <FormularioContrato
+        conceptos={conceptos}
         // Al llegar datos nuevos, el formulario se vuelve a montar con ellos.
         key={leidos ? `leido-${leidos.fecha_inicio}-${leidos.monto_inicial}` : "vacio"}
         accion={accion}

@@ -228,6 +228,13 @@ del alquiler —el agua, el CISI, la luz— en `contrato_cargos`. Aparecen tilda
 al registrar el cobro; destildar es la excepción. Se apagan en vez de borrarse:
 los recibos viejos tienen que seguir explicando por qué cobraron el agua.
 
+**Catálogo de servicios.** SAT, EDET, CISI, Expensas, Naturgy: se definen una
+vez en `conceptos` y desde el contrato se eligen de una lista. El monto sigue
+viviendo en el contrato, porque cada unidad paga lo suyo; lo que se comparte
+es el nombre. Al asignarlo, el nombre y el tipo se copian al cobro fijo: si
+mañana se renombra el concepto, los recibos ya emitidos siguen diciendo lo
+que decían.
+
 **Saldos.** Cada recibo guarda el saldo que queda *después* de él, no el
 movimiento. Así, para saber cómo está alguien alcanza con mirar su último
 recibo en vez de sumar la historia entera. Positivo es plata a favor del

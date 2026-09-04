@@ -255,6 +255,48 @@ function datosContrato(formData: FormData) {
   };
 }
 
+// Los montos del alta llegan como dos listas paralelas: un concepto por
+// renglón y su monto al lado. Solo entran los que tienen monto cargado.
+async function guardarCargosDelAlta(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  formData: FormData,
+  contratoId: string,
+  userId: string
+) {
+  const ids = formData.getAll("cargo_concepto_id").map(String);
+  const montos = formData.getAll("cargo_monto").map((m) => parsearMonto(String(m)) ?? 0);
+
+  const elegidos = ids
+    .map((conceptoId, i) => ({ conceptoId, monto: montos[i] ?? 0 }))
+    .filter((c) => c.conceptoId && c.monto > 0);
+
+  if (elegidos.length === 0) return;
+
+  const { data: conceptos } = await supabase
+    .from("conceptos")
+    .select("id, nombre, tipo")
+    .in("id", elegidos.map((c) => c.conceptoId));
+
+  const porId = new Map((conceptos ?? []).map((c) => [c.id, c]));
+
+  const filas = elegidos
+    .map((c) => {
+      const concepto = porId.get(c.conceptoId);
+      if (!concepto) return null;
+      return {
+        contrato_id: contratoId,
+        concepto_id: concepto.id,
+        tipo: concepto.tipo,
+        descripcion: concepto.nombre,
+        monto: c.monto,
+        created_by: userId,
+      };
+    })
+    .filter((f) => f !== null);
+
+  if (filas.length > 0) await supabase.from("contrato_cargos").insert(filas);
+}
+
 export async function crearContrato(formData: FormData) {
   const { supabase, user } = await sesion();
   const datos = datosContrato(formData);
@@ -284,6 +326,10 @@ export async function crearContrato(formData: FormData) {
     .from("propiedades")
     .update({ estado: "alquilado" })
     .eq("id", datos.propiedad_id);
+
+  // Los servicios que se marcaron en el alta. Van en la misma operación que
+  // el contrato para que no quede a medias si alguien cierra la pestaña.
+  await guardarCargosDelAlta(supabase, formData, data.id, user.id);
 
   revalidatePath("/contratos");
   redirect(`/contratos/${data.id}`);
@@ -906,16 +952,28 @@ export async function agregarCargo(formData: FormData) {
   const { supabase, user } = await sesion();
 
   const contratoId = String(formData.get("contrato_id"));
-  const descripcion = textoONulo(formData.get("descripcion"));
+  const conceptoId = textoONulo(formData.get("concepto_id"));
   const monto = parsearMonto(String(formData.get("monto") ?? ""));
 
-  if (!descripcion) throw new Error("Ponele un nombre al cobro: SAT, CISI, luz.");
+  if (!conceptoId) throw new Error("Elegí qué se cobra.");
   if (!monto || monto <= 0) throw new Error("El monto tiene que ser mayor a cero.");
+
+  // El nombre y el tipo se copian del catálogo al contrato. Si mañana el
+  // concepto se renombra, los recibos ya emitidos siguen diciendo lo que
+  // decían el día que se entregaron.
+  const { data: concepto } = await supabase
+    .from("conceptos")
+    .select("nombre, tipo")
+    .eq("id", conceptoId)
+    .single();
+
+  if (!concepto) throw new Error("Ese concepto ya no existe.");
 
   const { error } = await supabase.from("contrato_cargos").insert({
     contrato_id: contratoId,
-    tipo: String(formData.get("tipo") ?? "otro"),
-    descripcion,
+    concepto_id: conceptoId,
+    tipo: concepto.tipo,
+    descripcion: concepto.nombre,
     monto,
     created_by: user.id,
   });
@@ -1026,4 +1084,39 @@ export async function quitarFeriado(formData: FormData) {
 
   if (error) throw new Error(error.message);
   revalidatePath("/feriados");
+}
+
+// ====================================== catálogo de servicios e impuestos ==
+
+export async function crearConcepto(formData: FormData) {
+  const { supabase, user } = await sesion();
+
+  const nombre = textoONulo(formData.get("nombre"));
+  if (!nombre) throw new Error("Ponele un nombre: SAT, EDET, CISI.");
+
+  const { error } = await supabase.from("conceptos").insert({
+    nombre,
+    tipo: String(formData.get("tipo") ?? "otro"),
+    detalle: textoONulo(formData.get("detalle")),
+    created_by: user.id,
+  });
+
+  if (error) {
+    if (error.code === "23505") throw new Error(`Ya existe un concepto llamado "${nombre}".`);
+    throw new Error(error.message);
+  }
+
+  revalidatePath("/conceptos");
+}
+
+export async function cambiarConcepto(formData: FormData) {
+  const { supabase } = await sesion();
+
+  const { error } = await supabase
+    .from("conceptos")
+    .update({ activo: formData.get("activo") === "true" })
+    .eq("id", String(formData.get("id")));
+
+  if (error) throw new Error(error.message);
+  revalidatePath("/conceptos");
 }

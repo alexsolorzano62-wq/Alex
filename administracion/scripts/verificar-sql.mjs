@@ -18,6 +18,7 @@ const archivos = [
   path.join(raiz, "supabase", "semilla.sql"),
   path.join(raiz, "supabase", "carga-inicial.sql"),
   path.join(raiz, "supabase", "migraciones-0007-0009.sql"),
+  path.join(raiz, "supabase", "migracion-0010.sql"),
 ];
 
 let fallos = 0;

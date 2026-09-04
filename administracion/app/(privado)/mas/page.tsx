@@ -12,6 +12,7 @@ const SECCIONES = [
   { href: "/propietarios", texto: "Propietarios", detalle: "Dueños y cómo se les rinde" },
   { href: "/inquilinos", texto: "Inquilinos", detalle: "Quiénes ocupan cada unidad" },
   { href: "/gastos", texto: "Gastos", detalle: "Expensas, impuestos y reparaciones" },
+  { href: "/conceptos", texto: "Servicios e impuestos", detalle: "SAT, EDET, CISI: el catálogo" },
   { href: "/avisos", texto: "Avisos", detalle: "Mensajes de WhatsApp listos para enviar" },
   { href: "/ajustes", texto: "Aumentos", detalle: "Contratos que cumplieron período" },
   { href: "/indices", texto: "Índices", detalle: "Series de ICL, IPC y demás" },

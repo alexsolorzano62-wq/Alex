@@ -121,7 +121,7 @@ function Fila({ fila, periodo }: { fila: FilaPlanilla; periodo: string }) {
         ) : (
           <Link
             href={`/cobros/nuevo?contrato=${fila.contratoId}&periodo=${periodo}`}
-            className="mt-1 block rounded-lg bg-marca-600 px-2.5 py-1 text-center text-xs font-semibold text-white hover:bg-marca-700"
+            className="mt-1 block rounded-lg bg-marca-600 px-2.5 py-1 text-center text-xs font-semibold text-white hover:bg-marca-700 dark:hover:bg-marca-500"
           >
             {vence < hoyISO() ? "Cobrar · atrasado" : "Cobrar"}
           </Link>

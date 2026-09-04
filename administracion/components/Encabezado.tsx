@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Logo } from "@/components/Logo";
 import { CerrarSesion } from "@/components/CerrarSesion";
+import { SelectorTema } from "@/components/SelectorTema";
 import type { Perfil } from "@/lib/supabase/perfil";
 
 const SECCIONES = [
@@ -50,6 +51,7 @@ export function Encabezado({
               </span>
             )}
           </span>
+          <SelectorTema />
           <CerrarSesion />
         </div>
       </div>

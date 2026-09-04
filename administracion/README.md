@@ -248,6 +248,17 @@ Más → Feriados cuando se publican.
 se anotan desde la misma fila de la planilla. El contador del menú sale de una
 consulta con `head` en el layout: devuelve el número, no las filas.
 
+## Cotización del dólar
+
+Sale de `dolarapi.com`, no de dolarhoy ni de El Cronista: esos son sitios de
+noticias y sacarles el número exige raspar el HTML, que cambia sin aviso y se
+lleva puesta la pantalla. La API publica los mismos valores como datos, sin
+clave y sin costo.
+
+Se piden con `revalidate` de diez minutos y un corte a los cuatro segundos.
+Si la fuente no contesta, la tarjeta simplemente no se dibuja: una cartelera
+de cambio caída no es motivo para no poder cobrar un alquiler.
+
 ## Tipografía y temas
 
 Todo en Arial, títulos incluidos. La serif del logotipo quedaba linda en

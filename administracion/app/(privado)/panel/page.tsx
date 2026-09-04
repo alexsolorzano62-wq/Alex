@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { formatearCorto, formatearMoneda } from "@/lib/dinero";
 import { hoyISO, primerDiaDelMes, nombreDelPeriodo, sumarMeses, formatearFecha, vencimientoDelPeriodo } from "@/lib/fechas";
+import { Cotizaciones } from "@/components/Cotizaciones";
 
 export const dynamic = "force-dynamic";
 
@@ -170,6 +171,8 @@ export default async function Panel() {
           href="/liquidaciones"
         />
       </div>
+
+      <Cotizaciones />
 
       {tocanAjuste.length > 0 && (
         <section className="tarjeta border-marca-200 bg-marca-50/40">

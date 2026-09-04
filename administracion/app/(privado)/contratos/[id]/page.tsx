@@ -98,7 +98,7 @@ export default async function DetalleContrato({
       {(ajustePendiente || (!cobradoEsteMes && contrato.estado === "activo")) && (
         <div className="flex flex-wrap gap-3">
           {ajustePendiente && (
-            <Link href="/ajustes" className="boton bg-marca-700">
+            <Link href="/ajustes" className="boton bg-marca-700 dark:bg-marca-500">
               Tiene aumento pendiente
             </Link>
           )}

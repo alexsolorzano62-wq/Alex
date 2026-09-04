@@ -248,6 +248,24 @@ Más → Feriados cuando se publican.
 se anotan desde la misma fila de la planilla. El contador del menú sale de una
 consulta con `head` en el layout: devuelve el número, no las filas.
 
+## Tipografía y temas
+
+Todo en Arial, títulos incluidos. La serif del logotipo quedaba linda en
+grande y costaba de leer en una planilla de 130 filas.
+
+Los colores no están escritos en las pantallas sino en variables de CSS, y
+`globals.css` les da otro valor bajo `.dark`. Las pantallas siguen usando
+`bg-white` y `text-stone-900`; el tema se cambia en un solo archivo en lugar
+de repetir una variante `dark:` en cada etiqueta de las treinta pantallas.
+
+La escala oscura no es la clara invertida: invertirla dejaba
+`text-stone-700` —el de todas las etiquetas de formulario— en 1.7:1 sobre la
+tarjeta, ilegible. Los valores están medidos y el más flojo da 4.8:1.
+
+El selector ofrece claro, oscuro y automático, y guarda la elección en el
+navegador. Un script en `app/layout.tsx` la aplica antes del primer pintado:
+sin eso, quien elige oscuro ve un destello blanco en cada carga.
+
 ## Hosting
 
 El plan gratuito de Vercel **prohíbe el uso comercial**, y administrar

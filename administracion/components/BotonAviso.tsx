@@ -44,7 +44,7 @@ export function BotonAviso({
             type="submit"
             onClick={() => window.open(linkWhatsApp(telefono, mensaje), "_blank", "noopener")}
             className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold text-white ${
-              yaEnviado ? "bg-stone-400 hover:bg-stone-500" : "bg-marca-600 hover:bg-marca-700"
+              yaEnviado ? "bg-stone-400 hover:bg-stone-500" : "bg-marca-600 hover:bg-marca-700 dark:hover:bg-marca-500"
             }`}
           >
             <svg viewBox="0 0 24 24" fill="currentColor" className="h-3.5 w-3.5" aria-hidden="true">

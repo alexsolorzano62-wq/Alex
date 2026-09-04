@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { formatearCorto, formatearMoneda } from "@/lib/dinero";
 import { hoyISO, primerDiaDelMes, nombreDelPeriodo, sumarMeses, formatearFecha, vencimientoDelPeriodo } from "@/lib/fechas";
 import { Cotizaciones } from "@/components/Cotizaciones";
+import { AccesosRapidos } from "@/components/AccesosRapidos";
 
 export const dynamic = "force-dynamic";
 
@@ -143,6 +144,8 @@ export default async function Panel() {
           {activos.length} contratos activos sobre {propiedadesTotal ?? 0} propiedades.
         </p>
       </div>
+
+      <AccesosRapidos />
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Metrica

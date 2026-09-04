@@ -255,6 +255,10 @@ noticias y sacarles el número exige raspar el HTML, que cambia sin aviso y se
 lleva puesta la pantalla. La API publica los mismos valores como datos, sin
 clave y sin costo.
 
+Va como una línea al pie del panel, no como tarjeta: es una observación al
+costado del trabajo, y si compite en tamaño con lo cobrado y lo que falta
+cobrar le roba atención a los números que sí se miran.
+
 Se piden con `revalidate` de diez minutos y un corte a los cuatro segundos.
 Si la fuente no contesta, la tarjeta simplemente no se dibuja: una cartelera
 de cambio caída no es motivo para no poder cobrar un alquiler.

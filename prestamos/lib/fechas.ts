@@ -70,3 +70,21 @@ export function formatFechaCorta(iso: string): string {
   const [, mes, dia] = partes(iso);
   return `${dia}/${mes}`;
 }
+
+// Abreviados: van dentro de un desplegable angosto en el celular, y
+// "Septiembre 2026" no entra.
+const MESES = [
+  "Ene", "Feb", "Mar", "Abr", "May", "Jun",
+  "Jul", "Ago", "Sep", "Oct", "Nov", "Dic",
+];
+
+/** "2026-09-04" -> "2026-09", para agrupar por mes. */
+export function mesDe(iso: string): string {
+  return iso.slice(0, 7);
+}
+
+/** "2026-09" -> "Sep 2026" */
+export function nombreMes(mes: string): string {
+  const [anio, numero] = mes.split("-").map(Number);
+  return `${MESES[numero - 1]} ${anio}`;
+}

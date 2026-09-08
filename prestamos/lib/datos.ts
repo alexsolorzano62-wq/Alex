@@ -1,6 +1,13 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
-import type { Ajustes, Cliente, Pago, Prestamo, PrestamoConCliente } from "@/lib/types";
+import type {
+  Ajustes,
+  Cliente,
+  Pago,
+  PagoConDetalle,
+  Prestamo,
+  PrestamoConCliente,
+} from "@/lib/types";
 import type { PlantillasGuardadas, TipoMensaje } from "@/lib/plantillas";
 
 /** El usuario de la sesión. El proxy ya garantiza que hay uno. */
@@ -102,4 +109,17 @@ export async function traerPlantillas(): Promise<PlantillasGuardadas> {
   return guardadas;
 }
 
-export type { Ajustes, Cliente, Pago, Prestamo, PrestamoConCliente };
+/** Todos los cobros, del más nuevo al más viejo, con su cliente. */
+export async function traerPagos(): Promise<PagoConDetalle[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("pagos")
+    .select("*, prestamo:prestamos (id, modalidad, cliente:clientes (id, nombre))")
+    .order("fecha", { ascending: false })
+    .order("created_at", { ascending: false });
+
+  if (error) throw new Error(`No se pudieron traer los cobros: ${error.message}`);
+  return (data ?? []) as PagoConDetalle[];
+}
+
+export type { Ajustes, Cliente, Pago, PagoConDetalle, Prestamo, PrestamoConCliente };

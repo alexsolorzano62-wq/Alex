@@ -22,6 +22,16 @@ function IconoPrestamos() {
   );
 }
 
+function IconoCobros() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-5 w-5">
+      <rect x="2.5" y="6" width="19" height="12" rx="2" />
+      <circle cx="12" cy="12" r="2.5" />
+      <path d="M6 12h.01M18 12h.01" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 function IconoClientes() {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-5 w-5">
@@ -36,6 +46,7 @@ function IconoClientes() {
 const ITEMS = [
   { href: "/", label: "Inicio", icono: <IconoInicio /> },
   { href: "/prestamos", label: "Préstamos", icono: <IconoPrestamos /> },
+  { href: "/pagos", label: "Cobros", icono: <IconoCobros /> },
   { href: "/clientes", label: "Clientes", icono: <IconoClientes /> },
 ];
 

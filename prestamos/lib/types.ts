@@ -81,3 +81,12 @@ export type Ajustes = {
   plantilla_comprobante: string | null;
   actualizado_at: string;
 };
+
+/** Un pago con el préstamo y el cliente a los que pertenece. */
+export type PagoConDetalle = Pago & {
+  prestamo: {
+    id: string;
+    modalidad: Modalidad;
+    cliente: { id: string; nombre: string } | null;
+  } | null;
+};

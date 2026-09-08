@@ -40,6 +40,8 @@ todo y, si querés, les mandás el estado de cuenta por WhatsApp.
   importa es cuánto devuelve, y en un plan, cuántas cuotas le quedan y de cuánto.
   Son doce textos, con etiquetas como `{cliente}`, `{cuota}` o `{saldo}` que se
   reemplazan solas y vista previa en vivo.
+- **Cobros**: una pantalla con todos los pagos registrados, filtrable por mes y por
+  cliente, con el total que entró y cuánto de eso fue interés.
 - **Comprobante de pago**: cada vez que registrás un cobro podés mandarle el recibo,
   con el saldo, cuántas cuotas le quedan y cuándo vence la próxima.
 - Los mensajes al cliente **nunca muestran la tasa**: eso es información tuya. Si una

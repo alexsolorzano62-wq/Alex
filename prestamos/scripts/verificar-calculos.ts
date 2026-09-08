@@ -6,6 +6,7 @@ import { parsearPesos, parsearTasa } from "@/lib/parseo";
 import { cuotaSemanal, planesPara, PLANES_SEMANALES, SEMANAS_CON_PLAN } from "@/lib/planes";
 import { sumarSemanas, sumarDias } from "@/lib/fechas";
 import { siguienteVencimiento, datosFrecuencia, textoCuotas } from "@/lib/periodos";
+import { mesDe, nombreMes } from "@/lib/fechas";
 import type { Prestamo } from "@/lib/types";
 
 let fallos = 0;
@@ -320,6 +321,13 @@ chequear("plural", textoCuotas(4, "semanal"), "4 cuotas semanales");
 chequear("singular", textoCuotas(1, "mensual"), "1 cuota mensual");
 chequear("singular quincenal", textoCuotas(1, "quincenal"), "1 cuota quincenal");
 chequear("cuotas por mes de cada frecuencia", [datosFrecuencia("semanal").porMes, datosFrecuencia("quincenal").porMes, datosFrecuencia("mensual").porMes], [4, 2, 1]);
+
+console.log("--- Agrupar cobros por mes ---");
+chequear("mes de una fecha", mesDe("2026-09-04"), "2026-09");
+chequear("nombre del mes", nombreMes("2026-09"), "Sep 2026");
+chequear("enero", nombreMes("2026-01"), "Ene 2026");
+chequear("diciembre", nombreMes("2027-12"), "Dic 2027");
+chequear("los meses ordenan bien como texto", ["2026-09", "2026-08", "2026-12", "2027-01"].sort().join(), "2026-08,2026-09,2026-12,2027-01");
 
 console.log(fallos === 0 ? "\nTODO OK" : `\n${fallos} FALLAS`);
 process.exit(fallos === 0 ? 0 : 1);

@@ -232,10 +232,10 @@ export default async function PrestamoPage({
                     <form action={borrarPago}>
                       <input type="hidden" name="id" value={pago.id} />
                       <BotonConfirmar
-                        pregunta="¿Borrar este pago del historial?"
-                        className="rounded-lg px-2 py-1 text-xs text-slate-400 active:bg-slate-100"
+                        pregunta={`¿Borrar este cobro de ${plata(pago.monto)} del ${formatFecha(pago.fecha)}? El préstamo vuelve a como estaba antes.`}
+                        className="rounded-lg border border-slate-300 px-2.5 py-1.5 text-xs font-medium text-slate-600 active:bg-slate-100"
                       >
-                        ✕
+                        Borrar
                       </BotonConfirmar>
                     </form>
                   </div>

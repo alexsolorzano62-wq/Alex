@@ -7,7 +7,7 @@ import { calcularPlan, capitalizar, pesos, resumen, tasaImplicita } from "@/lib/
 import { hoyISO, sumarMeses } from "@/lib/fechas";
 import { datosFrecuencia, frecuenciaDe, siguienteVencimiento } from "@/lib/periodos";
 import type { Frecuencia } from "@/lib/types";
-import { parsearPesos, parsearTasa } from "@/lib/parseo";
+import { nombreCoincide, parsearPesos, parsearTasa } from "@/lib/parseo";
 import type { Modalidad, TipoPago } from "@/lib/types";
 
 export type Resultado = { error: string } | undefined;
@@ -72,10 +72,38 @@ export async function editarCliente(
   redirect(`/clientes/${id}`);
 }
 
-export async function borrarCliente(datos: FormData) {
+/**
+ * Borra un cliente y, con él, todos sus préstamos y pagos.
+ *
+ * Pide escribir el nombre a mano. La confirmación va acá y no en un cartel del
+ * navegador a propósito: un cartel se puede saltear con un toque apurado, y
+ * esto no se puede deshacer.
+ */
+export async function borrarCliente(
+  _previo: Resultado,
+  datos: FormData
+): Promise<Resultado> {
   const id = String(datos.get("id") ?? "");
+  const escrito = String(datos.get("confirmacion") ?? "").trim();
+
   const { supabase } = await sesion();
-  await supabase.from("clientes").delete().eq("id", id);
+
+  const { data: cliente } = await supabase
+    .from("clientes")
+    .select("nombre")
+    .eq("id", id)
+    .maybeSingle();
+  if (!cliente) return { error: "No se encontró el cliente." };
+
+  if (!nombreCoincide(escrito, cliente.nombre)) {
+    return {
+      error: `Para borrarlo, escribí su nombre tal cual: ${cliente.nombre}`,
+    };
+  }
+
+  const { error } = await supabase.from("clientes").delete().eq("id", id);
+  if (error) return { error: `No se pudo borrar: ${error.message}` };
+
   refrescar();
   redirect("/clientes");
 }

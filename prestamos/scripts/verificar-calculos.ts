@@ -2,7 +2,7 @@ import { calcularPlan, resumen, tasaImplicita, capitalizar, renovar } from "@/li
 import { sumarMeses, diasEntre } from "@/lib/fechas";
 import { normalizarTelefono, mensajeDe } from "@/lib/whatsapp";
 import { aplicarPlantilla, plantillaDe, variablesDePrestamo, EJEMPLOS, MODALIDADES, PLANTILLAS_POR_DEFECTO, TIPOS } from "@/lib/plantillas";
-import { parsearPesos, parsearTasa } from "@/lib/parseo";
+import { nombreCoincide, parsearPesos, parsearTasa } from "@/lib/parseo";
 import { cuotaSemanal, planesPara, PLANES_SEMANALES, SEMANAS_CON_PLAN } from "@/lib/planes";
 import { sumarSemanas, sumarDias } from "@/lib/fechas";
 import { siguienteVencimiento, datosFrecuencia, textoCuotas } from "@/lib/periodos";
@@ -328,6 +328,18 @@ chequear("nombre del mes", nombreMes("2026-09"), "Sep 2026");
 chequear("enero", nombreMes("2026-01"), "Ene 2026");
 chequear("diciembre", nombreMes("2027-12"), "Dic 2027");
 chequear("los meses ordenan bien como texto", ["2026-09", "2026-08", "2026-12", "2027-01"].sort().join(), "2026-08,2026-09,2026-12,2027-01");
+
+console.log("--- Confirmar el borrado de un cliente ---");
+chequear("el nombre exacto borra", nombreCoincide("Marcelo Rodriguez", "Marcelo Rodriguez"), true);
+chequear("no importan las mayusculas", nombreCoincide("marcelo rodriguez", "Marcelo Rodriguez"), true);
+chequear("no importan los espacios de mas", nombreCoincide("  Marcelo   Rodriguez ", "Marcelo Rodriguez"), true);
+chequear("no importan los acentos", nombreCoincide("Marcelo Rodriguez", "Marcelo Rodríguez"), true);
+chequear("solo el nombre de pila NO alcanza", nombreCoincide("Marcelo", "Marcelo Rodriguez"), false);
+chequear("solo el apellido NO alcanza", nombreCoincide("Rodriguez", "Marcelo Rodriguez"), false);
+chequear("vacio NO borra", nombreCoincide("", "Marcelo Rodriguez"), false);
+chequear("espacios NO borran", nombreCoincide("   ", "Marcelo Rodriguez"), false);
+chequear("otro cliente NO borra", nombreCoincide("Miriam Marquez", "Marcelo Rodriguez"), false);
+chequear("un nombre que lo contiene NO alcanza", nombreCoincide("Marcelo Rodriguez Perez", "Marcelo Rodriguez"), false);
 
 console.log(fallos === 0 ? "\nTODO OK" : `\n${fallos} FALLAS`);
 process.exit(fallos === 0 ? 0 : 1);

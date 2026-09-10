@@ -4,7 +4,7 @@ import Encabezado from "@/components/Encabezado";
 import FilaPrestamo from "@/components/FilaPrestamo";
 import BotonesWhatsApp from "@/components/BotonesWhatsApp";
 import BotonConfirmar from "@/components/BotonConfirmar";
-import { borrarCliente } from "@/app/acciones";
+import BorrarCliente from "@/components/BorrarCliente";
 import { traerCliente, traerPlantillas, traerPrestamosDeCliente } from "@/lib/datos";
 import { resolver } from "@/lib/agregados";
 import { hoyISO, formatFecha } from "@/lib/fechas";
@@ -124,18 +124,12 @@ export default async function ClientePage({
           )}
         </section>
 
-        <form action={borrarCliente} className="mt-8">
-          <input type="hidden" name="id" value={cliente.id} />
-          <BotonConfirmar
-            pregunta={`¿Borrar a ${cliente.nombre}? Se borran también sus ${resueltos.length} préstamo(s) y todos los pagos. No se puede deshacer.`}
-            className="w-full rounded-xl border border-red-200 px-4 py-2.5 text-sm font-medium text-red-600 active:bg-red-50"
-          >
-            Borrar cliente
-          </BotonConfirmar>
-          <p className="mt-1 text-center text-xs text-slate-400">
-            Se borran también sus préstamos y pagos.
-          </p>
-        </form>
+        <BorrarCliente
+          id={cliente.id}
+          nombre={cliente.nombre}
+          prestamos={resueltos.length}
+          cobrado={resueltos.reduce((acc, { datos }) => acc + datos.cobrado, 0)}
+        />
       </main>
     </>
   );

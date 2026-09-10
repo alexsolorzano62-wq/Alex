@@ -21,3 +21,23 @@ export function parsearTasa(texto: string | null | undefined): number | null {
   const numero = Number(limpio);
   return Number.isFinite(numero) ? numero : null;
 }
+
+/**
+ * ¿El nombre escrito a mano coincide con el del cliente?
+ *
+ * Se usa para confirmar que se quiere borrar un cliente. Perdona mayúsculas,
+ * espacios de más y acentos —nadie escribe "Rodríguez" con tilde en el
+ * celular— pero exige el nombre completo: con "marcelo" no alcanza.
+ */
+export function nombreCoincide(escrito: string, real: string): boolean {
+  const normalizar = (texto: string) =>
+    texto
+      .normalize("NFD")
+      .replace(/[̀-ͯ]/g, "")
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, " ");
+
+  const limpio = normalizar(escrito);
+  return limpio !== "" && limpio === normalizar(real);
+}

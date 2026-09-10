@@ -2,6 +2,8 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import { borrarPago } from "@/app/acciones";
+import BotonConfirmar from "@/components/BotonConfirmar";
 import { formatFecha, mesDe, nombreMes } from "@/lib/fechas";
 import { plata } from "@/lib/format";
 import type { PagoConDetalle } from "@/lib/types";
@@ -117,10 +119,10 @@ export default function ListaPagos({ pagos }: { pagos: PagoConDetalle[] }) {
       ) : (
         <ul className="mt-4 divide-y divide-slate-100 overflow-hidden rounded-2xl border border-slate-200 bg-white">
           {visibles.map((pago) => (
-            <li key={pago.id}>
+            <li key={pago.id} className="flex items-center gap-2 px-4 py-3">
               <Link
                 href={`/prestamos/${pago.prestamo?.id ?? ""}`}
-                className="flex items-center justify-between gap-3 px-4 py-3 active:bg-slate-50"
+                className="flex min-w-0 flex-1 items-center justify-between gap-3"
               >
                 <div className="min-w-0">
                   <p className="truncate text-sm font-semibold text-slate-900">
@@ -137,6 +139,16 @@ export default function ListaPagos({ pagos }: { pagos: PagoConDetalle[] }) {
                   {plata(pago.monto)}
                 </span>
               </Link>
+
+              <form action={borrarPago} className="shrink-0">
+                <input type="hidden" name="id" value={pago.id} />
+                <BotonConfirmar
+                  pregunta={`¿Borrar este cobro de ${plata(pago.monto)} del ${formatFecha(pago.fecha)}? El préstamo vuelve a como estaba antes.`}
+                  className="rounded-lg border border-slate-300 px-2.5 py-1.5 text-xs font-medium text-slate-600 active:bg-slate-100"
+                >
+                  Borrar
+                </BotonConfirmar>
+              </form>
             </li>
           ))}
         </ul>

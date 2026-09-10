@@ -7,7 +7,7 @@ import BotonesWhatsApp from "@/components/BotonesWhatsApp";
 import BotonConfirmar from "@/components/BotonConfirmar";
 import { borrarPago, borrarPrestamo, capitalizarPrestamo } from "@/app/acciones";
 import { traerPlantillas, traerPrestamo } from "@/lib/datos";
-import { resumen } from "@/lib/calc";
+import { numerarCuotas, resumen } from "@/lib/calc";
 import { formatFecha, hoyISO } from "@/lib/fechas";
 import { descripcionPlan, plata, tasaMostrada, textoVencimiento } from "@/lib/format";
 import { linkWhatsApp, mensajeDe } from "@/lib/whatsapp";
@@ -55,6 +55,7 @@ export default async function PrestamoPage({
 
   // El historial viene del más nuevo al más viejo, así que el último cobro
   // es el primero de la lista.
+  const numeros = numerarCuotas(prestamo.pagos);
   const ultimoPago = prestamo.pagos[0] ?? null;
   const comprobante = ultimoPago
     ? mensajeDe("comprobante", prestamo, datos, nombre, hoy, {
@@ -218,7 +219,9 @@ export default async function PrestamoPage({
                 <li key={pago.id} className="flex items-center justify-between gap-3 px-4 py-3">
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-slate-800">
-                      {NOMBRE_TIPO[pago.tipo] ?? pago.tipo}
+                      {numeros.has(pago.id)
+                        ? `Cuota ${numeros.get(pago.id)}${prestamo.cuotas_total ? ` de ${prestamo.cuotas_total}` : ""}`
+                        : (NOMBRE_TIPO[pago.tipo] ?? pago.tipo)}
                     </p>
                     <p className="text-xs text-slate-500">
                       {formatFecha(pago.fecha)}
@@ -232,7 +235,7 @@ export default async function PrestamoPage({
                     <form action={borrarPago}>
                       <input type="hidden" name="id" value={pago.id} />
                       <BotonConfirmar
-                        pregunta={`¿Borrar este cobro de ${plata(pago.monto)} del ${formatFecha(pago.fecha)}? El préstamo vuelve a como estaba antes.`}
+                        pregunta={`¿Borrar ${numeros.has(pago.id) ? `la cuota ${numeros.get(pago.id)}` : "este cobro"} de ${plata(pago.monto)} del ${formatFecha(pago.fecha)}? El préstamo vuelve a como estaba antes.`}
                         className="rounded-lg border border-slate-300 px-2.5 py-1.5 text-xs font-medium text-slate-600 active:bg-slate-100"
                       >
                         Borrar
@@ -245,15 +248,36 @@ export default async function PrestamoPage({
           )}
         </section>
 
-        <form action={borrarPrestamo} className="mt-8">
-          <input type="hidden" name="id" value={prestamo.id} />
-          <BotonConfirmar
-            pregunta={`¿Borrar el préstamo de ${nombre}? Se borra también su historial de pagos y no se puede deshacer.`}
-            className="w-full rounded-xl border border-red-200 px-4 py-2.5 text-sm font-medium text-red-600 active:bg-red-50"
-          >
+        <details className="mt-8 rounded-2xl border border-slate-200 bg-white">
+          <summary className="cursor-pointer px-4 py-3 text-sm font-medium text-slate-500">
             Borrar este préstamo
-          </BotonConfirmar>
-        </form>
+          </summary>
+          <form action={borrarPrestamo} className="border-t border-slate-100 px-4 py-4">
+            <input type="hidden" name="id" value={prestamo.id} />
+            <p className="text-sm text-slate-700">
+              Se borra el préstamo de {nombre}
+              {prestamo.pagos.length > 0 && (
+                <>
+                  {" "}
+                  y sus {prestamo.pagos.length} cobro
+                  {prestamo.pagos.length === 1 ? "" : "s"} por{" "}
+                  <strong>{plata(datos.cobrado)}</strong>
+                </>
+              )}
+              . No se puede deshacer.
+            </p>
+            <p className="mt-2 text-xs text-slate-500">
+              Si lo que querés es corregir un cobro mal cargado, borralo desde el
+              historial de acá arriba y el préstamo se acomoda solo.
+            </p>
+            <BotonConfirmar
+              pregunta={`¿Borrar el préstamo de ${nombre} y sus ${prestamo.pagos.length} cobro(s)? No se puede deshacer.`}
+              className="mt-3 w-full rounded-xl border border-red-300 px-4 py-2.5 text-sm font-semibold text-red-600 active:bg-red-50"
+            >
+              Borrar definitivamente
+            </BotonConfirmar>
+          </form>
+        </details>
       </main>
     </>
   );

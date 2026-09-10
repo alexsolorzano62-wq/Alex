@@ -207,3 +207,21 @@ export function capitalizar(prestamo: Prestamo): {
     fecha_vencimiento: sumarMeses(prestamo.fecha_vencimiento, 1),
   };
 }
+
+/**
+ * Numera los pagos de cuota de un préstamo: el primero es la cuota 1.
+ *
+ * Se ordena por fecha y, cuando dos caen el mismo día —pasa cuando se registran
+ * dos cuotas juntas— por el momento en que se cargaron. Así el número de cada
+ * cuota no cambia según cómo se esté mirando la lista.
+ */
+export function numerarCuotas(pagos: Pago[]): Map<string, number> {
+  const cronologico = pagos
+    .filter((pago) => pago.tipo === "cuota")
+    .sort(
+      (a, b) =>
+        a.fecha.localeCompare(b.fecha) || a.created_at.localeCompare(b.created_at)
+    );
+
+  return new Map(cronologico.map((pago, indice) => [pago.id, indice + 1]));
+}

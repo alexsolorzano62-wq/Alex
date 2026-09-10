@@ -114,7 +114,9 @@ export async function traerPagos(): Promise<PagoConDetalle[]> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("pagos")
-    .select("*, prestamo:prestamos (id, modalidad, cliente:clientes (id, nombre))")
+    .select(
+      "*, prestamo:prestamos (id, modalidad, cuotas_total, cliente:clientes (id, nombre))"
+    )
     .order("fecha", { ascending: false })
     .order("created_at", { ascending: false });
 

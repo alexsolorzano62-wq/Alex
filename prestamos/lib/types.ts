@@ -87,6 +87,7 @@ export type PagoConDetalle = Pago & {
   prestamo: {
     id: string;
     modalidad: Modalidad;
+    cuotas_total: number | null;
     cliente: { id: string; nombre: string } | null;
   } | null;
 };

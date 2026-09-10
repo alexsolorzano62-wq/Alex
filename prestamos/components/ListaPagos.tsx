@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { borrarPago } from "@/app/acciones";
 import BotonConfirmar from "@/components/BotonConfirmar";
+import { numerarCuotas } from "@/lib/calc";
 import { formatFecha, mesDe, nombreMes } from "@/lib/fechas";
 import { plata } from "@/lib/format";
 import type { PagoConDetalle } from "@/lib/types";
@@ -31,6 +32,22 @@ export default function ListaPagos({ pagos }: { pagos: PagoConDetalle[] }) {
       if (cliente) porId.set(cliente.id, cliente.nombre);
     }
     return [...porId.entries()].sort((a, b) => a[1].localeCompare(b[1]));
+  }, [pagos]);
+
+  // Los cobros llegan de todos los préstamos juntos, así que se numeran por
+  // préstamo: la cuota 3 de uno no tiene nada que ver con la de otro.
+  const numeros = useMemo(() => {
+    const porPrestamo = new Map<string, typeof pagos>();
+    for (const pago of pagos) {
+      const id = pago.prestamo?.id ?? pago.prestamo_id;
+      porPrestamo.set(id, [...(porPrestamo.get(id) ?? []), pago]);
+    }
+
+    const todos = new Map<string, number>();
+    for (const delPrestamo of porPrestamo.values()) {
+      for (const [id, numero] of numerarCuotas(delPrestamo)) todos.set(id, numero);
+    }
+    return todos;
   }, [pagos]);
 
   const [mes, setMes] = useState(meses[0] ?? TODOS);
@@ -129,7 +146,10 @@ export default function ListaPagos({ pagos }: { pagos: PagoConDetalle[] }) {
                     {pago.prestamo?.cliente?.nombre ?? "Cliente borrado"}
                   </p>
                   <p className="truncate text-xs text-slate-500">
-                    {NOMBRE_TIPO[pago.tipo] ?? pago.tipo} · {formatFecha(pago.fecha)}
+                    {numeros.has(pago.id)
+                      ? `Cuota ${numeros.get(pago.id)}${pago.prestamo?.cuotas_total ? ` de ${pago.prestamo.cuotas_total}` : ""}`
+                      : (NOMBRE_TIPO[pago.tipo] ?? pago.tipo)}{" "}
+                    · {formatFecha(pago.fecha)}
                   </p>
                   {pago.nota && (
                     <p className="truncate text-xs text-slate-400">{pago.nota}</p>
@@ -143,7 +163,7 @@ export default function ListaPagos({ pagos }: { pagos: PagoConDetalle[] }) {
               <form action={borrarPago} className="shrink-0">
                 <input type="hidden" name="id" value={pago.id} />
                 <BotonConfirmar
-                  pregunta={`¿Borrar este cobro de ${plata(pago.monto)} del ${formatFecha(pago.fecha)}? El préstamo vuelve a como estaba antes.`}
+                  pregunta={`¿Borrar ${numeros.has(pago.id) ? `la cuota ${numeros.get(pago.id)}` : "este cobro"} de ${plata(pago.monto)} del ${formatFecha(pago.fecha)}? El préstamo vuelve a como estaba antes.`}
                   className="rounded-lg border border-slate-300 px-2.5 py-1.5 text-xs font-medium text-slate-600 active:bg-slate-100"
                 >
                   Borrar

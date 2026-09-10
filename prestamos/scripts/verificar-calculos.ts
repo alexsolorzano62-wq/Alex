@@ -1,4 +1,4 @@
-import { calcularPlan, resumen, tasaImplicita, capitalizar, renovar } from "@/lib/calc";
+import { calcularPlan, numerarCuotas, resumen, tasaImplicita, capitalizar, renovar } from "@/lib/calc";
 import { sumarMeses, diasEntre } from "@/lib/fechas";
 import { normalizarTelefono, mensajeDe } from "@/lib/whatsapp";
 import { aplicarPlantilla, plantillaDe, variablesDePrestamo, EJEMPLOS, MODALIDADES, PLANTILLAS_POR_DEFECTO, TIPOS } from "@/lib/plantillas";
@@ -340,6 +340,32 @@ chequear("vacio NO borra", nombreCoincide("", "Marcelo Rodriguez"), false);
 chequear("espacios NO borran", nombreCoincide("   ", "Marcelo Rodriguez"), false);
 chequear("otro cliente NO borra", nombreCoincide("Miriam Marquez", "Marcelo Rodriguez"), false);
 chequear("un nombre que lo contiene NO alcanza", nombreCoincide("Marcelo Rodriguez Perez", "Marcelo Rodriguez"), false);
+
+console.log("--- Numero de cuota ---");
+const cobro = (id: string, fecha: string, tipo: "cuota" | "interes", creado = "") =>
+  ({ id, prestamo_id: "p", fecha, monto: 27900, tipo, nota: null, created_at: creado });
+
+chequear(
+  "se numeran en orden cronologico, no como llegan",
+  [...numerarCuotas([cobro("c", "2026-09-15", "cuota"), cobro("a", "2026-09-01", "cuota"), cobro("b", "2026-09-08", "cuota")])],
+  [["a", 1], ["b", 2], ["c", 3]]
+);
+chequear(
+  "dos cuotas el mismo dia se ordenan por cuando se cargaron",
+  [...numerarCuotas([cobro("cuatro", "2026-09-08", "cuota", "2026-09-08T10:05:00Z"), cobro("tres", "2026-09-08", "cuota", "2026-09-08T10:00:00Z")])],
+  [["tres", 1], ["cuatro", 2]]
+);
+chequear(
+  "los pagos que no son cuota no llevan numero",
+  [...numerarCuotas([cobro("i", "2026-09-01", "interes"), cobro("a", "2026-09-08", "cuota")])],
+  [["a", 1]]
+);
+chequear("sin cuotas no numera nada", [...numerarCuotas([])], []);
+chequear(
+  "borrar la cuota 4 deja a la 3 como cuota 3",
+  [...numerarCuotas([cobro("uno", "2026-09-01", "cuota"), cobro("dos", "2026-09-08", "cuota"), cobro("tres", "2026-09-15", "cuota")])].map(([, n]) => n),
+  [1, 2, 3]
+);
 
 console.log(fallos === 0 ? "\nTODO OK" : `\n${fallos} FALLAS`);
 process.exit(fallos === 0 ? 0 : 1);

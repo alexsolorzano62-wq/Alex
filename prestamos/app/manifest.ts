@@ -14,6 +14,8 @@ export default function manifest(): MetadataRoute.Manifest {
     theme_color: "#1877f2",
     lang: "es-AR",
     icons: [
+      // El de 96 es el dibujo simplificado: a ese tamaño la carta no se lee.
+      { src: "/icons/icon-96.png", sizes: "96x96", type: "image/png", purpose: "any" },
       { src: "/icons/icon-192.png", sizes: "192x192", type: "image/png", purpose: "any" },
       { src: "/icons/icon-512.png", sizes: "512x512", type: "image/png", purpose: "any" },
       { src: "/icons/icon-maskable-192.png", sizes: "192x192", type: "image/png", purpose: "maskable" },

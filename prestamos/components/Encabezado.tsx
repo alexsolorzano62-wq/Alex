@@ -6,7 +6,7 @@ export default function Encabezado({ subtitulo }: { subtitulo?: string }) {
   return (
     <header className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-200 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 px-4 py-3 backdrop-blur">
       <Link href="/" className="flex min-w-0 items-center gap-2">
-        <LogoMark className="h-8 w-8 text-[18px]" />
+        <LogoMark className="h-8 w-8" />
         <div className="min-w-0">
           <p className="truncate text-sm font-bold leading-tight">Préstamos</p>
           {subtitulo && (

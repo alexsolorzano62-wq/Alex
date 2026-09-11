@@ -82,7 +82,7 @@ export default function LoginPage() {
     <div className="flex min-h-dvh flex-col items-center justify-center px-6">
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
-          <LogoMark className="mx-auto h-16 w-16 text-[36px]" />
+          <LogoMark variante="carta" className="mx-auto h-20 w-20" />
           <h1 className="mt-3 text-xl font-bold">Préstamos</h1>
           <p className="text-sm text-slate-600 dark:text-slate-400">Seguimiento de clientes</p>
         </div>

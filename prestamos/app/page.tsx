@@ -151,6 +151,23 @@ export default async function DashboardPage() {
 
         <section className="mt-6 space-y-3">
           <Link
+            href="/resumen"
+            className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-3 active:bg-slate-50"
+          >
+            <span>
+              <span className="block text-sm font-semibold text-slate-800">
+                Ver el resumen
+              </span>
+              <span className="block text-xs text-slate-500">
+                Cuánto prestaste y ganaste mes a mes
+              </span>
+            </span>
+            <span aria-hidden="true" className="text-slate-400">
+              →
+            </span>
+          </Link>
+
+          <Link
             href="/simulador"
             className="flex items-center justify-between rounded-xl border border-brand-200 bg-brand-50 px-4 py-3 active:bg-brand-100"
           >

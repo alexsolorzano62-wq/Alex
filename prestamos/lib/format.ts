@@ -47,3 +47,15 @@ export function tasaMostrada(prestamo: Prestamo): number {
   }
   return prestamo.tasa_mensual;
 }
+
+/** Para los ejes del gráfico, donde no entra el número completo: "$3,9 M". */
+export function plataCorta(monto: number): string {
+  const valor = Math.round(monto);
+  if (Math.abs(valor) >= 1_000_000) {
+    return `$${(valor / 1_000_000).toLocaleString("es-AR", { maximumFractionDigits: 1 })} M`;
+  }
+  if (Math.abs(valor) >= 10_000) {
+    return `$${Math.round(valor / 1000).toLocaleString("es-AR")} mil`;
+  }
+  return plata(valor);
+}

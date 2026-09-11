@@ -15,6 +15,11 @@ todo y, si querés, les mandás el estado de cuenta por WhatsApp.
 - **Totales** de lo que tenés en la calle, lo que vas a cobrar, el interés pendiente
   y la ganancia ya cobrada.
 - **Cuotas atrasadas**: no solo «vencido hace 21 días», sino «debe 3 cuotas, $83.700».
+- **Avance de cada préstamo**: cuántas cuotas lleva pagas y qué porcentaje es, y si ya
+  recuperaste lo que prestaste. Son dos cosas distintas: se puede ir por la mitad de
+  las cuotas y tener el capital de vuelta, o al revés.
+- **Resumen**: un gráfico de cómo vienen creciendo lo prestado y la ganancia, el
+  detalle de cada mes, cuánto prestaste y ganaste este mes, y qué vence el que viene.
 - **Corregir un préstamo** sin perder los cobros ya registrados.
 - **Respaldo**: una copia de la base se guarda sola todas las noches en la rama
   `respaldos` del repositorio, y desde *Ajustes* podés bajarte los datos en CSV.

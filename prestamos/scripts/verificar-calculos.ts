@@ -4,6 +4,7 @@ import { normalizarTelefono, mensajeDe } from "@/lib/whatsapp";
 import { aplicarPlantilla, plantillaDe, variablesDePrestamo, EJEMPLOS, MODALIDADES, PLANTILLAS_POR_DEFECTO, TIPOS } from "@/lib/plantillas";
 import { nombreCoincide, parsearPesos, parsearTasa } from "@/lib/parseo";
 import { cuotaSemanal, planesPara, PLANES_SEMANALES, SEMANAS_CON_PLAN } from "@/lib/planes";
+import { serieHistorica } from "@/lib/agregados";
 import { sumarSemanas, sumarDias } from "@/lib/fechas";
 import { siguienteVencimiento, datosFrecuencia, textoCuotas } from "@/lib/periodos";
 import { mesDe, nombreMes } from "@/lib/fechas";
@@ -388,6 +389,61 @@ chequear("y el monto atrasado acompaña", resumen(semanal, catorcePagas, "2029-0
 chequear("con todas pagas no debe ninguna", resumen(semanal, todas, "2029-01-01").cuotasAtrasadas, 0);
 chequear("un prestamo cerrado no debe nada", resumen({ ...semanal, estado: "pagado" }, [], "2029-01-01").cuotasAtrasadas, 0);
 chequear("el de interes mensual no cuenta cuotas", resumen(base, [], "2026-12-01").cuotasAtrasadas, 0);
+
+console.log("--- Avance del plan ---");
+chequear("sin pagar, 0%", resumen(semanal, [], "2026-08-20").avance, 0);
+chequear("1 de 16 = 6%", resumen(semanal, unaSemana, "2026-09-01").avance, 6);
+chequear("8 de 16 = 50%", resumen(semanal, todas.slice(0, 8), "2026-09-01").avance, 50);
+chequear("12 de 16 = 75%", resumen(semanal, todas.slice(0, 12), "2026-09-01").avance, 75);
+chequear("16 de 16 = 100%", resumen(semanal, todas, "2026-12-09").avance, 100);
+chequear("3 de 4 cuotas = 75%", resumen({ ...semanal, cuotas_total: 4 }, todas.slice(0, 3), "2026-09-01").avance, 75);
+chequear("el de interes mensual no tiene avance", resumen(base, [], "2026-08-18").avance, null);
+
+console.log("--- Recuperar el capital prestado ---");
+// Presta 100.000 al 30%: le pagan el interes mes a mes.
+const cien: Prestamo = { ...base, capital_inicial: 100000, capital_actual: 100000, tasa_mensual: 30 };
+const interesesDe = (cantidad: number) =>
+  Array.from({ length: cantidad }, (_, i) => ({
+    id: `i${i}`, prestamo_id: "1", fecha: "2026-09-01", monto: 30000,
+    tipo: "interes" as const, nota: null, created_at: "",
+  }));
+chequear("sin cobrar nada, faltan los 100.000", resumen(cien, [], "2026-08-18").faltaRecuperar, 100000);
+chequear("con 1 interes cobrado faltan 70.000", resumen(cien, interesesDe(1), "2026-08-18").faltaRecuperar, 70000);
+chequear("con 3 todavia falta", resumen(cien, interesesDe(3), "2026-08-18").capitalRecuperado, false);
+chequear("con 3 faltan 10.000", resumen(cien, interesesDe(3), "2026-08-18").faltaRecuperar, 10000);
+chequear("al cuarto ya se recupero", resumen(cien, interesesDe(4), "2026-08-18").capitalRecuperado, true);
+chequear("y no queda nada por recuperar", resumen(cien, interesesDe(4), "2026-08-18").faltaRecuperar, 0);
+chequear("cobrar de mas no da negativo", resumen(cien, interesesDe(9), "2026-08-18").faltaRecuperar, 0);
+chequear(
+  "en un plan semanal se recupera a la octava cuota",
+  [7, 8].map((n) => resumen(semanal, todas.slice(0, n), "2026-12-09").capitalRecuperado),
+  [false, true]
+);
+
+console.log("--- Serie historica del grafico ---");
+const prest = (id: string, inicio: string, capital: number) =>
+  ({ id, cliente_id: "c", cliente: { id: "c", nombre: "X", telefono: null }, modalidad: "mensual" as const,
+     capital_inicial: capital, capital_actual: capital, tasa_mensual: 30, fecha_inicio: inicio,
+     fecha_vencimiento: inicio, cuotas_total: null, cuota_monto: null, total_a_devolver: null,
+     frecuencia: null, estado: "vigente" as const, observacion: null, created_at: "", pagos: [] });
+const movimiento = (fecha: string, monto: number, tipo: "interes" | "cuota") =>
+  ({ id: fecha + monto, prestamo_id: "p", fecha, monto, tipo, nota: null, created_at: "", prestamo: null });
+
+const serie = serieHistorica(
+  [prest("a", "2026-07-10", 100000), prest("b", "2026-09-02", 200000)],
+  [movimiento("2026-08-10", 30000, "interes"), movimiento("2026-09-10", 30000, "interes"), movimiento("2026-09-20", 50000, "cuota")],
+  "2026-09-30"
+);
+chequear("arranca en el primer movimiento y llega a hoy", serie.map((p) => p.mes), ["2026-07", "2026-08", "2026-09"]);
+chequear("lo prestado se acumula", serie.map((p) => p.prestado), [100000, 100000, 300000]);
+chequear("la ganancia tambien, y solo cuenta el interes", serie.map((p) => p.ganado), [0, 30000, 60000]);
+chequear("los meses sin movimiento igual aparecen", serie.length, 3);
+chequear("sin datos no hay serie", serieHistorica([], [], "2026-09-30"), []);
+chequear(
+  "cruza el fin de anio sin saltear meses",
+  serieHistorica([prest("c", "2026-11-05", 50000)], [], "2027-02-10").map((p) => p.mes),
+  ["2026-11", "2026-12", "2027-01", "2027-02"]
+);
 
 console.log(fallos === 0 ? "\nTODO OK" : `\n${fallos} FALLAS`);
 process.exit(fallos === 0 ? 0 : 1);

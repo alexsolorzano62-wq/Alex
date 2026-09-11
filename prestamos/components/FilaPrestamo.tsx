@@ -30,6 +30,19 @@ export default function FilaPrestamo({ prestamo, datos }: PrestamoResuelto) {
               : textoVencimiento(datos.diasParaVencer)}
         </p>
       </div>
+      {datos.avance != null && prestamo.estado === "vigente" && (
+        <div className="hidden w-20 shrink-0 sm:block">
+          <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
+            <div
+              className="h-full rounded-full bg-brand-500"
+              style={{ width: `${Math.max(datos.avance, 2)}%` }}
+            />
+          </div>
+          <p className="tabular mt-1 text-right text-[11px] text-slate-400">
+            {datos.avance}%
+          </p>
+        </div>
+      )}
       <div className="shrink-0 text-right">
         <p className="tabular text-sm font-bold text-slate-900">
           {plata(datos.aDevolver)}

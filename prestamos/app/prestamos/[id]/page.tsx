@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import Encabezado from "@/components/Encabezado";
 import EstadoBadge from "@/components/EstadoBadge";
+import AvancePrestamo from "@/components/AvancePrestamo";
 import FormularioPago from "@/components/FormularioPago";
 import BotonesWhatsApp from "@/components/BotonesWhatsApp";
 import BotonConfirmar from "@/components/BotonConfirmar";
@@ -104,6 +105,8 @@ export default async function PrestamoPage({
             {datos.cuotasAtrasadas === 1 ? "" : "s"}: {plata(datos.montoAtrasado)}
           </p>
         )}
+
+        <AvancePrestamo datos={datos} cuotasTotal={prestamo.cuotas_total} />
 
         <section className="mt-4 rounded-2xl border border-slate-200 bg-white p-4">
           <dl className="space-y-2 text-sm">

@@ -37,6 +37,12 @@ export type ResumenPrestamo = {
   diasParaVencer: number;
   /** Cuantas cuotas deberia haber pagado y no pago. Solo en los planes. */
   cuotasAtrasadas: number;
+  /** Cuanto del plan lleva pagado, de 0 a 100. Null si no tiene cuotas. */
+  avance: number | null;
+  /** Ya cobraste al menos lo que prestaste: de aca en mas todo es ganancia. */
+  capitalRecuperado: boolean;
+  /** Cuanto falta cobrar para recuperar lo prestado. Cero si ya se recupero. */
+  faltaRecuperar: number;
   /** Lo que suman esas cuotas: el numero con el que se le reclama. */
   montoAtrasado: number;
   vencido: boolean;
@@ -187,10 +193,21 @@ export function resumen(
     );
   }
 
+  // El punto de equilibrio: cuando lo cobrado supera lo prestado, la plata que
+  // se puso ya volvio. Lo que siga entrando es ganancia, y el capital que queda
+  // afuera es todo a favor.
+  const faltaRecuperar = Math.max(0, pesos(prestamo.capital_inicial) - cobrado);
+
   return {
     capital,
     interes,
     aDevolver,
+    avance:
+      prestamo.cuotas_total && prestamo.cuotas_total > 0
+        ? Math.min(100, Math.round((cuotasPagadas / prestamo.cuotas_total) * 100))
+        : null,
+    capitalRecuperado: faltaRecuperar === 0,
+    faltaRecuperar,
     cuotasAtrasadas,
     montoAtrasado: pesos(cuotasAtrasadas * (prestamo.cuota_monto ?? 0)),
     cobrado,

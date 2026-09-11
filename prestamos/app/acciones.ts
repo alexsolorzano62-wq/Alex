@@ -16,6 +16,7 @@ import { hoyISO, sumarMeses } from "@/lib/fechas";
 import { datosFrecuencia, frecuenciaDe, siguienteVencimiento } from "@/lib/periodos";
 import type { Frecuencia } from "@/lib/types";
 import { nombreCoincide, parsearPesos, parsearTasa } from "@/lib/parseo";
+import { vencimientoEsperado } from "@/lib/revision";
 import type { Modalidad, TipoPago } from "@/lib/types";
 
 export type Resultado = { error: string } | undefined;
@@ -431,6 +432,34 @@ export async function guardarPlantillas(
 
   refrescar();
   return undefined;
+}
+
+// ----------------------------------------------------------------- revision
+
+/**
+ * Pone el vencimiento donde corresponde según los cobros registrados.
+ *
+ * Los préstamos que se cargaron antes del arreglo de borrar cobros quedaron
+ * corridos: cada cobro borrado les dejó el vencimiento un período adelantado.
+ * Esto no lo hace solo, se confirma uno por uno desde Ajustes.
+ */
+export async function corregirVencimiento(datos: FormData) {
+  const id = String(datos.get("id") ?? "");
+  const { supabase } = await sesion();
+
+  const { data: prestamo } = await supabase
+    .from("prestamos")
+    .select("*, cliente:clientes (id, nombre, telefono), pagos (*)")
+    .eq("id", id)
+    .maybeSingle();
+  if (!prestamo) return;
+
+  await supabase
+    .from("prestamos")
+    .update({ fecha_vencimiento: vencimientoEsperado(prestamo) })
+    .eq("id", id);
+
+  refrescar();
 }
 
 // ---------------------------------------------------------------- apariencia

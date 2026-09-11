@@ -1,5 +1,6 @@
 import { aplicarPago, calcularPlan, numerarCuotas, resumen, revertirPago, tasaImplicita, capitalizar, renovar } from "@/lib/calc";
 import { vencimientoAnterior } from "@/lib/periodos";
+import { revisarVencimientos, vencimientoEsperado } from "@/lib/revision";
 import { sumarMeses, diasEntre } from "@/lib/fechas";
 import { normalizarTelefono, mensajeDe } from "@/lib/whatsapp";
 import { aplicarPlantilla, plantillaDe, variablesDePrestamo, EJEMPLOS, MODALIDADES, PLANTILLAS_POR_DEFECTO, TIPOS } from "@/lib/plantillas";
@@ -780,6 +781,93 @@ chequear("ningun mes es infinito ni NaN", porMes.every((m) =>
 const eva = pend.find((l) => l.prestamoId === "q1")!;
 chequear("Eva: 3 cuotas de 130.000 que no divide exacto", eva.cuotas.map((c) => c.monto), [43333, 43333, 43334]);
 chequear("Eva: y las tres suman los 130.000", eva.cuotas.reduce((a, c) => a + c.monto, 0), 130000);
+}
+
+
+{
+console.log("--- Revision: encontrar los vencimientos que quedaron corridos ---");
+
+type Pc = PrestamoConCliente;
+const quien = { id: "cr", nombre: "Rita", telefono: null };
+let w = 0;
+const cuota = (fecha: string, tipo: "cuota" | "interes" = "cuota") =>
+  ({ id: `w${++w}`, prestamo_id: "r1", fecha, monto: 18300, tipo, nota: null, created_at: "" });
+
+function rp(o: Partial<Pc>): Pc {
+  return { id: "r1", cliente_id: "cr", modalidad: "semanal", capital_inicial: 200000,
+    capital_actual: 200000, tasa_mensual: 46.4, fecha_inicio: "2026-08-01",
+    fecha_vencimiento: "2026-08-08", cuotas_total: 16, cuota_monto: 18300,
+    total_a_devolver: 292800, frecuencia: "semanal", estado: "vigente", observacion: null,
+    created_at: "", cliente: quien, pagos: [], ...o } as Pc;
+}
+
+// Sin cobros, vence una semana despues del inicio.
+chequear("sin cobros: una semana despues del inicio", vencimientoEsperado(rp({})), "2026-08-08");
+chequear("con 3 cuotas: cuatro semanas despues", vencimientoEsperado(rp({
+  pagos: ["2026-08-08","2026-08-15","2026-08-22"].map((f) => cuota(f)) })), "2026-08-29");
+
+// Un prestamo sano no aparece en la revision.
+chequear("un prestamo sano no se reporta", revisarVencimientos([rp({
+  fecha_vencimiento: "2026-08-29",
+  pagos: ["2026-08-08","2026-08-15","2026-08-22"].map((f) => cuota(f)) })]).length, 0);
+
+// El caso real: se cargaron 4 cuotas y se borro una, pero el vencimiento
+// quedo donde estaba. Tiene 3 cobros y la fecha de la quinta semana.
+const corrido = rp({ fecha_vencimiento: "2026-09-05",
+  pagos: ["2026-08-08","2026-08-15","2026-08-22"].map((f) => cuota(f)) });
+const aviso = revisarVencimientos([corrido])[0];
+chequear("detecta el que quedo corrido", aviso.periodos, 1);
+chequear("y dice a que fecha tendria que volver", aviso.esperado, "2026-08-29");
+chequear("en un plan la cuenta es segura", aviso.seguro, true);
+
+// Corrido para el otro lado: le faltan periodos.
+const atras = rp({ fecha_vencimiento: "2026-08-15",
+  pagos: ["2026-08-08","2026-08-15","2026-08-22"].map((f) => cuota(f)) });
+chequear("tambien detecta los que quedaron atras", revisarVencimientos([atras])[0].periodos, -2);
+
+// Varios borrados seguidos: tres periodos de mas.
+const tresDeMas = rp({ fecha_vencimiento: "2026-09-19",
+  pagos: ["2026-08-08","2026-08-15","2026-08-22"].map((f) => cuota(f)) });
+chequear("cuenta bien tres periodos de mas", revisarVencimientos([tresDeMas])[0].periodos, 3);
+
+// Interes mensual: un interes cobrado corre el vencimiento un mes.
+const mensualSano = rp({ modalidad: "mensual", frecuencia: null, cuotas_total: null,
+  cuota_monto: null, total_a_devolver: null, fecha_inicio: "2026-06-07",
+  fecha_vencimiento: "2026-08-07",
+  pagos: [cuota("2026-07-07", "interes")] });
+chequear("mensual al dia: no se reporta", revisarVencimientos([mensualSano]).length, 0);
+const mensualCorrido = { ...mensualSano, fecha_vencimiento: "2026-09-07" };
+const avisoM = revisarVencimientos([mensualCorrido])[0];
+chequear("mensual corrido: un mes de mas", avisoM.periodos, 1);
+chequear("y avisa que la cuenta supone plazo de un mes", avisoM.seguro, false);
+
+// Los cerrados no se revisan: su vencimiento ya no significa nada.
+chequear("un prestamo pagado no se reporta", revisarVencimientos([rp({
+  estado: "pagado", fecha_vencimiento: "2026-12-31" })]).length, 0);
+chequear("uno cancelado tampoco", revisarVencimientos([rp({
+  estado: "cancelado", fecha_vencimiento: "2026-12-31" })]).length, 0);
+
+// Los quincenales tambien, que es donde 15 dias no es medio mes.
+const quinc = rp({ modalidad: "personalizado", frecuencia: "quincenal", cuotas_total: 6,
+  cuota_monto: 65000, total_a_devolver: 390000, fecha_inicio: "2026-08-01",
+  fecha_vencimiento: "2026-09-15", pagos: [cuota("2026-08-16"), cuota("2026-08-31")] });
+chequear("quincenal sano: no se reporta", revisarVencimientos([quinc]).length, 0);
+
+// La correccion es la vuelta exacta: aplicarla deja el prestamo sano.
+const sanado = { ...corrido, fecha_vencimiento: vencimientoEsperado(corrido) };
+chequear("corregir lo saca de la lista", revisarVencimientos([sanado]).length, 0);
+
+// Se ordenan por cuanto se desviaron.
+// Una fecha puesta a mano no cae en la grilla: no es un corrimiento y se
+// muestra distinto, porque decirle "adelantado 4 cuotas" seria inventar.
+const aMano = rp({ fecha_vencimiento: "2026-08-31",
+  pagos: ["2026-08-08","2026-08-15","2026-08-22"].map((f) => cuota(f)) });
+const avisoMano = revisarVencimientos([aMano])[0];
+chequear("una fecha fuera de la grilla se marca como tal", avisoMano.enGrilla, false);
+chequear("un corrimiento de verdad si cae en la grilla", aviso.enGrilla, true);
+
+chequear("los peores van primero",
+  revisarVencimientos([corrido, tresDeMas, atras]).map((d) => d.periodos), [3, -2, 1]);
 }
 
 console.log(fallos === 0 ? "\nTODO OK" : `\n${fallos} FALLAS`);

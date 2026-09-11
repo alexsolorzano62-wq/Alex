@@ -2,16 +2,21 @@ import Link from "next/link";
 import Encabezado from "@/components/Encabezado";
 import FormularioApariencia from "@/components/FormularioApariencia";
 import FormularioPlantillas from "@/components/FormularioPlantillas";
-import { traerApariencia, traerPlantillas } from "@/lib/datos";
+import RevisionVencimientos from "@/components/RevisionVencimientos";
+import { traerApariencia, traerPlantillas, traerPrestamos } from "@/lib/datos";
+import { revisarVencimientos } from "@/lib/revision";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Ajustes" };
 
 export default async function AjustesPage() {
-  const [plantillas, apariencia] = await Promise.all([
+  const [plantillas, apariencia, prestamos] = await Promise.all([
     traerPlantillas(),
     traerApariencia(),
+    traerPrestamos(),
   ]);
+
+  const desfases = revisarVencimientos(prestamos);
 
   return (
     <>
@@ -25,6 +30,24 @@ export default async function AjustesPage() {
 
         <section className="mb-10 mt-6">
           <FormularioApariencia tema={apariencia.tema} fuente={apariencia.fuente} />
+        </section>
+
+        <section className="mb-10 border-t border-slate-200 dark:border-slate-800 pt-6">
+          <h2 className="text-lg font-bold">
+            Revisión de vencimientos
+            {desfases.length > 0 && (
+              <span className="ml-2 rounded-full bg-amber-100 dark:bg-amber-900/40 px-2 py-0.5 align-middle text-xs font-semibold text-amber-900 dark:text-amber-200">
+                {desfases.length} para revisar
+              </span>
+            )}
+          </h2>
+          <p className="mb-3 mt-1 text-sm text-slate-600 dark:text-slate-400">
+            Recalcula desde cero qué día tendría que vencer cada préstamo según los
+            cobros que tiene registrados, y lo compara con la fecha guardada. Sirve
+            para encontrar los que quedaron corridos cuando borrar un cobro todavía
+            no devolvía el vencimiento a su lugar.
+          </p>
+          <RevisionVencimientos desfases={desfases} />
         </section>
 
         <h2 className="border-t border-slate-200 pt-6 text-lg font-bold dark:border-slate-800">

@@ -4,7 +4,9 @@ import NavInferior from "@/components/NavInferior";
 import Metrica from "@/components/Metrica";
 import BarrasPorCliente from "@/components/BarrasPorCliente";
 import FilaPrestamo from "@/components/FilaPrestamo";
-import { traerPrestamos, usuarioActual } from "@/lib/datos";
+import ParaCobrar, { type FilaCobranza } from "@/components/ParaCobrar";
+import { traerPlantillas, traerPrestamos, usuarioActual } from "@/lib/datos";
+import { linkWhatsApp, mensajeDe } from "@/lib/whatsapp";
 import {
   capitalPorCliente,
   proximosVencimientos,
@@ -17,7 +19,11 @@ import { formatFecha } from "@/lib/fechas";
 export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
-  const [usuario, prestamos] = await Promise.all([usuarioActual(), traerPrestamos()]);
+  const [usuario, prestamos, plantillas] = await Promise.all([
+    usuarioActual(),
+    traerPrestamos(),
+    traerPlantillas(),
+  ]);
 
   const hoy = hoyISO();
   const resueltos = resolver(prestamos, hoy);
@@ -25,10 +31,29 @@ export default async function DashboardPage() {
   const proximos = proximosVencimientos(resueltos);
   const porCliente = capitalPorCliente(resueltos);
 
-  const alertas = proximos.filter(
-    ({ datos }) => datos.estadoVisual === "vencido" || datos.estadoVisual === "por_vencer"
+  // La cobranza de hoy: lo vencido y lo que vence hoy mismo.
+  const paraCobrar: FilaCobranza[] = proximos
+    .filter(({ datos }) => datos.diasParaVencer <= 0)
+    .map((item) => {
+      const { prestamo, datos } = item;
+      const esPlan = prestamo.modalidad !== "mensual";
+      const nombre = prestamo.cliente?.nombre ?? "Cliente";
+      const mensaje = mensajeDe("estado_cuenta", prestamo, datos, nombre, hoy, {
+        plantillas,
+      });
+
+      return {
+        ...item,
+        aCobrar: esPlan ? (datos.cuotaMonto ?? 0) : datos.interes,
+        tipo: esPlan ? ("cuota" as const) : ("interes" as const),
+        linkWhatsApp: linkWhatsApp(prestamo.cliente?.telefono ?? null, mensaje),
+      };
+    });
+
+  // Lo que viene: ni vencido ni de hoy, pero dentro de la semana.
+  const estaSemana = proximos.filter(
+    ({ datos }) => datos.estadoVisual === "por_vencer" && datos.diasParaVencer > 0
   );
-  // Los que ya aparecen arriba no se repiten en la lista de próximos.
   const siguientes = proximos.filter(({ datos }) => datos.estadoVisual === "al_dia");
 
   return (
@@ -61,44 +86,57 @@ export default async function DashboardPage() {
           />
         </section>
 
-        {alertas.length > 0 && (
+        {paraCobrar.length > 0 && (
           <section className="mt-6">
             <h2 className="mb-2 text-sm font-bold text-slate-900">
-              Necesitan atención
+              Para cobrar
               <span className="ml-2 font-normal text-slate-500">
-                {numeros.vencidos} vencido{numeros.vencidos === 1 ? "" : "s"} ·{" "}
-                {numeros.porVencer} por vencer
+                {numeros.vencidos > 0
+                  ? `${numeros.vencidos} vencido${numeros.vencidos === 1 ? "" : "s"}`
+                  : "vencen hoy"}
+              </span>
+            </h2>
+            <ParaCobrar filas={paraCobrar} />
+          </section>
+        )}
+
+        {estaSemana.length > 0 && (
+          <section className="mt-6">
+            <h2 className="mb-2 text-sm font-bold text-slate-900">
+              Esta semana
+              <span className="ml-2 font-normal text-slate-500">
+                {estaSemana.length} por vencer
               </span>
             </h2>
             <div className="divide-y divide-slate-100 overflow-hidden rounded-2xl border border-slate-200 bg-white">
-              {alertas.map((item) => (
+              {estaSemana.map((item) => (
                 <FilaPrestamo key={item.prestamo.id} {...item} />
               ))}
             </div>
           </section>
         )}
 
+        {(siguientes.length > 0 || proximos.length === 0) && (
         <section className="mt-6">
-          <div className="mb-2 flex items-baseline justify-between">
-            <h2 className="text-sm font-bold text-slate-900">Próximos vencimientos</h2>
-            <Link href="/prestamos" className="text-xs font-medium text-brand-600">
-              Ver todos
-            </Link>
-          </div>
-          {siguientes.length === 0 ? (
-            <p className="rounded-2xl border border-dashed border-slate-300 px-4 py-8 text-center text-sm text-slate-500">
-              {proximos.length === 0
-                ? "No tenés préstamos vigentes."
-                : "Todo lo que vence pronto ya está arriba."}
-            </p>
-          ) : (
-            <div className="divide-y divide-slate-100 overflow-hidden rounded-2xl border border-slate-200 bg-white">
-              {siguientes.slice(0, 5).map((item) => (
-                <FilaPrestamo key={item.prestamo.id} {...item} />
-              ))}
+            <div className="mb-2 flex items-baseline justify-between">
+              <h2 className="text-sm font-bold text-slate-900">Próximos vencimientos</h2>
+              <Link href="/prestamos" className="text-xs font-medium text-brand-600">
+                Ver todos
+              </Link>
             </div>
-          )}
-        </section>
+            {siguientes.length === 0 ? (
+              <p className="rounded-2xl border border-dashed border-slate-300 px-4 py-8 text-center text-sm text-slate-500">
+                No tenés préstamos vigentes.
+              </p>
+            ) : (
+              <div className="divide-y divide-slate-100 overflow-hidden rounded-2xl border border-slate-200 bg-white">
+                {siguientes.slice(0, 5).map((item) => (
+                  <FilaPrestamo key={item.prestamo.id} {...item} />
+                ))}
+              </div>
+            )}
+          </section>
+        )}
 
         {porCliente.length > 0 && (
           <section className="mt-6">

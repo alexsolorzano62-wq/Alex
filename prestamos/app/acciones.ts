@@ -370,6 +370,15 @@ export async function registrarPago(
   return undefined;
 }
 
+/**
+ * Registra el cobro de siempre —la cuota del plan, o el interés del mes— desde
+ * la lista de cobranza, sin abrir el préstamo. El monto lo pone `registrarPago`
+ * a partir del plan; acá solo se le dice de qué préstamo se trata.
+ */
+export async function cobrarRapido(datos: FormData) {
+  await registrarPago(undefined, datos);
+}
+
 export async function borrarPago(datos: FormData) {
   const id = String(datos.get("id") ?? "");
   const { supabase } = await sesion();

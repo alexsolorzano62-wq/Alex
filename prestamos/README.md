@@ -9,8 +9,15 @@ todo y, si querés, les mandás el estado de cuenta por WhatsApp.
 
 ## Qué hace
 
-- **Dashboard** con lo que tenés en la calle, lo que vas a cobrar, el interés
-  pendiente y la ganancia ya cobrada.
+- **La cobranza del día en la pantalla de inicio**: a quién le cobrás hoy, cuánto,
+  con el botón de WhatsApp al lado y uno para registrar el cobro sin entrar al
+  préstamo. Debajo, lo que vence esta semana.
+- **Totales** de lo que tenés en la calle, lo que vas a cobrar, el interés pendiente
+  y la ganancia ya cobrada.
+- **Cuotas atrasadas**: no solo «vencido hace 21 días», sino «debe 3 cuotas, $83.700».
+- **Corregir un préstamo** sin perder los cobros ya registrados.
+- **Respaldo**: una copia de la base se guarda sola todas las noches en la rama
+  `respaldos` del repositorio, y desde *Ajustes* podés bajarte los datos en CSV.
 - **Avisos** de lo vencido y lo que vence en los próximos 7 días.
 - **Clientes** con teléfono y notas, y el historial de todo lo que le prestaste.
 - **Préstamos** en tres modalidades:
@@ -161,6 +168,15 @@ npm test
 | `npm run lint` | Revisa el código |
 | `npm test` | Verifica los cálculos de préstamos, importes y teléfonos |
 | `python3 scripts/generar-iconos.py` | Regenera los íconos de la app |
+
+## Respaldo
+
+`.github/workflows/respaldo-prestamos.yml` vuelca la base todas las noches a la
+rama `respaldos`. Necesita un secret del repositorio llamado
+`SUPABASE_DB_URL_PRESTAMOS`: sacalo de Supabase → **Connect → Session pooler**
+(puerto 5432; la conexión directa es solo IPv6 y GitHub no la alcanza).
+
+Para bajar los datos a mano, *Ajustes → Bajar una copia*.
 
 ## Estructura
 

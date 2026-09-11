@@ -23,9 +23,11 @@ export default function FilaPrestamo({ prestamo, datos }: PrestamoResuelto) {
             datos.vencido ? "font-semibold text-red-600" : "text-slate-400"
           }`}
         >
-          {prestamo.estado === "vigente"
-            ? textoVencimiento(datos.diasParaVencer)
-            : "cerrado"}
+          {prestamo.estado !== "vigente"
+            ? "cerrado"
+            : datos.cuotasAtrasadas > 0
+              ? `debe ${datos.cuotasAtrasadas} cuota${datos.cuotasAtrasadas === 1 ? "" : "s"} · ${plata(datos.montoAtrasado)}`
+              : textoVencimiento(datos.diasParaVencer)}
         </p>
       </div>
       <div className="shrink-0 text-right">

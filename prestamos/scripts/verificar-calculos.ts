@@ -367,5 +367,27 @@ chequear(
   [1, 2, 3]
 );
 
+console.log("--- Cuotas atrasadas ---");
+// Semanal de 16 cuotas, vencia el 25/08 y no pago nada.
+const atraso = (hoy: string, pagos = [] as typeof unaSemana) => resumen(semanal, pagos, hoy);
+chequear("al dia: no debe nada", atraso("2026-08-24").cuotasAtrasadas, 0);
+chequear("el dia del vencimiento tampoco", atraso("2026-08-25").cuotasAtrasadas, 0);
+chequear("un dia despues ya debe una", atraso("2026-08-26").cuotasAtrasadas, 1);
+chequear("a la semana debe dos", atraso("2026-09-01").cuotasAtrasadas, 2);
+chequear("a las tres semanas debe cuatro", atraso("2026-09-15").cuotasAtrasadas, 4);
+chequear("el monto atrasado son las cuotas por su valor", atraso("2026-09-15").montoAtrasado, 4 * 27900);
+chequear("nunca debe mas cuotas que las que le quedan", atraso("2029-01-01").cuotasAtrasadas, 16);
+// El tope son las cuotas que le quedan: con 14 de 16 pagas, por mas que el
+// vencimiento sea viejo, no se le pueden reclamar mas de 2.
+const catorcePagas = Array.from({ length: 14 }, (_, i) => ({
+  id: `q${i}`, prestamo_id: "3", fecha: "2026-08-20", monto: 27900,
+  tipo: "cuota" as const, nota: null, created_at: `2026-08-20T10:${String(i).padStart(2, "0")}:00Z`,
+}));
+chequear("con 14 de 16 pagas, el tope son 2", resumen(semanal, catorcePagas, "2029-01-01").cuotasAtrasadas, 2);
+chequear("y el monto atrasado acompaña", resumen(semanal, catorcePagas, "2029-01-01").montoAtrasado, 2 * 27900);
+chequear("con todas pagas no debe ninguna", resumen(semanal, todas, "2029-01-01").cuotasAtrasadas, 0);
+chequear("un prestamo cerrado no debe nada", resumen({ ...semanal, estado: "pagado" }, [], "2029-01-01").cuotasAtrasadas, 0);
+chequear("el de interes mensual no cuenta cuotas", resumen(base, [], "2026-12-01").cuotasAtrasadas, 0);
+
 console.log(fallos === 0 ? "\nTODO OK" : `\n${fallos} FALLAS`);
 process.exit(fallos === 0 ? 0 : 1);

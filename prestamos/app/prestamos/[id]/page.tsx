@@ -86,8 +86,24 @@ export default async function PrestamoPage({
               {descripcionPlan(prestamo, datos)}
             </p>
           </div>
-          <EstadoBadge estado={datos.estadoVisual} />
+          <div className="flex shrink-0 flex-col items-end gap-2">
+            <EstadoBadge estado={datos.estadoVisual} />
+            <Link
+              href={`/prestamos/${prestamo.id}/editar`}
+              className="rounded-xl border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-600"
+            >
+              Corregir
+            </Link>
+          </div>
         </div>
+
+        {datos.cuotasAtrasadas > 0 && (
+          <p className="mt-4 rounded-xl border border-red-200 bg-red-50 px-3 py-2.5 text-sm font-semibold text-red-800">
+            Debe {datos.cuotasAtrasadas} cuota
+            {datos.cuotasAtrasadas === 1 ? "" : "s"} atrasada
+            {datos.cuotasAtrasadas === 1 ? "" : "s"}: {plata(datos.montoAtrasado)}
+          </p>
+        )}
 
         <section className="mt-4 rounded-2xl border border-slate-200 bg-white p-4">
           <dl className="space-y-2 text-sm">

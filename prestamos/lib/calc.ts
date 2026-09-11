@@ -1,6 +1,6 @@
 import { diasEntre, sumarMeses } from "@/lib/fechas";
 import { cuotaSemanal } from "@/lib/planes";
-import { datosFrecuencia } from "@/lib/periodos";
+import { datosFrecuencia, frecuenciaDe } from "@/lib/periodos";
 import type { Frecuencia } from "@/lib/types";
 import type { Modalidad, Pago, Prestamo } from "@/lib/types";
 
@@ -35,6 +35,10 @@ export type ResumenPrestamo = {
   cuotasTotal: number | null;
   /** Negativo si ya vencio. */
   diasParaVencer: number;
+  /** Cuantas cuotas deberia haber pagado y no pago. Solo en los planes. */
+  cuotasAtrasadas: number;
+  /** Lo que suman esas cuotas: el numero con el que se le reclama. */
+  montoAtrasado: number;
   vencido: boolean;
   estadoVisual: EstadoVisual;
 };
@@ -170,10 +174,25 @@ export function resumen(
             ? "por_vencer"
             : "al_dia";
 
+  // Cuantas cuotas se le pasaron: la del vencimiento, mas una por cada periodo
+  // completo transcurrido desde entonces. Nunca mas de las que le quedan.
+  const DIAS_DEL_PERIODO = { semanal: 7, quincenal: 15, mensual: 30 } as const;
+  let cuotasAtrasadas = 0;
+  if (prestamo.modalidad !== "mensual" && vencido) {
+    const periodo = DIAS_DEL_PERIODO[frecuenciaDe(prestamo)];
+    const restantes = (prestamo.cuotas_total ?? 0) - cuotasPagadas;
+    cuotasAtrasadas = Math.max(
+      0,
+      Math.min(restantes, 1 + Math.floor(Math.abs(diasParaVencer) / periodo))
+    );
+  }
+
   return {
     capital,
     interes,
     aDevolver,
+    cuotasAtrasadas,
+    montoAtrasado: pesos(cuotasAtrasadas * (prestamo.cuota_monto ?? 0)),
     cobrado,
     ganancia,
     cuotaMonto: prestamo.cuota_monto,

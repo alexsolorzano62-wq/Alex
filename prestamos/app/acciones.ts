@@ -199,6 +199,70 @@ export async function crearPrestamo(
   redirect(`/prestamos/${data.id}?nuevo=1`);
 }
 
+/**
+ * Corrige un préstamo ya cargado sin tocar sus cobros.
+ *
+ * Se editan los números y las fechas, no la modalidad: cambiarla con cobros
+ * registrados dejaría un historial que no se corresponde con el plan. El
+ * vencimiento se edita a mano en vez de recalcularse, porque en los préstamos
+ * con interés mensual ya se corrió con cada renovación.
+ */
+export async function editarPrestamo(
+  _previo: Resultado,
+  datos: FormData
+): Promise<Resultado> {
+  const id = String(datos.get("id") ?? "");
+  const capital = parsearPesos(String(datos.get("capital")));
+  if (capital == null || capital <= 0) return { error: "Poné el monto prestado." };
+
+  const { supabase } = await sesion();
+
+  const { data: previo } = await supabase
+    .from("prestamos")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle();
+  if (!previo) return { error: "No se encontró el préstamo." };
+
+  const tasa = parsearTasa(String(datos.get("tasa"))) ?? 0;
+  const cuotas = Number(datos.get("cuotas") ?? 0) || null;
+  const cuotaMonto = parsearPesos(String(datos.get("cuota_monto")));
+  const esPlan = previo.modalidad !== "mensual";
+
+  if (esPlan && (!cuotas || !cuotaMonto || cuotaMonto <= 0)) {
+    return { error: "Poné la cantidad de cuotas y cuánto es cada una." };
+  }
+
+  // El capital que sigue debiendo se mueve lo mismo que el prestado, así no se
+  // pierden las entregas a cuenta que ya estaban registradas.
+  const diferencia = pesos(capital) - pesos(previo.capital_inicial);
+  const capitalActual = Math.max(0, pesos(previo.capital_actual + diferencia));
+
+  const { error } = await supabase
+    .from("prestamos")
+    .update({
+      capital_inicial: pesos(capital),
+      capital_actual: capitalActual,
+      tasa_mensual: esPlan
+        ? tasaImplicita(capital, pesos((cuotaMonto ?? 0) * (cuotas ?? 1)))
+        : tasa,
+      fecha_inicio: String(datos.get("fecha_inicio") || previo.fecha_inicio),
+      fecha_vencimiento: String(
+        datos.get("fecha_vencimiento") || previo.fecha_vencimiento
+      ),
+      cuotas_total: esPlan ? cuotas : null,
+      cuota_monto: esPlan ? pesos(cuotaMonto ?? 0) : null,
+      total_a_devolver: esPlan ? pesos((cuotaMonto ?? 0) * (cuotas ?? 1)) : null,
+      observacion: String(datos.get("observacion") ?? "").trim() || null,
+    })
+    .eq("id", id);
+
+  if (error) return { error: `No se pudo guardar: ${error.message}` };
+
+  refrescar();
+  redirect(`/prestamos/${id}`);
+}
+
 export async function borrarPrestamo(datos: FormData) {
   const id = String(datos.get("id") ?? "");
   const { supabase } = await sesion();

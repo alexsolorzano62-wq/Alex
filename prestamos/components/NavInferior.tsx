@@ -32,6 +32,15 @@ function IconoCobros() {
   );
 }
 
+function IconoResumen() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-5 w-5">
+      <path d="M3 3v16.5A1.5 1.5 0 0 0 4.5 21H21" strokeLinecap="round" />
+      <path d="M7 15l4-5 3.5 3L20 6" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 function IconoClientes() {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-5 w-5">
@@ -47,6 +56,7 @@ const ITEMS = [
   { href: "/", label: "Inicio", icono: <IconoInicio /> },
   { href: "/prestamos", label: "Préstamos", icono: <IconoPrestamos /> },
   { href: "/pagos", label: "Cobros", icono: <IconoCobros /> },
+  { href: "/resumen", label: "Resumen", icono: <IconoResumen /> },
   { href: "/clientes", label: "Clientes", icono: <IconoClientes /> },
 ];
 
@@ -64,7 +74,7 @@ export default function NavInferior() {
               key={item.href}
               href={item.href}
               aria-current={activo ? "page" : undefined}
-              className={`flex flex-1 flex-col items-center gap-0.5 py-2.5 text-[11px] font-medium ${
+              className={`flex flex-1 flex-col items-center gap-0.5 px-0.5 py-2.5 text-[10px] font-medium ${
                 activo ? "text-brand-600" : "text-slate-400"
               }`}
             >

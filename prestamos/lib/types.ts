@@ -11,6 +11,8 @@ export type Modalidad =
 
 export type EstadoPrestamo = "vigente" | "pagado" | "cancelado";
 
+export type Tema = "claro" | "oscuro";
+
 /** Cada cuánto paga una cuota. */
 export type Frecuencia = "semanal" | "quincenal" | "mensual";
 
@@ -73,6 +75,8 @@ export type PrestamoConCliente = Prestamo & {
 
 export type Ajustes = {
   owner_id: string;
+  tema: Tema;
+  fuente: string;
   /** Textos por tipo de mensaje y modalidad. Ver `lib/plantillas.ts`. */
   plantillas: Record<string, Record<string, string>> | null;
   /** Columnas viejas, de cuando había un solo texto por mensaje. */

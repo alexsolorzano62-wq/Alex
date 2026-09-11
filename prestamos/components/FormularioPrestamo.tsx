@@ -112,8 +112,8 @@ export default function FormularioPrestamo({
 
   if (clientes.length === 0) {
     return (
-      <div className="rounded-2xl border border-slate-200 bg-white p-6 text-center">
-        <p className="text-sm text-slate-600">
+      <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 text-center">
+        <p className="text-sm text-slate-600 dark:text-slate-400">
           Primero cargá un cliente y después le creás el préstamo.
         </p>
         <Link
@@ -146,7 +146,7 @@ export default function FormularioPrestamo({
       </CampoTexto>
 
       <div>
-        <span className="mb-1 block text-sm font-medium text-slate-700">
+        <span className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
           Cómo lo devuelve
         </span>
         <div className="space-y-2">
@@ -158,14 +158,14 @@ export default function FormularioPrestamo({
               aria-pressed={modalidad === opcion.valor}
               className={`block w-full rounded-xl border px-3 py-2.5 text-left ${
                 modalidad === opcion.valor
-                  ? "border-brand-500 bg-brand-50 ring-2 ring-brand-100"
-                  : "border-slate-300 bg-white"
+                  ? "border-brand-500 bg-brand-50 dark:bg-brand-900/40 ring-2 ring-brand-100 dark:ring-brand-900"
+                  : "border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900"
               }`}
             >
-              <span className="block text-sm font-semibold text-slate-800">
+              <span className="block text-sm font-semibold text-slate-800 dark:text-slate-200">
                 {opcion.titulo}
               </span>
-              <span className="block text-[11px] text-slate-500">{opcion.detalle}</span>
+              <span className="block text-[11px] text-slate-500 dark:text-slate-400">{opcion.detalle}</span>
             </button>
           ))}
         </div>
@@ -314,7 +314,7 @@ export default function FormularioPrestamo({
                   className={claseInput}
                 />
               </CampoTexto>
-              <p className="rounded-xl bg-amber-50 px-3 py-2 text-xs text-amber-800">
+              <p className="rounded-xl bg-amber-50 dark:bg-amber-900/30 px-3 py-2 text-xs text-amber-800 dark:text-amber-300">
                 Tu lista de precios tiene {SEMANAS_CON_PLAN.join(" y ")} semanas. Para
                 otro plazo, escribí vos la cuota: no invento una tasa que nunca pactaste.
               </p>
@@ -385,31 +385,31 @@ export default function FormularioPrestamo({
       </CampoTexto>
 
       {capitalNum > 0 && plan.total > 0 && (
-        <div className="rounded-2xl border border-brand-200 bg-brand-50 p-4">
-          <p className="text-xs font-semibold uppercase tracking-wide text-brand-700">
+        <div className="rounded-2xl border border-brand-200 dark:border-brand-800 bg-brand-50 dark:bg-brand-900/40 p-4">
+          <p className="text-xs font-semibold uppercase tracking-wide text-brand-700 dark:text-brand-300">
             Así queda
           </p>
           <dl className="mt-2 space-y-1.5 text-sm">
             <div className="flex justify-between">
-              <dt className="text-slate-600">Presta</dt>
+              <dt className="text-slate-600 dark:text-slate-400">Presta</dt>
               <dd className="tabular font-medium">{plata(capitalNum)}</dd>
             </div>
             <div className="flex justify-between">
-              <dt className="text-slate-600">
+              <dt className="text-slate-600 dark:text-slate-400">
                 Interés {modalidad === "mensual" ? "del mes" : "del plan"} (
                 {porcentaje(tasaReal)})
               </dt>
               <dd className="tabular font-medium">{plata(plan.interes)}</dd>
             </div>
-            <div className="flex justify-between border-t border-brand-200 pt-1.5">
-              <dt className="font-semibold text-slate-800">A devolver</dt>
-              <dd className="tabular text-base font-bold text-brand-700">
+            <div className="flex justify-between border-t border-brand-200 dark:border-brand-800 pt-1.5">
+              <dt className="font-semibold text-slate-800 dark:text-slate-200">A devolver</dt>
+              <dd className="tabular text-base font-bold text-brand-700 dark:text-brand-300">
                 {plata(plan.total)}
               </dd>
             </div>
             {plan.cuotaMonto != null && plan.cuotaMonto > 0 && (
               <div className="flex justify-between">
-                <dt className="text-slate-600">Cuota</dt>
+                <dt className="text-slate-600 dark:text-slate-400">Cuota</dt>
                 <dd className="tabular font-medium">
                   {esSemanal
                     ? `${cantidad} semanas`
@@ -421,7 +421,7 @@ export default function FormularioPrestamo({
               </div>
             )}
             <div className="flex justify-between">
-              <dt className="text-slate-600">
+              <dt className="text-slate-600 dark:text-slate-400">
                 {modalidad === "mensual" ? "Vence" : "Primer vencimiento"}
               </dt>
               <dd className="font-medium">{formatFecha(vencimiento)}</dd>
@@ -431,7 +431,7 @@ export default function FormularioPrestamo({
       )}
 
       {estado?.error && (
-        <p className="rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700">
+        <p className="rounded-xl bg-red-50 dark:bg-red-900/30 px-3 py-2 text-sm text-red-700 dark:text-red-400">
           {estado.error}
         </p>
       )}

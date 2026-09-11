@@ -72,16 +72,16 @@ export default function FormularioPago({
             key={opcion.tipo}
             type="button"
             onClick={() => setElegida(opcion)}
-            className="flex w-full items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-left active:bg-slate-50"
+            className="flex w-full items-center justify-between gap-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-4 py-3 text-left active:bg-slate-50 dark:active:bg-slate-800"
           >
             <span className="min-w-0">
-              <span className="block text-sm font-semibold text-slate-800">
+              <span className="block text-sm font-semibold text-slate-800 dark:text-slate-200">
                 {opcion.titulo}
               </span>
-              <span className="block text-xs text-slate-500">{opcion.detalle}</span>
+              <span className="block text-xs text-slate-500 dark:text-slate-400">{opcion.detalle}</span>
             </span>
             {opcion.monto > 0 && (
-              <span className="tabular shrink-0 text-sm font-bold text-brand-700">
+              <span className="tabular shrink-0 text-sm font-bold text-brand-700 dark:text-brand-300">
                 {plata(opcion.monto)}
               </span>
             )}
@@ -92,16 +92,16 @@ export default function FormularioPago({
   }
 
   return (
-    <form action={accion} className="space-y-3 rounded-xl border border-brand-200 bg-brand-50 p-4">
+    <form action={accion} className="space-y-3 rounded-xl border border-brand-200 dark:border-brand-800 bg-brand-50 dark:bg-brand-900/40 p-4">
       <input type="hidden" name="prestamo_id" value={prestamo.id} />
       <input type="hidden" name="tipo" value={elegida.tipo} />
 
       <div className="flex items-center justify-between">
-        <p className="text-sm font-semibold text-brand-800">{elegida.titulo}</p>
+        <p className="text-sm font-semibold text-brand-800 dark:text-brand-200">{elegida.titulo}</p>
         <button
           type="button"
           onClick={() => setElegida(null)}
-          className="text-xs font-medium text-slate-500 underline"
+          className="text-xs font-medium text-slate-500 dark:text-slate-400 underline"
         >
           Cambiar
         </button>
@@ -127,7 +127,7 @@ export default function FormularioPago({
       </CampoTexto>
 
       {estado?.error && (
-        <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
+        <p className="rounded-lg bg-red-50 dark:bg-red-900/30 px-3 py-2 text-sm text-red-700 dark:text-red-400">
           {estado.error}
         </p>
       )}

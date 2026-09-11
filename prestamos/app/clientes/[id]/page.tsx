@@ -47,7 +47,7 @@ export default async function ClientePage({
       <Encabezado subtitulo={cliente.nombre} />
 
       <main className="mx-auto max-w-lg px-4 pb-16 pt-4">
-        <Link href="/clientes" className="text-sm text-slate-500">
+        <Link href="/clientes" className="text-sm text-slate-500 dark:text-slate-400">
           ← Volver
         </Link>
 
@@ -55,44 +55,44 @@ export default async function ClientePage({
           <div className="min-w-0">
             <h1 className="truncate text-xl font-bold">{cliente.nombre}</h1>
             {cliente.telefono && (
-              <p className="text-sm text-slate-500">{cliente.telefono}</p>
+              <p className="text-sm text-slate-500 dark:text-slate-400">{cliente.telefono}</p>
             )}
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-slate-400 dark:text-slate-500">
               Cliente desde {formatFecha(cliente.created_at.slice(0, 10))}
             </p>
           </div>
           <Link
             href={`/clientes/${cliente.id}/editar`}
-            className="shrink-0 rounded-xl border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-600"
+            className="shrink-0 rounded-xl border border-slate-300 dark:border-slate-700 px-3 py-1.5 text-sm font-medium text-slate-600 dark:text-slate-400"
           >
             Editar
           </Link>
         </div>
 
         {cliente.notas && (
-          <p className="mt-3 rounded-xl bg-slate-100 px-3 py-2 text-sm text-slate-600">
+          <p className="mt-3 rounded-xl bg-slate-100 dark:bg-slate-800 px-3 py-2 text-sm text-slate-600 dark:text-slate-400">
             {cliente.notas}
           </p>
         )}
 
-        <dl className="mt-4 grid grid-cols-3 gap-2 rounded-2xl border border-slate-200 bg-white p-3">
+        <dl className="mt-4 grid grid-cols-3 gap-2 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3">
           <div>
-            <dt className="text-[11px] uppercase text-slate-500">En la calle</dt>
+            <dt className="text-[11px] uppercase text-slate-500 dark:text-slate-400">En la calle</dt>
             <dd className="tabular text-sm font-bold">{plata(enLaCalle)}</dd>
           </div>
           <div>
-            <dt className="text-[11px] uppercase text-slate-500">A cobrar</dt>
+            <dt className="text-[11px] uppercase text-slate-500 dark:text-slate-400">A cobrar</dt>
             <dd className="tabular text-sm font-bold">{plata(aCobrar)}</dd>
           </div>
           <div>
-            <dt className="text-[11px] uppercase text-slate-500">Te dejó</dt>
+            <dt className="text-[11px] uppercase text-slate-500 dark:text-slate-400">Te dejó</dt>
             <dd className="tabular text-sm font-bold">{plata(gananciaCobrada)}</dd>
           </div>
         </dl>
 
         {mensaje && (
           <section className="mt-5">
-            <h2 className="mb-2 text-sm font-bold text-slate-900">Estado de cuenta</h2>
+            <h2 className="mb-2 text-sm font-bold text-slate-900 dark:text-slate-100">Estado de cuenta</h2>
             <BotonesWhatsApp
               mensaje={mensaje}
               link={linkWhatsApp(cliente.telefono, mensaje)}
@@ -103,20 +103,20 @@ export default async function ClientePage({
 
         <section className="mt-6">
           <div className="mb-2 flex items-center justify-between">
-            <h2 className="text-sm font-bold text-slate-900">Préstamos</h2>
+            <h2 className="text-sm font-bold text-slate-900 dark:text-slate-100">Préstamos</h2>
             <Link
               href="/prestamos/nuevo"
-              className="text-xs font-medium text-brand-600"
+              className="text-xs font-medium text-brand-600 dark:text-brand-400"
             >
               + Nuevo préstamo
             </Link>
           </div>
           {resueltos.length === 0 ? (
-            <p className="rounded-2xl border border-dashed border-slate-300 px-4 py-8 text-center text-sm text-slate-500">
+            <p className="rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 px-4 py-8 text-center text-sm text-slate-500 dark:text-slate-400">
               Este cliente todavía no tiene préstamos.
             </p>
           ) : (
-            <div className="divide-y divide-slate-100 overflow-hidden rounded-2xl border border-slate-200 bg-white">
+            <div className="divide-y divide-slate-100 dark:divide-slate-800 overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
               {resueltos.map((item) => (
                 <FilaPrestamo key={item.prestamo.id} {...item} />
               ))}

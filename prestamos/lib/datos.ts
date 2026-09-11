@@ -7,6 +7,7 @@ import type {
   PagoConDetalle,
   Prestamo,
   PrestamoConCliente,
+  Tema,
 } from "@/lib/types";
 import type { PlantillasGuardadas, TipoMensaje } from "@/lib/plantillas";
 
@@ -122,6 +123,18 @@ export async function traerPagos(): Promise<PagoConDetalle[]> {
 
   if (error) throw new Error(`No se pudieron traer los cobros: ${error.message}`);
   return (data ?? []) as PagoConDetalle[];
+}
+
+/**
+ * Cómo quiere ver la app este usuario.
+ *
+ * No redirige si no hay sesión: el layout la usa también en el login, donde
+ * corresponden los valores de fábrica.
+ */
+export async function traerApariencia(): Promise<{ tema: Tema; fuente: string }> {
+  const supabase = await createClient();
+  const { data } = await supabase.from("ajustes").select("tema, fuente").maybeSingle();
+  return { tema: data?.tema ?? "claro", fuente: data?.fuente ?? "sistema" };
 }
 
 export type { Ajustes, Cliente, Pago, PagoConDetalle, Prestamo, PrestamoConCliente };

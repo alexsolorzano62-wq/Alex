@@ -70,7 +70,7 @@ export default function ListaPagos({ pagos }: { pagos: PagoConDetalle[] }) {
 
   if (pagos.length === 0) {
     return (
-      <p className="rounded-2xl border border-dashed border-slate-300 px-4 py-10 text-center text-sm text-slate-500">
+      <p className="rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 px-4 py-10 text-center text-sm text-slate-500 dark:text-slate-400">
         Todavía no registraste ningún cobro.
       </p>
     );
@@ -80,11 +80,11 @@ export default function ListaPagos({ pagos }: { pagos: PagoConDetalle[] }) {
     <>
       <div className="grid grid-cols-2 gap-3">
         <label className="block">
-          <span className="mb-1 block text-sm font-medium text-slate-700">Mes</span>
+          <span className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Mes</span>
           <select
             value={mes}
             onChange={(e) => setMes(e.target.value)}
-            className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-base outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
+            className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2.5 text-base outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
           >
             {meses.map((valor) => (
               <option key={valor} value={valor}>
@@ -96,11 +96,11 @@ export default function ListaPagos({ pagos }: { pagos: PagoConDetalle[] }) {
         </label>
 
         <label className="block">
-          <span className="mb-1 block text-sm font-medium text-slate-700">Cliente</span>
+          <span className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Cliente</span>
           <select
             value={cliente}
             onChange={(e) => setCliente(e.target.value)}
-            className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-base outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
+            className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2.5 text-base outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
           >
             <option value={TODOS}>Todos</option>
             {clientes.map(([id, nombre]) => (
@@ -112,29 +112,29 @@ export default function ListaPagos({ pagos }: { pagos: PagoConDetalle[] }) {
         </label>
       </div>
 
-      <dl className="mt-3 grid grid-cols-3 gap-2 rounded-2xl border border-slate-200 bg-white p-3">
+      <dl className="mt-3 grid grid-cols-3 gap-2 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3">
         <div>
-          <dt className="text-[11px] uppercase text-slate-500">Cobros</dt>
+          <dt className="text-[11px] uppercase text-slate-500 dark:text-slate-400">Cobros</dt>
           <dd className="tabular text-sm font-bold">{visibles.length}</dd>
         </div>
         <div>
-          <dt className="text-[11px] uppercase text-slate-500">Entró</dt>
+          <dt className="text-[11px] uppercase text-slate-500 dark:text-slate-400">Entró</dt>
           <dd className="tabular text-sm font-bold">{plata(cobrado)}</dd>
         </div>
         <div>
-          <dt className="text-[11px] uppercase text-slate-500">De interés</dt>
-          <dd className="tabular text-sm font-bold text-emerald-700">
+          <dt className="text-[11px] uppercase text-slate-500 dark:text-slate-400">De interés</dt>
+          <dd className="tabular text-sm font-bold text-emerald-700 dark:text-emerald-400">
             {plata(ganancia)}
           </dd>
         </div>
       </dl>
 
       {visibles.length === 0 ? (
-        <p className="mt-4 rounded-2xl border border-dashed border-slate-300 px-4 py-10 text-center text-sm text-slate-500">
+        <p className="mt-4 rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 px-4 py-10 text-center text-sm text-slate-500 dark:text-slate-400">
           No hay cobros con ese filtro.
         </p>
       ) : (
-        <ul className="mt-4 divide-y divide-slate-100 overflow-hidden rounded-2xl border border-slate-200 bg-white">
+        <ul className="mt-4 divide-y divide-slate-100 dark:divide-slate-800 overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
           {visibles.map((pago) => (
             <li key={pago.id} className="flex items-center gap-2 px-4 py-3">
               <Link
@@ -142,20 +142,20 @@ export default function ListaPagos({ pagos }: { pagos: PagoConDetalle[] }) {
                 className="flex min-w-0 flex-1 items-center justify-between gap-3"
               >
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold text-slate-900">
+                  <p className="truncate text-sm font-semibold text-slate-900 dark:text-slate-100">
                     {pago.prestamo?.cliente?.nombre ?? "Cliente borrado"}
                   </p>
-                  <p className="truncate text-xs text-slate-500">
+                  <p className="truncate text-xs text-slate-500 dark:text-slate-400">
                     {numeros.has(pago.id)
                       ? `Cuota ${numeros.get(pago.id)}${pago.prestamo?.cuotas_total ? ` de ${pago.prestamo.cuotas_total}` : ""}`
                       : (NOMBRE_TIPO[pago.tipo] ?? pago.tipo)}{" "}
                     · {formatFecha(pago.fecha)}
                   </p>
                   {pago.nota && (
-                    <p className="truncate text-xs text-slate-400">{pago.nota}</p>
+                    <p className="truncate text-xs text-slate-400 dark:text-slate-500">{pago.nota}</p>
                   )}
                 </div>
-                <span className="tabular shrink-0 text-sm font-bold text-emerald-700">
+                <span className="tabular shrink-0 text-sm font-bold text-emerald-700 dark:text-emerald-400">
                   {plata(pago.monto)}
                 </span>
               </Link>
@@ -164,7 +164,7 @@ export default function ListaPagos({ pagos }: { pagos: PagoConDetalle[] }) {
                 <input type="hidden" name="id" value={pago.id} />
                 <BotonConfirmar
                   pregunta={`¿Borrar ${numeros.has(pago.id) ? `la cuota ${numeros.get(pago.id)}` : "este cobro"} de ${plata(pago.monto)} del ${formatFecha(pago.fecha)}? El préstamo vuelve a como estaba antes.`}
-                  className="rounded-lg border border-slate-300 px-2.5 py-1.5 text-xs font-medium text-slate-600 active:bg-slate-100"
+                  className="rounded-lg border border-slate-300 dark:border-slate-700 px-2.5 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-400 active:bg-slate-100 dark:active:bg-slate-800"
                 >
                   Borrar
                 </BotonConfirmar>

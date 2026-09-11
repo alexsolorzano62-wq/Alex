@@ -24,7 +24,7 @@ export default async function NuevoPrestamoPage({
       <Encabezado subtitulo="Nuevo préstamo" />
 
       <main className="mx-auto max-w-lg px-4 pb-16 pt-4">
-        <Link href="/prestamos" className="text-sm text-slate-500">
+        <Link href="/prestamos" className="text-sm text-slate-500 dark:text-slate-400">
           ← Volver
         </Link>
         <h1 className="mb-4 mt-2 text-lg font-bold">Nuevo préstamo</h1>

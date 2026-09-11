@@ -83,8 +83,8 @@ export default function FormularioPlantillas({
           <input key={campo} type="hidden" name={campo} value={texto} />
         ))}
 
-      <div className="rounded-2xl border border-slate-200 bg-white p-3">
-        <p className="mb-2 text-xs font-medium text-slate-500">
+      <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3">
+        <p className="mb-2 text-xs font-medium text-slate-500 dark:text-slate-400">
           Estás editando los mensajes de:
         </p>
         <div className="flex flex-wrap gap-2">
@@ -97,14 +97,14 @@ export default function FormularioPlantillas({
               className={`rounded-full px-3.5 py-1.5 text-sm font-medium ${
                 modalidad === opcion.modalidad
                   ? "bg-brand-600 text-white"
-                  : "border border-slate-300 bg-white text-slate-600"
+                  : "border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400"
               }`}
             >
               {opcion.titulo}
             </button>
           ))}
         </div>
-        <p className="mt-2 text-xs text-slate-400">
+        <p className="mt-2 text-xs text-slate-400 dark:text-slate-500">
           Cada modalidad tiene sus propios textos, porque lo que el cliente necesita
           saber no es lo mismo.
         </p>
@@ -115,7 +115,7 @@ export default function FormularioPlantillas({
         return (
           <section key={campo}>
             <div className="flex items-baseline justify-between gap-2">
-              <h2 className="text-sm font-bold text-slate-900">{mensaje.titulo}</h2>
+              <h2 className="text-sm font-bold text-slate-900 dark:text-slate-100">{mensaje.titulo}</h2>
               <button
                 type="button"
                 onClick={() =>
@@ -124,12 +124,12 @@ export default function FormularioPlantillas({
                     [campo]: PLANTILLAS_POR_DEFECTO[mensaje.tipo][modalidad],
                   }))
                 }
-                className="text-xs font-medium text-slate-500 underline"
+                className="text-xs font-medium text-slate-500 dark:text-slate-400 underline"
               >
                 Restaurar el original
               </button>
             </div>
-            <p className="mb-2 text-xs text-slate-500">{mensaje.ayuda}</p>
+            <p className="mb-2 text-xs text-slate-500 dark:text-slate-400">{mensaje.ayuda}</p>
 
             <textarea
               ref={(elemento) => {
@@ -141,10 +141,10 @@ export default function FormularioPlantillas({
                 setTextos((previo) => ({ ...previo, [campo]: e.target.value }))
               }
               rows={8}
-              className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 font-mono text-sm leading-relaxed outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
+              className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2.5 font-mono text-sm leading-relaxed outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
             />
 
-            <p className="mt-2 text-xs font-medium text-slate-500">
+            <p className="mt-2 text-xs font-medium text-slate-500 dark:text-slate-400">
               Tocá una etiqueta para insertarla donde tengas el cursor:
             </p>
             <div className="mt-1.5 flex flex-wrap gap-1.5">
@@ -154,18 +154,18 @@ export default function FormularioPlantillas({
                   type="button"
                   title={etiqueta.descripcion}
                   onClick={() => insertar(campo, etiqueta.clave)}
-                  className="rounded-lg border border-slate-300 bg-white px-2 py-1 font-mono text-[11px] text-slate-600 active:bg-brand-50"
+                  className="rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-2 py-1 font-mono text-[11px] text-slate-600 dark:text-slate-400 active:bg-brand-50 dark:active:bg-brand-900/40"
                 >
                   {`{${etiqueta.clave}}`}
                 </button>
               ))}
             </div>
 
-            <div className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 p-3">
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-emerald-800">
+            <div className="mt-3 rounded-xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/30 p-3">
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-emerald-800 dark:text-emerald-300">
                 Así le va a llegar
               </p>
-              <pre className="mt-1.5 whitespace-pre-wrap font-sans text-sm leading-relaxed text-slate-800">
+              <pre className="mt-1.5 whitespace-pre-wrap font-sans text-sm leading-relaxed text-slate-800 dark:text-slate-200">
                 {aplicarPlantilla(textos[campo], muestra)}
               </pre>
             </div>
@@ -174,13 +174,13 @@ export default function FormularioPlantillas({
       })}
 
       {estado?.error && (
-        <p className="rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700">
+        <p className="rounded-xl bg-red-50 dark:bg-red-900/30 px-3 py-2 text-sm text-red-700 dark:text-red-400">
           {estado.error}
         </p>
       )}
 
       {guardado && !enviando && !estado?.error && (
-        <p className="rounded-xl bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-800">
+        <p className="rounded-xl bg-emerald-50 dark:bg-emerald-900/30 px-3 py-2 text-sm font-medium text-emerald-800 dark:text-emerald-300">
           ✓ Guardado. Tus mensajes ya salen así.
         </p>
       )}

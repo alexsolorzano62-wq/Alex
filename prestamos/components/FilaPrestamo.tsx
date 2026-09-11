@@ -9,18 +9,18 @@ export default function FilaPrestamo({ prestamo, datos }: PrestamoResuelto) {
   return (
     <Link
       href={`/prestamos/${prestamo.id}`}
-      className="flex items-center justify-between gap-3 px-4 py-3 active:bg-slate-50"
+      className="flex items-center justify-between gap-3 px-4 py-3 active:bg-slate-50 dark:active:bg-slate-800"
     >
       <div className="min-w-0">
-        <p className="truncate text-sm font-semibold text-slate-900">
+        <p className="truncate text-sm font-semibold text-slate-900 dark:text-slate-100">
           {prestamo.cliente?.nombre}
         </p>
-        <p className="tabular truncate text-xs text-slate-500">
+        <p className="tabular truncate text-xs text-slate-500 dark:text-slate-400">
           {plata(datos.capital)} · vence {formatFecha(prestamo.fecha_vencimiento)}
         </p>
         <p
           className={`text-xs ${
-            datos.vencido ? "font-semibold text-red-600" : "text-slate-400"
+            datos.vencido ? "font-semibold text-red-600 dark:text-red-400" : "text-slate-400 dark:text-slate-500"
           }`}
         >
           {prestamo.estado !== "vigente"
@@ -32,19 +32,19 @@ export default function FilaPrestamo({ prestamo, datos }: PrestamoResuelto) {
       </div>
       {datos.avance != null && prestamo.estado === "vigente" && (
         <div className="hidden w-20 shrink-0 sm:block">
-          <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
+          <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
             <div
               className="h-full rounded-full bg-brand-500"
               style={{ width: `${Math.max(datos.avance, 2)}%` }}
             />
           </div>
-          <p className="tabular mt-1 text-right text-[11px] text-slate-400">
+          <p className="tabular mt-1 text-right text-[11px] text-slate-400 dark:text-slate-500">
             {datos.avance}%
           </p>
         </div>
       )}
       <div className="shrink-0 text-right">
-        <p className="tabular text-sm font-bold text-slate-900">
+        <p className="tabular text-sm font-bold text-slate-900 dark:text-slate-100">
           {plata(datos.aDevolver)}
         </p>
         <EstadoBadge estado={datos.estadoVisual} className="mt-1" />

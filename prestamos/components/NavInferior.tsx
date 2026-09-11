@@ -64,7 +64,7 @@ export default function NavInferior() {
   const ruta = usePathname();
 
   return (
-    <nav className="pb-safe fixed inset-x-0 bottom-0 z-20 border-t border-slate-200 bg-white/95 backdrop-blur">
+    <nav className="pb-safe fixed inset-x-0 bottom-0 z-20 border-t border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 backdrop-blur">
       <div className="mx-auto flex max-w-2xl">
         {ITEMS.map((item) => {
           const activo =
@@ -75,7 +75,7 @@ export default function NavInferior() {
               href={item.href}
               aria-current={activo ? "page" : undefined}
               className={`flex flex-1 flex-col items-center gap-0.5 px-0.5 py-2.5 text-[10px] font-medium ${
-                activo ? "text-brand-600" : "text-slate-400"
+                activo ? "text-brand-600 dark:text-brand-400" : "text-slate-400 dark:text-slate-500"
               }`}
             >
               {item.icono}

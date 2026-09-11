@@ -65,7 +65,7 @@ export default function ListaPrestamos({ items }: { items: PrestamoResuelto[] })
             className={`shrink-0 rounded-full px-3.5 py-1.5 text-sm font-medium ${
               filtro === opcion.valor
                 ? "bg-brand-600 text-white"
-                : "border border-slate-300 bg-white text-slate-600"
+                : "border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400"
             }`}
           >
             {opcion.texto}
@@ -77,27 +77,27 @@ export default function ListaPrestamos({ items }: { items: PrestamoResuelto[] })
         value={busqueda}
         onChange={(e) => setBusqueda(e.target.value)}
         placeholder="Buscar por cliente..."
-        className="mt-3 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-base outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
+        className="mt-3 w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2.5 text-base outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
       />
 
       {visibles.length === 0 ? (
-        <p className="mt-4 rounded-2xl border border-dashed border-slate-300 px-4 py-10 text-center text-sm text-slate-500">
+        <p className="mt-4 rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 px-4 py-10 text-center text-sm text-slate-500 dark:text-slate-400">
           No hay préstamos para mostrar.
         </p>
       ) : (
         <>
           {/* En el celular, una tarjeta por préstamo. */}
-          <div className="mt-4 divide-y divide-slate-100 overflow-hidden rounded-2xl border border-slate-200 bg-white md:hidden">
+          <div className="mt-4 divide-y divide-slate-100 dark:divide-slate-800 overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 md:hidden">
             {visibles.map((item) => (
               <FilaPrestamo key={item.prestamo.id} {...item} />
             ))}
           </div>
 
           {/* En pantalla grande, la planilla de siempre. */}
-          <div className="mt-4 hidden overflow-x-auto rounded-2xl border border-slate-200 bg-white md:block">
+          <div className="mt-4 hidden overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 md:block">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-slate-200 bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
+                <tr className="border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-left text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">
                   <th className="px-3 py-2 font-semibold">Nombre</th>
                   <th className="px-3 py-2 text-right font-semibold">Monto</th>
                   <th className="px-3 py-2 font-semibold">Inicio</th>
@@ -108,16 +108,16 @@ export default function ListaPrestamos({ items }: { items: PrestamoResuelto[] })
                   <th className="px-3 py-2 font-semibold">Observación</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                 {visibles.map(({ prestamo, datos }) => {
                   const tasa = tasaMostrada(prestamo);
 
                   return (
-                    <tr key={prestamo.id} className="hover:bg-slate-50">
+                    <tr key={prestamo.id} className="hover:bg-slate-50 dark:hover:bg-slate-800">
                       <td className="px-3 py-2">
                         <Link
                           href={`/prestamos/${prestamo.id}`}
-                          className="font-medium text-slate-900 hover:text-brand-600"
+                          className="font-medium text-slate-900 dark:text-slate-100 hover:text-brand-600"
                         >
                           {prestamo.cliente?.nombre}
                         </Link>
@@ -126,7 +126,7 @@ export default function ListaPrestamos({ items }: { items: PrestamoResuelto[] })
                       <td className="tabular px-3 py-2 text-right">
                         {plata(datos.capital)}
                       </td>
-                      <td className="px-3 py-2 text-slate-500">
+                      <td className="px-3 py-2 text-slate-500 dark:text-slate-400">
                         {formatFechaCorta(prestamo.fecha_inicio)}
                       </td>
                       <td className="tabular px-3 py-2 text-right">
@@ -135,13 +135,13 @@ export default function ListaPrestamos({ items }: { items: PrestamoResuelto[] })
                       <td className="tabular px-3 py-2 text-right font-semibold">
                         {plata(datos.aDevolver)}
                       </td>
-                      <td className="tabular px-3 py-2 text-right text-slate-600">
+                      <td className="tabular px-3 py-2 text-right text-slate-600 dark:text-slate-400">
                         {plata(datos.interes)}
                       </td>
-                      <td className="px-3 py-2 text-slate-500">
+                      <td className="px-3 py-2 text-slate-500 dark:text-slate-400">
                         {formatFecha(prestamo.fecha_vencimiento)}
                       </td>
-                      <td className="px-3 py-2 text-slate-500">
+                      <td className="px-3 py-2 text-slate-500 dark:text-slate-400">
                         {prestamo.modalidad === "mensual"
                           ? (prestamo.observacion ?? "")
                           : descripcionPlan(prestamo, datos)}
@@ -151,7 +151,7 @@ export default function ListaPrestamos({ items }: { items: PrestamoResuelto[] })
                 })}
               </tbody>
               <tfoot>
-                <tr className="border-t-2 border-slate-300 bg-slate-50 font-bold">
+                <tr className="border-t-2 border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 font-bold">
                   <td className="px-3 py-2">Totales</td>
                   <td className="tabular px-3 py-2 text-right">{plata(sumas.capital)}</td>
                   <td />
@@ -168,17 +168,17 @@ export default function ListaPrestamos({ items }: { items: PrestamoResuelto[] })
           </div>
 
           {/* En el celular los totales van aparte, porque no hay tabla. */}
-          <dl className="mt-3 grid grid-cols-3 gap-2 rounded-2xl border border-slate-200 bg-white p-3 md:hidden">
+          <dl className="mt-3 grid grid-cols-3 gap-2 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3 md:hidden">
             <div>
-              <dt className="text-[11px] uppercase text-slate-500">Capital</dt>
+              <dt className="text-[11px] uppercase text-slate-500 dark:text-slate-400">Capital</dt>
               <dd className="tabular text-sm font-bold">{plata(sumas.capital)}</dd>
             </div>
             <div>
-              <dt className="text-[11px] uppercase text-slate-500">A cobrar</dt>
+              <dt className="text-[11px] uppercase text-slate-500 dark:text-slate-400">A cobrar</dt>
               <dd className="tabular text-sm font-bold">{plata(sumas.aDevolver)}</dd>
             </div>
             <div>
-              <dt className="text-[11px] uppercase text-slate-500">Interés</dt>
+              <dt className="text-[11px] uppercase text-slate-500 dark:text-slate-400">Interés</dt>
               <dd className="tabular text-sm font-bold">{plata(sumas.interes)}</dd>
             </div>
           </dl>

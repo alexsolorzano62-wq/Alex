@@ -45,6 +45,10 @@ todo y, si querés, les mandás el estado de cuenta por WhatsApp.
 - **WhatsApp**: manda el estado de cuenta o el aviso de préstamo nuevo, con el
   texto ya escrito. Si el cliente tiene teléfono cargado, abre su chat directo;
   si no, te deja elegir el contacto o copiar el texto.
+- **Apariencia**: tema claro u oscuro y diez tipografías para elegir, en *Ajustes*.
+  La elección se guarda en la base, así que viaja con el usuario a cualquier
+  teléfono, y el tema lo decide el servidor para que la pantalla no parpadee al
+  cargar.
 - **Mensajes a tu manera**: en *Ajustes* (el engranaje del encabezado) escribís vos
   el texto de tres mensajes —préstamo nuevo, estado de cuenta y comprobante de pago—
   **y cada uno tiene su versión para cada modalidad**, porque lo que el cliente
@@ -90,6 +94,7 @@ contenido completo de cada archivo de `supabase/migrations/`:
 4. `0004_comprobante.sql` — agrega la plantilla del comprobante de pago.
 5. `0005_plantillas_por_modalidad.sql` — un texto propio por modalidad.
 6. `0006_plan_personalizado.sql` — la modalidad personalizada y su frecuencia.
+7. `0007_apariencia.sql` — el tema y la tipografía elegidos.
 
 Si agregás más migraciones a futuro, corrélas siempre en orden numérico.
 
@@ -172,7 +177,7 @@ npm test
 | `npm run build` | Compila para producción |
 | `npm run lint` | Revisa el código |
 | `npm test` | Verifica los cálculos de préstamos, importes y teléfonos |
-| `python3 scripts/generar-iconos.py` | Regenera los íconos de la app |
+| `python3 scripts/generar-iconos.py` | Regenera los íconos (el billete sobre el azul) |
 
 ## Respaldo
 

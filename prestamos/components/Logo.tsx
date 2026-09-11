@@ -1,17 +1,21 @@
-export function LogoMark({ className = "h-8 w-8" }: { className?: string }) {
+/**
+ * El billete de la marca.
+ *
+ * Es el emoji, no un dibujo: se ve nítido en cualquier tamaño y a color en
+ * todos los teléfonos, sin pesar nada. Va dentro de un cuadrado azul, igual
+ * que el ícono que queda en la pantalla de inicio.
+ *
+ * El tamaño del emoji sale del `font-size` de la caja, así que quien la usa
+ * pasa alto, ancho y tamaño de texto juntos: `h-8 w-8 text-[18px]`.
+ */
+export function LogoMark({ className = "h-8 w-8 text-[18px]" }: { className?: string }) {
   return (
-    <svg viewBox="0 0 100 100" className={className} aria-hidden="true">
-      {/* De abajo hacia arriba: cada moneda tapa a la de atrás. */}
-      <g fill="currentColor" stroke="currentColor" strokeWidth="0">
-        <rect width="100" height="100" rx="22" />
-      </g>
-      <g fill="none" stroke="white" strokeWidth="6">
-        <ellipse cx="50" cy="70" rx="30" ry="10" />
-      </g>
-      <g fill="currentColor" stroke="white" strokeWidth="6">
-        <ellipse cx="50" cy="52" rx="30" ry="10" />
-        <ellipse cx="50" cy="34" rx="30" ry="10" />
-      </g>
-    </svg>
+    <span
+      className={`inline-flex shrink-0 items-center justify-center rounded-xl bg-brand-500 leading-none ${className}`}
+      role="img"
+      aria-label="Préstamos"
+    >
+      💵
+    </span>
   );
 }

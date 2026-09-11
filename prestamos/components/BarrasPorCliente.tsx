@@ -20,12 +20,12 @@ export default function BarrasPorCliente({ filas }: { filas: FilaCliente[] }) {
         <li key={fila.id}>
           <Link href={`/clientes/${fila.id}`} className="block">
             <div className="flex items-baseline justify-between gap-3 text-sm">
-              <span className="truncate font-medium text-slate-700">{fila.nombre}</span>
-              <span className="tabular shrink-0 font-semibold text-slate-900">
+              <span className="truncate font-medium text-slate-700 dark:text-slate-300">{fila.nombre}</span>
+              <span className="tabular shrink-0 font-semibold text-slate-900 dark:text-slate-100">
                 {plata(fila.monto)}
               </span>
             </div>
-            <div className="mt-1 h-2 w-full overflow-hidden rounded-full bg-slate-100">
+            <div className="mt-1 h-2 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
               <div
                 className="h-full rounded-full bg-brand-500"
                 style={{ width: `${Math.max(2, (fila.monto / maximo) * 100)}%` }}

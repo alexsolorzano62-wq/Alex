@@ -52,17 +52,17 @@ export default function BotonesWhatsApp({
         <button
           type="button"
           onClick={copiar}
-          className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-700 active:bg-slate-100"
+          className="rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-3 text-sm font-semibold text-slate-700 dark:text-slate-300 active:bg-slate-100 dark:active:bg-slate-800"
         >
           {copiado ? "¡Copiado!" : "Copiar"}
         </button>
       </div>
 
-      <details className="rounded-xl border border-slate-200 bg-white">
-        <summary className="cursor-pointer px-3 py-2 text-xs font-medium text-slate-500">
+      <details className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+        <summary className="cursor-pointer px-3 py-2 text-xs font-medium text-slate-500 dark:text-slate-400">
           Ver el mensaje
         </summary>
-        <pre className="whitespace-pre-wrap px-3 pb-3 text-xs leading-relaxed text-slate-700">
+        <pre className="whitespace-pre-wrap px-3 pb-3 text-xs leading-relaxed text-slate-700 dark:text-slate-300">
           {mensaje}
         </pre>
       </details>

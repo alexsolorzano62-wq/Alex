@@ -20,7 +20,7 @@ export default async function EditarClientePage({
       <Encabezado subtitulo={cliente.nombre} />
 
       <main className="mx-auto max-w-lg px-4 pb-16 pt-4">
-        <Link href={`/clientes/${cliente.id}`} className="text-sm text-slate-500">
+        <Link href={`/clientes/${cliente.id}`} className="text-sm text-slate-500 dark:text-slate-400">
           ← Volver
         </Link>
         <h1 className="mb-4 mt-2 text-lg font-bold">Editar cliente</h1>

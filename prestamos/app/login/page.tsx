@@ -39,7 +39,7 @@ function Formulario() {
   return (
     <form onSubmit={entrar} className="space-y-4">
       <label className="block">
-        <span className="mb-1 block text-sm font-medium text-slate-700">Email</span>
+        <span className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Email</span>
         <input
           type="email"
           required
@@ -51,7 +51,7 @@ function Formulario() {
       </label>
 
       <label className="block">
-        <span className="mb-1 block text-sm font-medium text-slate-700">Contraseña</span>
+        <span className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Contraseña</span>
         <input
           type="password"
           required
@@ -63,7 +63,7 @@ function Formulario() {
       </label>
 
       {error && (
-        <p className="rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
+        <p className="rounded-xl bg-red-50 dark:bg-red-900/30 px-3 py-2 text-sm text-red-700 dark:text-red-400">{error}</p>
       )}
 
       <button
@@ -82,9 +82,9 @@ export default function LoginPage() {
     <div className="flex min-h-dvh flex-col items-center justify-center px-6">
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
-          <LogoMark className="mx-auto h-16 w-16 text-brand-600" />
+          <LogoMark className="mx-auto h-16 w-16 text-[36px]" />
           <h1 className="mt-3 text-xl font-bold">Préstamos</h1>
-          <p className="text-sm text-slate-500">Seguimiento de clientes</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400">Seguimiento de clientes</p>
         </div>
         <Suspense>
           <Formulario />

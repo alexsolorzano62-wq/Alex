@@ -15,17 +15,17 @@ export type FilaCobranza = PrestamoResuelto & {
 /** La lista de trabajo del día: a quién cobrarle y cuánto. */
 export default function ParaCobrar({ filas }: { filas: FilaCobranza[] }) {
   return (
-    <ul className="divide-y divide-slate-100 overflow-hidden rounded-2xl border border-slate-200 bg-white">
+    <ul className="divide-y divide-slate-100 dark:divide-slate-800 overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
       {filas.map(({ prestamo, datos, aCobrar, tipo, linkWhatsApp }) => (
         <li key={prestamo.id} className="px-4 py-3">
           <div className="flex items-start justify-between gap-3">
             <Link href={`/prestamos/${prestamo.id}`} className="min-w-0">
-              <p className="truncate text-sm font-semibold text-slate-900">
+              <p className="truncate text-sm font-semibold text-slate-900 dark:text-slate-100">
                 {prestamo.cliente?.nombre}
               </p>
               <p
                 className={`text-xs ${
-                  datos.vencido ? "font-semibold text-red-600" : "text-slate-500"
+                  datos.vencido ? "font-semibold text-red-600 dark:text-red-400" : "text-slate-500 dark:text-slate-400"
                 }`}
               >
                 {datos.cuotasAtrasadas > 0
@@ -33,7 +33,7 @@ export default function ParaCobrar({ filas }: { filas: FilaCobranza[] }) {
                   : textoVencimiento(datos.diasParaVencer)}
               </p>
             </Link>
-            <p className="tabular shrink-0 text-base font-bold text-slate-900">
+            <p className="tabular shrink-0 text-base font-bold text-slate-900 dark:text-slate-100">
               {plata(aCobrar)}
             </p>
           </div>

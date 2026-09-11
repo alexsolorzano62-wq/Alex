@@ -1,43 +1,47 @@
-"""Iconos PWA del sistema de prestamos: una pila de monedas."""
-import os
-from PIL import Image, ImageDraw
+"""Iconos de la app: el emoji del billete sobre el azul de la marca.
 
-OUT = "/home/user/Alex/prestamos/public/icons"
+NotoColorEmoji es una fuente de mapa de bits y solo se dibuja a 109 px, así que
+el emoji se agranda con LANCZOS. Para que no se note, ocupa poco más de la mitad
+del icono: agrandar 2,5 veces un dibujo plano aguanta bien.
+"""
+import os
+from PIL import Image, ImageDraw, ImageFont
+
+OUT = os.path.join(os.path.dirname(__file__), "..", "public", "icons")
 os.makedirs(OUT, exist_ok=True)
 
-BRAND = (67, 56, 202)   # brand-600 #4338ca
-WHITE = (255, 255, 255)
-SS = 8
-
-RX, RY = 34, 11
-CENTROS = [70, 52, 34]          # de abajo hacia arriba
-BBOX = (16, 23, 84, 81)
+EMOJI = "💵"
+FUENTE = "/usr/share/fonts/truetype/noto/NotoColorEmoji.ttf"
+TAM_NATIVO = 109
+AZUL = (24, 119, 242)  # brand-500, el azul de Facebook
 
 
-def render(size, ratio, bg, fg):
-    s = size * SS
-    img = Image.new("RGB", (s, s), bg)
-    draw = ImageDraw.Draw(img)
+def dibujar_emoji() -> Image.Image:
+    """El emoji recortado justo a su contenido, con fondo transparente."""
+    fuente = ImageFont.truetype(FUENTE, TAM_NATIVO)
+    lienzo = Image.new("RGBA", (TAM_NATIVO * 2, TAM_NATIVO * 2), (0, 0, 0, 0))
+    ImageDraw.Draw(lienzo).text((20, 20), EMOJI, font=fuente, embedded_color=True)
+    return lienzo.crop(lienzo.getbbox())
 
-    ancho = BBOX[2] - BBOX[0]
-    alto = BBOX[3] - BBOX[1]
-    escala = (s * ratio) / ancho
-    off_x = (s - ancho * escala) / 2 - BBOX[0] * escala
-    off_y = (s - alto * escala) / 2 - BBOX[1] * escala
-    grosor = max(1, round(4.5 * escala))
 
-    for cy in CENTROS:  # el de arriba tapa al de abajo: da sensacion de pila
-        x0 = off_x + (50 - RX) * escala
-        y0 = off_y + (cy - RY) * escala
-        x1 = off_x + (50 + RX) * escala
-        y1 = off_y + (cy + RY) * escala
-        draw.ellipse([x0, y0, x1, y1], fill=bg, outline=fg, width=grosor)
+def render(size: int, ratio: float) -> Image.Image:
+    fondo = Image.new("RGB", (size, size), AZUL)
+    emoji = dibujar_emoji()
 
-    return img.resize((size, size), Image.LANCZOS)
+    ancho = int(size * ratio)
+    alto = round(ancho * emoji.height / emoji.width)
+    emoji = emoji.resize((ancho, alto), Image.LANCZOS)
+
+    fondo.paste(emoji, ((size - ancho) // 2, (size - alto) // 2), emoji)
+    return fondo
 
 
 for size in (192, 512):
-    render(size, 0.70, BRAND, WHITE).save(f"{OUT}/icon-{size}.png", optimize=True)
-render(180, 0.70, BRAND, WHITE).save(f"{OUT}/apple-touch-icon.png", optimize=True)
+    render(size, 0.62).save(f"{OUT}/icon-{size}.png", optimize=True)
+render(180, 0.62).save(f"{OUT}/apple-touch-icon.png", optimize=True)
+
+# Maskable: Android recorta hasta un 20% de cada borde.
 for size in (192, 512):
-    render(size, 0.52, BRAND, WHITE).save(f"{OUT}/icon-maskable-{size}.png", optimize=True)
+    render(size, 0.46).save(f"{OUT}/icon-maskable-{size}.png", optimize=True)
+
+print("íconos regenerados")

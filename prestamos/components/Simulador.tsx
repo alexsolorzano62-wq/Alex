@@ -42,7 +42,7 @@ export default function Simulador() {
   return (
     <div className="space-y-4">
       <label className="block">
-        <span className="mb-1 block text-sm font-medium text-slate-700">
+        <span className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
           ¿Cuánto quiere?
         </span>
         <input
@@ -63,8 +63,8 @@ export default function Simulador() {
             onClick={() => setCapital(monto.toLocaleString("es-AR"))}
             className={`rounded-lg border px-2.5 py-1 text-xs font-medium ${
               capitalNum === monto
-                ? "border-brand-500 bg-brand-50 text-brand-700"
-                : "border-slate-300 bg-white text-slate-600"
+                ? "border-brand-500 bg-brand-50 dark:bg-brand-900/40 text-brand-700 dark:text-brand-300"
+                : "border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400"
             }`}
           >
             {plata(monto)}
@@ -73,16 +73,16 @@ export default function Simulador() {
       </div>
 
       {capitalNum <= 0 ? (
-        <p className="rounded-2xl border border-dashed border-slate-300 px-4 py-10 text-center text-sm text-slate-500">
+        <p className="rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 px-4 py-10 text-center text-sm text-slate-500 dark:text-slate-400">
           Escribí un monto y te muestro cuánto paga en cada plan.
         </p>
       ) : (
         <>
           <section>
             <div className="mb-2 flex items-baseline justify-between gap-2">
-              <h2 className="text-sm font-bold text-slate-900">Planes semanales</h2>
+              <h2 className="text-sm font-bold text-slate-900 dark:text-slate-100">Planes semanales</h2>
               {!enLista && (
-                <span className="text-[11px] text-amber-700">
+                <span className="text-[11px] text-amber-700 dark:text-amber-400">
                   monto fuera de la lista: calculado en proporción
                 </span>
               )}
@@ -92,22 +92,22 @@ export default function Simulador() {
               {semanales.map((plan) => (
                 <div
                   key={plan.semanas}
-                  className="rounded-xl border border-slate-200 bg-white p-3"
+                  className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3"
                 >
                   <div className="flex items-baseline justify-between gap-3">
-                    <p className="text-sm font-semibold text-slate-900">
+                    <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
                       {plan.semanas} semanas
                     </p>
-                    <p className="tabular text-lg font-bold leading-none text-brand-700">
+                    <p className="tabular text-lg font-bold leading-none text-brand-700 dark:text-brand-300">
                       {plata(plan.cuota)}
-                      <span className="text-xs font-normal text-slate-500"> /semana</span>
+                      <span className="text-xs font-normal text-slate-500 dark:text-slate-400"> /semana</span>
                     </p>
                   </div>
 
                   <div className="mt-1.5 flex items-center justify-between gap-3">
-                    <p className="tabular min-w-0 truncate text-xs text-slate-500">
+                    <p className="tabular min-w-0 truncate text-xs text-slate-500 dark:text-slate-400">
                       devuelve {plata(plan.total)} · ganás{" "}
-                      <span className="font-semibold text-emerald-700">
+                      <span className="font-semibold text-emerald-700 dark:text-emerald-400">
                         {plata(plan.interes)}
                       </span>
                     </p>
@@ -125,37 +125,37 @@ export default function Simulador() {
 
           {mensual && (
             <section>
-              <h2 className="mb-2 text-sm font-bold text-slate-900">
+              <h2 className="mb-2 text-sm font-bold text-slate-900 dark:text-slate-100">
                 Si en cambio lo hacés con interés mensual
               </h2>
-              <div className="rounded-2xl border border-slate-200 bg-white p-4">
+              <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4">
                 <label className="flex items-center justify-between gap-3">
-                  <span className="text-sm text-slate-600">Tasa mensual</span>
+                  <span className="text-sm text-slate-600 dark:text-slate-400">Tasa mensual</span>
                   <span className="flex items-center gap-1">
                     <input
                       value={tasaMensual}
                       onChange={(e) => setTasaMensual(e.target.value)}
                       inputMode="decimal"
-                      className="w-20 rounded-lg border border-slate-300 px-2 py-1 text-right text-sm"
+                      className="w-20 rounded-lg border border-slate-300 dark:border-slate-700 px-2 py-1 text-right text-sm"
                     />
-                    <span className="text-sm text-slate-500">%</span>
+                    <span className="text-sm text-slate-500 dark:text-slate-400">%</span>
                   </span>
                 </label>
 
-                <dl className="mt-2 space-y-1 border-t border-slate-100 pt-2 text-sm">
+                <dl className="mt-2 space-y-1 border-t border-slate-100 dark:border-slate-800 pt-2 text-sm">
                   <div className="flex justify-between">
-                    <dt className="text-slate-600">Interés por mes</dt>
+                    <dt className="text-slate-600 dark:text-slate-400">Interés por mes</dt>
                     <dd className="tabular font-medium">{plata(mensual.interes)}</dd>
                   </div>
                   <div className="flex justify-between">
-                    <dt className="text-slate-600">A devolver al mes</dt>
+                    <dt className="text-slate-600 dark:text-slate-400">A devolver al mes</dt>
                     <dd className="tabular font-semibold">{plata(mensual.total)}</dd>
                   </div>
                 </dl>
 
                 <Link
                   href={`/prestamos/nuevo?capital=${capitalNum}&modalidad=mensual`}
-                  className="mt-3 block rounded-xl border border-slate-300 px-4 py-2.5 text-center text-sm font-semibold text-slate-700 active:bg-slate-100"
+                  className="mt-3 block rounded-xl border border-slate-300 dark:border-slate-700 px-4 py-2.5 text-center text-sm font-semibold text-slate-700 dark:text-slate-300 active:bg-slate-100 dark:active:bg-slate-800"
                 >
                   Usar interés mensual
                 </Link>
@@ -164,7 +164,7 @@ export default function Simulador() {
           )}
 
           <section>
-            <h2 className="mb-2 text-sm font-bold text-slate-900">Pasarle las opciones</h2>
+            <h2 className="mb-2 text-sm font-bold text-slate-900 dark:text-slate-100">Pasarle las opciones</h2>
             <BotonesWhatsApp
               mensaje={mensaje}
               link={linkWhatsApp(null, mensaje)}

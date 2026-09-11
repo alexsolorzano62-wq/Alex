@@ -6,7 +6,7 @@ import { plata, plataCorta } from "@/lib/format";
 import type { PuntoHistorico } from "@/lib/agregados";
 
 const SERIES = [
-  { clave: "prestado", texto: "Prestado", color: "#4f46e5" },
+  { clave: "prestado", texto: "Prestado", color: "#1877f2" },
   { clave: "ganado", texto: "Ganado", color: "#059669" },
 ] as const;
 
@@ -35,7 +35,7 @@ export default function GraficoEvolucion({ puntos }: { puntos: PuntoHistorico[] 
 
   if (!ultimo) {
     return (
-      <p className="rounded-2xl border border-dashed border-slate-300 px-4 py-10 text-center text-sm text-slate-500">
+      <p className="rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 px-4 py-10 text-center text-sm text-slate-500 dark:text-slate-400">
         Todavía no hay movimientos para graficar.
       </p>
     );
@@ -50,12 +50,12 @@ export default function GraficoEvolucion({ puntos }: { puntos: PuntoHistorico[] 
   const lineas = [techo, techo * 0.66, techo * 0.33];
 
   return (
-    <figure className="rounded-2xl border border-slate-200 bg-white p-4">
+    <figure className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4">
       <figcaption>
-        <p className="tabular text-3xl font-bold leading-none text-slate-900">
+        <p className="tabular text-3xl font-bold leading-none text-slate-900 dark:text-slate-100">
           {plata(ultimo.ganado)}
         </p>
-        <p className="mt-1 text-sm text-slate-500">
+        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
           ganado sobre {plata(ultimo.prestado)} prestados
         </p>
       </figcaption>
@@ -73,13 +73,13 @@ export default function GraficoEvolucion({ puntos }: { puntos: PuntoHistorico[] 
               x2={util}
               y1={y(valor)}
               y2={y(valor)}
-              stroke="#f1f5f9"
+              className="stroke-slate-100 dark:stroke-slate-800"
               strokeWidth="1"
             />
             <text
               x={util + 8}
               y={y(valor) + 4}
-              className="fill-slate-400"
+              className="fill-slate-400 dark:fill-slate-500"
               style={{ fontSize: 10 }}
             >
               {plataCorta(valor)}
@@ -106,14 +106,14 @@ export default function GraficoEvolucion({ puntos }: { puntos: PuntoHistorico[] 
           </g>
         ))}
 
-        <text x="0" y={ALTO + 14} className="fill-slate-400" style={{ fontSize: 10 }}>
+        <text x="0" y={ALTO + 14} className="fill-slate-400 dark:fill-slate-500" style={{ fontSize: 10 }}>
           {nombreMes(visibles[0].mes)}
         </text>
         <text
           x={util}
           y={ALTO + 14}
           textAnchor="end"
-          className="fill-slate-400"
+          className="fill-slate-400 dark:fill-slate-500"
           style={{ fontSize: 10 }}
         >
           {nombreMes(ultimo.mes)}
@@ -123,7 +123,7 @@ export default function GraficoEvolucion({ puntos }: { puntos: PuntoHistorico[] 
       <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
         <div className="flex gap-3 text-xs">
           {SERIES.map((serie) => (
-            <span key={serie.clave} className="flex items-center gap-1.5 text-slate-600">
+            <span key={serie.clave} className="flex items-center gap-1.5 text-slate-600 dark:text-slate-400">
               <span
                 aria-hidden="true"
                 className="h-2.5 w-2.5 rounded-sm"
@@ -134,7 +134,7 @@ export default function GraficoEvolucion({ puntos }: { puntos: PuntoHistorico[] 
           ))}
         </div>
 
-        <div className="flex gap-1 rounded-full bg-slate-100 p-0.5">
+        <div className="flex gap-1 rounded-full bg-slate-100 dark:bg-slate-800 p-0.5">
           {RANGOS.filter(
             (opcion) => opcion.meses === Infinity || puntos.length > opcion.meses
           ).map((opcion) => (
@@ -144,7 +144,7 @@ export default function GraficoEvolucion({ puntos }: { puntos: PuntoHistorico[] 
               onClick={() => setRango(opcion.meses)}
               aria-pressed={rango === opcion.meses}
               className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                rango === opcion.meses ? "bg-white text-slate-900 shadow-sm" : "text-slate-500"
+                rango === opcion.meses ? "bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm" : "text-slate-500 dark:text-slate-400"
               }`}
             >
               {opcion.texto}

@@ -10,7 +10,7 @@ export default function NuevoClientePage() {
       <Encabezado subtitulo="Nuevo cliente" />
 
       <main className="mx-auto max-w-lg px-4 pb-16 pt-4">
-        <Link href="/clientes" className="text-sm text-slate-500">
+        <Link href="/clientes" className="text-sm text-slate-500 dark:text-slate-400">
           ← Volver
         </Link>
         <h1 className="mb-4 mt-2 text-lg font-bold">Nuevo cliente</h1>

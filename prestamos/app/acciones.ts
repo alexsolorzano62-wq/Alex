@@ -417,6 +417,22 @@ export async function guardarPlantillas(
   return undefined;
 }
 
+// ---------------------------------------------------------------- apariencia
+
+/** Guarda el tema y la tipografía elegidos. */
+export async function guardarApariencia(datos: FormData) {
+  const { supabase, ownerId } = await sesion();
+
+  await supabase.from("ajustes").upsert({
+    owner_id: ownerId,
+    tema: String(datos.get("tema") ?? "claro"),
+    fuente: String(datos.get("fuente") ?? "sistema"),
+    actualizado_at: new Date().toISOString(),
+  });
+
+  refrescar();
+}
+
 // --------------------------------------------------------------------- salir
 
 export async function cerrarSesion() {

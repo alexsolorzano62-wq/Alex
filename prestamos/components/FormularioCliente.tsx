@@ -51,7 +51,7 @@ export default function FormularioCliente({ cliente }: { cliente?: Cliente }) {
       </CampoTexto>
 
       {estado?.error && (
-        <p className="rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700">
+        <p className="rounded-xl bg-red-50 dark:bg-red-900/30 px-3 py-2 text-sm text-red-700 dark:text-red-400">
           {estado.error}
         </p>
       )}

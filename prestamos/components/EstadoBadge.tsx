@@ -8,27 +8,27 @@ const ESTILOS: Record<EstadoVisual, { texto: string; icono: string; clase: strin
   vencido: {
     texto: "Vencido",
     icono: "●",
-    clase: "bg-red-50 text-red-700 ring-red-200",
+    clase: "bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400 ring-red-200 dark:ring-red-800",
   },
   por_vencer: {
     texto: "Por vencer",
     icono: "◐",
-    clase: "bg-amber-50 text-amber-800 ring-amber-200",
+    clase: "bg-amber-50 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 ring-amber-200 dark:ring-amber-800",
   },
   al_dia: {
     texto: "Al día",
     icono: "○",
-    clase: "bg-emerald-50 text-emerald-700 ring-emerald-200",
+    clase: "bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 ring-emerald-200 dark:ring-emerald-800",
   },
   pagado: {
     texto: "Pagado",
     icono: "✓",
-    clase: "bg-slate-100 text-slate-600 ring-slate-200",
+    clase: "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 ring-slate-200 dark:ring-slate-700",
   },
   cancelado: {
     texto: "Cancelado",
     icono: "—",
-    clase: "bg-slate-100 text-slate-500 ring-slate-200",
+    clase: "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 ring-slate-200 dark:ring-slate-700",
   },
 };
 

@@ -70,12 +70,12 @@ export default async function PrestamoPage({
       <Encabezado subtitulo={nombre} />
 
       <main className="mx-auto max-w-lg px-4 pb-16 pt-4">
-        <Link href="/prestamos" className="text-sm text-slate-500">
+        <Link href="/prestamos" className="text-sm text-slate-500 dark:text-slate-400">
           ← Volver
         </Link>
 
         {esNuevo && (
-          <p className="mt-3 rounded-xl bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-800">
+          <p className="mt-3 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 px-3 py-2 text-sm font-medium text-emerald-800 dark:text-emerald-300">
             ✓ Préstamo guardado. Podés avisarle al cliente acá abajo.
           </p>
         )}
@@ -83,7 +83,7 @@ export default async function PrestamoPage({
         <div className="mt-3 flex items-start justify-between gap-3">
           <div className="min-w-0">
             <h1 className="truncate text-xl font-bold">{nombre}</h1>
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-slate-500 dark:text-slate-400">
               {descripcionPlan(prestamo, datos)}
             </p>
           </div>
@@ -91,7 +91,7 @@ export default async function PrestamoPage({
             <EstadoBadge estado={datos.estadoVisual} />
             <Link
               href={`/prestamos/${prestamo.id}/editar`}
-              className="rounded-xl border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-600"
+              className="rounded-xl border border-slate-300 dark:border-slate-700 px-3 py-1.5 text-sm font-medium text-slate-600 dark:text-slate-400"
             >
               Corregir
             </Link>
@@ -99,7 +99,7 @@ export default async function PrestamoPage({
         </div>
 
         {datos.cuotasAtrasadas > 0 && (
-          <p className="mt-4 rounded-xl border border-red-200 bg-red-50 px-3 py-2.5 text-sm font-semibold text-red-800">
+          <p className="mt-4 rounded-xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/30 px-3 py-2.5 text-sm font-semibold text-red-800 dark:text-red-300">
             Debe {datos.cuotasAtrasadas} cuota
             {datos.cuotasAtrasadas === 1 ? "" : "s"} atrasada
             {datos.cuotasAtrasadas === 1 ? "" : "s"}: {plata(datos.montoAtrasado)}
@@ -108,51 +108,51 @@ export default async function PrestamoPage({
 
         <AvancePrestamo datos={datos} cuotasTotal={prestamo.cuotas_total} />
 
-        <section className="mt-4 rounded-2xl border border-slate-200 bg-white p-4">
+        <section className="mt-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4">
           <dl className="space-y-2 text-sm">
             <div className="flex justify-between">
-              <dt className="text-slate-600">Prestado</dt>
+              <dt className="text-slate-600 dark:text-slate-400">Prestado</dt>
               <dd className="tabular font-medium">{plata(prestamo.capital_inicial)}</dd>
             </div>
             {prestamo.capital_actual !== prestamo.capital_inicial && (
               <div className="flex justify-between">
-                <dt className="text-slate-600">Capital hoy</dt>
+                <dt className="text-slate-600 dark:text-slate-400">Capital hoy</dt>
                 <dd className="tabular font-medium">{plata(datos.capital)}</dd>
               </div>
             )}
             <div className="flex justify-between">
-              <dt className="text-slate-600">
+              <dt className="text-slate-600 dark:text-slate-400">
                 {prestamo.modalidad === "mensual" ? "Interés del mes" : "Interés del plan"}
               </dt>
               <dd className="tabular font-medium">{plata(datos.interes)}</dd>
             </div>
-            <div className="flex justify-between border-t border-slate-200 pt-2">
-              <dt className="font-semibold text-slate-800">
+            <div className="flex justify-between border-t border-slate-200 dark:border-slate-800 pt-2">
+              <dt className="font-semibold text-slate-800 dark:text-slate-200">
                 {prestamo.estado === "vigente" ? "A devolver" : "Saldo"}
               </dt>
-              <dd className="tabular text-lg font-bold text-brand-700">
+              <dd className="tabular text-lg font-bold text-brand-700 dark:text-brand-300">
                 {plata(datos.aDevolver)}
               </dd>
             </div>
             <div className="flex justify-between">
-              <dt className="text-slate-600">Inicio</dt>
+              <dt className="text-slate-600 dark:text-slate-400">Inicio</dt>
               <dd>{formatFecha(prestamo.fecha_inicio)}</dd>
             </div>
             <div className="flex justify-between">
-              <dt className="text-slate-600">Vence</dt>
+              <dt className="text-slate-600 dark:text-slate-400">Vence</dt>
               <dd
-                className={datos.vencido ? "font-semibold text-red-600" : undefined}
+                className={datos.vencido ? "font-semibold text-red-600 dark:text-red-400" : undefined}
               >
                 {formatFecha(prestamo.fecha_vencimiento)}
                 {prestamo.estado === "vigente" && (
-                  <span className="ml-1 text-xs text-slate-400">
+                  <span className="ml-1 text-xs text-slate-400 dark:text-slate-500">
                     ({textoVencimiento(datos.diasParaVencer)})
                   </span>
                 )}
               </dd>
             </div>
             {prestamo.observacion && (
-              <div className="border-t border-slate-200 pt-2 text-slate-600">
+              <div className="border-t border-slate-200 dark:border-slate-800 pt-2 text-slate-600 dark:text-slate-400">
                 {prestamo.observacion}
               </div>
             )}
@@ -160,7 +160,7 @@ export default async function PrestamoPage({
         </section>
 
         <section className="mt-5">
-          <h2 className="mb-2 text-sm font-bold text-slate-900">
+          <h2 className="mb-2 text-sm font-bold text-slate-900 dark:text-slate-100">
             {esNuevo ? "Avisarle del préstamo" : "Mandarle el estado de cuenta"}
           </h2>
           <BotonesWhatsApp
@@ -169,7 +169,7 @@ export default async function PrestamoPage({
             etiqueta={telefono ? "Enviar por WhatsApp" : "Elegir contacto"}
           />
           {!telefono && (
-            <p className="mt-2 text-xs text-slate-400">
+            <p className="mt-2 text-xs text-slate-400 dark:text-slate-500">
               Este cliente no tiene WhatsApp cargado.{" "}
               <Link
                 href={`/clientes/${prestamo.cliente_id}/editar`}
@@ -183,7 +183,7 @@ export default async function PrestamoPage({
 
         {prestamo.estado === "vigente" && (
           <section className="mt-6">
-            <h2 className="mb-2 text-sm font-bold text-slate-900">Registrar un cobro</h2>
+            <h2 className="mb-2 text-sm font-bold text-slate-900 dark:text-slate-100">Registrar un cobro</h2>
             <FormularioPago prestamo={prestamo} datos={datos} />
 
             {prestamo.modalidad === "mensual" && (
@@ -191,12 +191,12 @@ export default async function PrestamoPage({
                 <input type="hidden" name="id" value={prestamo.id} />
                 <BotonConfirmar
                   pregunta={`¿Sumar ${plata(datos.interes)} de interés al capital? Va a pasar a deber ${plata(datos.capital + datos.interes)}.`}
-                  className="w-full rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-left active:bg-amber-100"
+                  className="w-full rounded-xl border border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/30 px-4 py-3 text-left active:bg-amber-100 dark:active:bg-amber-900/50"
                 >
-                  <span className="block text-sm font-semibold text-amber-900">
+                  <span className="block text-sm font-semibold text-amber-900 dark:text-amber-200">
                     No pagó este mes
                   </span>
-                  <span className="block text-xs text-amber-700">
+                  <span className="block text-xs text-amber-700 dark:text-amber-400">
                     El interés de {plata(datos.interes)} se suma al capital: pasa a
                     deber {plata(datos.capital + datos.interes)} y corre otro mes
                   </span>
@@ -208,7 +208,7 @@ export default async function PrestamoPage({
 
         {comprobante && (
           <section className="mt-6">
-            <h2 className="mb-2 text-sm font-bold text-slate-900">
+            <h2 className="mb-2 text-sm font-bold text-slate-900 dark:text-slate-100">
               Comprobante del último cobro
             </h2>
             <BotonesWhatsApp
@@ -220,42 +220,42 @@ export default async function PrestamoPage({
         )}
 
         <section className="mt-6">
-          <h2 className="mb-2 text-sm font-bold text-slate-900">
+          <h2 className="mb-2 text-sm font-bold text-slate-900 dark:text-slate-100">
             Historial
             {datos.cobrado > 0 && (
-              <span className="ml-2 font-normal text-slate-500">
+              <span className="ml-2 font-normal text-slate-500 dark:text-slate-400">
                 cobrado {plata(datos.cobrado)}
               </span>
             )}
           </h2>
           {prestamo.pagos.length === 0 ? (
-            <p className="rounded-2xl border border-dashed border-slate-300 px-4 py-6 text-center text-sm text-slate-500">
+            <p className="rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 px-4 py-6 text-center text-sm text-slate-500 dark:text-slate-400">
               Todavía no registraste cobros.
             </p>
           ) : (
-            <ul className="divide-y divide-slate-100 overflow-hidden rounded-2xl border border-slate-200 bg-white">
+            <ul className="divide-y divide-slate-100 dark:divide-slate-800 overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
               {prestamo.pagos.map((pago) => (
                 <li key={pago.id} className="flex items-center justify-between gap-3 px-4 py-3">
                   <div className="min-w-0">
-                    <p className="text-sm font-medium text-slate-800">
+                    <p className="text-sm font-medium text-slate-800 dark:text-slate-200">
                       {numeros.has(pago.id)
                         ? `Cuota ${numeros.get(pago.id)}${prestamo.cuotas_total ? ` de ${prestamo.cuotas_total}` : ""}`
                         : (NOMBRE_TIPO[pago.tipo] ?? pago.tipo)}
                     </p>
-                    <p className="text-xs text-slate-500">
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
                       {formatFecha(pago.fecha)}
                       {pago.nota ? ` · ${pago.nota}` : ""}
                     </p>
                   </div>
                   <div className="flex shrink-0 items-center gap-2">
-                    <span className="tabular text-sm font-bold text-emerald-700">
+                    <span className="tabular text-sm font-bold text-emerald-700 dark:text-emerald-400">
                       {plata(pago.monto)}
                     </span>
                     <form action={borrarPago}>
                       <input type="hidden" name="id" value={pago.id} />
                       <BotonConfirmar
                         pregunta={`¿Borrar ${numeros.has(pago.id) ? `la cuota ${numeros.get(pago.id)}` : "este cobro"} de ${plata(pago.monto)} del ${formatFecha(pago.fecha)}? El préstamo vuelve a como estaba antes.`}
-                        className="rounded-lg border border-slate-300 px-2.5 py-1.5 text-xs font-medium text-slate-600 active:bg-slate-100"
+                        className="rounded-lg border border-slate-300 dark:border-slate-700 px-2.5 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-400 active:bg-slate-100 dark:active:bg-slate-800"
                       >
                         Borrar
                       </BotonConfirmar>
@@ -267,13 +267,13 @@ export default async function PrestamoPage({
           )}
         </section>
 
-        <details className="mt-8 rounded-2xl border border-slate-200 bg-white">
-          <summary className="cursor-pointer px-4 py-3 text-sm font-medium text-slate-500">
+        <details className="mt-8 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+          <summary className="cursor-pointer px-4 py-3 text-sm font-medium text-slate-500 dark:text-slate-400">
             Borrar este préstamo
           </summary>
-          <form action={borrarPrestamo} className="border-t border-slate-100 px-4 py-4">
+          <form action={borrarPrestamo} className="border-t border-slate-100 dark:border-slate-800 px-4 py-4">
             <input type="hidden" name="id" value={prestamo.id} />
-            <p className="text-sm text-slate-700">
+            <p className="text-sm text-slate-700 dark:text-slate-300">
               Se borra el préstamo de {nombre}
               {prestamo.pagos.length > 0 && (
                 <>
@@ -285,13 +285,13 @@ export default async function PrestamoPage({
               )}
               . No se puede deshacer.
             </p>
-            <p className="mt-2 text-xs text-slate-500">
+            <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
               Si lo que querés es corregir un cobro mal cargado, borralo desde el
               historial de acá arriba y el préstamo se acomoda solo.
             </p>
             <BotonConfirmar
               pregunta={`¿Borrar el préstamo de ${nombre} y sus ${prestamo.pagos.length} cobro(s)? No se puede deshacer.`}
-              className="mt-3 w-full rounded-xl border border-red-300 px-4 py-2.5 text-sm font-semibold text-red-600 active:bg-red-50"
+              className="mt-3 w-full rounded-xl border border-red-300 dark:border-red-800 px-4 py-2.5 text-sm font-semibold text-red-600 dark:text-red-400 active:bg-red-50 dark:active:bg-red-900/30"
             >
               Borrar definitivamente
             </BotonConfirmar>

@@ -18,7 +18,15 @@ const NOMBRE_TIPO: Record<string, string> = {
 
 const TODOS = "todos";
 
-export default function ListaPagos({ pagos }: { pagos: PagoConDetalle[] }) {
+export default function ListaPagos({
+  pagos,
+  ganancias,
+}: {
+  pagos: PagoConDetalle[];
+  /** Cuánto fue ganancia en cada cobro, por id. Viene calculado del servidor. */
+  ganancias: [string, number][];
+}) {
+  const gananciaDe = useMemo(() => new Map(ganancias), [ganancias]);
   // Los meses y los clientes salen de los cobros que existen: no tiene sentido
   // ofrecer un filtro que no va a devolver nada.
   const meses = useMemo(
@@ -64,9 +72,10 @@ export default function ListaPagos({ pagos }: { pagos: PagoConDetalle[] }) {
   );
 
   const cobrado = visibles.reduce((acc, pago) => acc + pago.monto, 0);
-  const ganancia = visibles
-    .filter((pago) => pago.tipo === "interes")
-    .reduce((acc, pago) => acc + pago.monto, 0);
+  const ganancia = visibles.reduce(
+    (acc, pago) => acc + (gananciaDe.get(pago.id) ?? 0),
+    0
+  );
 
   if (pagos.length === 0) {
     return (
@@ -122,7 +131,7 @@ export default function ListaPagos({ pagos }: { pagos: PagoConDetalle[] }) {
           <dd className="tabular text-sm font-bold">{plata(cobrado)}</dd>
         </div>
         <div>
-          <dt className="text-[11px] uppercase text-slate-600 dark:text-slate-400">De interés</dt>
+          <dt className="text-[11px] uppercase text-slate-600 dark:text-slate-400">Ganancia</dt>
           <dd className="tabular text-sm font-bold text-emerald-700 dark:text-emerald-400">
             {plata(ganancia)}
           </dd>

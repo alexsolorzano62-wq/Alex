@@ -1,10 +1,12 @@
-import { calcularPlan, numerarCuotas, resumen, tasaImplicita, capitalizar, renovar } from "@/lib/calc";
+import { aplicarPago, calcularPlan, numerarCuotas, resumen, revertirPago, tasaImplicita, capitalizar, renovar } from "@/lib/calc";
+import { vencimientoAnterior } from "@/lib/periodos";
 import { sumarMeses, diasEntre } from "@/lib/fechas";
 import { normalizarTelefono, mensajeDe } from "@/lib/whatsapp";
 import { aplicarPlantilla, plantillaDe, variablesDePrestamo, EJEMPLOS, MODALIDADES, PLANTILLAS_POR_DEFECTO, TIPOS } from "@/lib/plantillas";
 import { nombreCoincide, parsearPesos, parsearTasa } from "@/lib/parseo";
 import { cuotaSemanal, planesPara, PLANES_SEMANALES, SEMANAS_CON_PLAN } from "@/lib/planes";
-import { serieHistorica } from "@/lib/agregados";
+import { cronogramaPendiente, gananciaPorCobro, proyeccionDelMes, resolver, resumenPorMes, serieHistorica, totales as totalesDe, mesesConVencimientos } from "@/lib/agregados";
+import type { PrestamoConCliente } from "@/lib/types";
 import { sumarSemanas, sumarDias } from "@/lib/fechas";
 import { siguienteVencimiento, datosFrecuencia, textoCuotas } from "@/lib/periodos";
 import { mesDe, nombreMes } from "@/lib/fechas";
@@ -409,14 +411,14 @@ const interesesDe = (cantidad: number) =>
   }));
 chequear("sin cobrar nada, faltan los 100.000", resumen(cien, [], "2026-08-18").faltaRecuperar, 100000);
 chequear("con 1 interes cobrado faltan 70.000", resumen(cien, interesesDe(1), "2026-08-18").faltaRecuperar, 70000);
-chequear("con 3 todavia falta", resumen(cien, interesesDe(3), "2026-08-18").capitalRecuperado, false);
+chequear("con 3 todavia falta", resumen(cien, interesesDe(3), "2026-08-18").recuperado, false);
 chequear("con 3 faltan 10.000", resumen(cien, interesesDe(3), "2026-08-18").faltaRecuperar, 10000);
-chequear("al cuarto ya se recupero", resumen(cien, interesesDe(4), "2026-08-18").capitalRecuperado, true);
+chequear("al cuarto ya se recupero", resumen(cien, interesesDe(4), "2026-08-18").recuperado, true);
 chequear("y no queda nada por recuperar", resumen(cien, interesesDe(4), "2026-08-18").faltaRecuperar, 0);
 chequear("cobrar de mas no da negativo", resumen(cien, interesesDe(9), "2026-08-18").faltaRecuperar, 0);
 chequear(
   "en un plan semanal se recupera a la octava cuota",
-  [7, 8].map((n) => resumen(semanal, todas.slice(0, n), "2026-12-09").capitalRecuperado),
+  [7, 8].map((n) => resumen(semanal, todas.slice(0, n), "2026-12-09").recuperado),
   [false, true]
 );
 
@@ -429,21 +431,356 @@ const prest = (id: string, inicio: string, capital: number) =>
 const movimiento = (fecha: string, monto: number, tipo: "interes" | "cuota") =>
   ({ id: fecha + monto, prestamo_id: "p", fecha, monto, tipo, nota: null, created_at: "", prestamo: null });
 
-const serie = serieHistorica(
-  [prest("a", "2026-07-10", 100000), prest("b", "2026-09-02", 200000)],
-  [movimiento("2026-08-10", 30000, "interes"), movimiento("2026-09-10", 30000, "interes"), movimiento("2026-09-20", 50000, "cuota")],
-  "2026-09-30"
-);
+// 100.000 prestados en julio. Cobra 30.000 en agosto y 30.000 en septiembre:
+// los dos tapan capital, todavia no hay ganancia. El tercero, de 50.000, tapa
+// los 40.000 que faltaban y recien los otros 10.000 son ganancia.
+const conCobros = {
+  ...prest("a", "2026-07-10", 100000),
+  pagos: [
+    movimiento("2026-08-10", 30000, "interes"),
+    movimiento("2026-09-10", 30000, "interes"),
+    movimiento("2026-09-20", 50000, "cuota"),
+  ],
+};
+const serie = serieHistorica([conCobros, prest("b", "2026-09-02", 200000)], "2026-09-30");
 chequear("arranca en el primer movimiento y llega a hoy", serie.map((p) => p.mes), ["2026-07", "2026-08", "2026-09"]);
 chequear("lo prestado se acumula", serie.map((p) => p.prestado), [100000, 100000, 300000]);
-chequear("la ganancia tambien, y solo cuenta el interes", serie.map((p) => p.ganado), [0, 30000, 60000]);
+chequear("la ganancia empieza recien cuando se recupero el capital", serie.map((p) => p.ganado), [0, 0, 10000]);
+chequear("la ganancia acumulada = cobrado - lo que se recupero", serie[2].ganado, 110000 - 100000);
 chequear("los meses sin movimiento igual aparecen", serie.length, 3);
-chequear("sin datos no hay serie", serieHistorica([], [], "2026-09-30"), []);
+chequear("sin datos no hay serie", serieHistorica([], "2026-09-30"), []);
 chequear(
   "cruza el fin de anio sin saltear meses",
-  serieHistorica([prest("c", "2026-11-05", 50000)], [], "2027-02-10").map((p) => p.mes),
+  serieHistorica([prest("c", "2026-11-05", 50000)], "2027-02-10").map((p) => p.mes),
   ["2026-11", "2026-12", "2027-01", "2027-02"]
 );
+
+
+console.log("--- Proyeccion del mes: todas las cuotas, no solo la proxima ---");
+
+const cliente = { id: "c1", nombre: "Marcelo", telefono: null };
+function planDe(over: Partial<PrestamoConCliente>): PrestamoConCliente {
+  return {
+    id: "p1", cliente_id: "c1", modalidad: "semanal", capital_inicial: 200000,
+    capital_actual: 200000, tasa_mensual: 46.4, fecha_inicio: "2026-08-01",
+    fecha_vencimiento: "2026-08-08", cuotas_total: 16, cuota_monto: 18300,
+    total_a_devolver: 292800, frecuencia: "semanal", estado: "vigente",
+    observacion: null, created_at: "2026-08-01T00:00:00Z",
+    cliente, pagos: [], ...over,
+  } as PrestamoConCliente;
+}
+const HOY = "2026-09-11";
+function proyectar(prestamos: PrestamoConCliente[], mes: string) {
+  return proyeccionDelMes(cronogramaPendiente(resolver(prestamos, HOY), HOY), mes);
+}
+
+// Un plan semanal al dia: octubre de 2026 tiene cinco viernes desde el 2.
+const alDia = planDe({ fecha_vencimiento: "2026-09-18" });
+chequear("semanal al dia: 5 cuotas en octubre", proyectar([alDia], "2026-10").cuotas, 5);
+chequear("semanal al dia: monto = 5 cuotas", proyectar([alDia], "2026-10").monto, 5 * 18300);
+
+// El fallo que se arreglo: un prestamo atrasado dejaba meses en cero porque
+// las cuotas vencidas se comian el cupo del cronograma.
+const atrasado = planDe({ fecha_vencimiento: "2026-07-03" });
+chequear("atrasado: las 16 cuotas siguen en el cronograma", cronogramaPendiente(resolver([atrasado], HOY), HOY)[0].cuotas.length, 16);
+chequear("atrasado: septiembre tiene 4 cuotas", proyectar([atrasado], "2026-09").cuotas, 4);
+chequear("atrasado: de esas, 2 ya vencieron", proyectar([atrasado], "2026-09").vencidas, 2);
+chequear("atrasado: octubre tiene 3 cuotas, no cero", proyectar([atrasado], "2026-10").cuotas, 3);
+
+// Nada del cronograma se pierde ni se cuenta dos veces.
+const delAtrasado = cronogramaPendiente(resolver([atrasado], HOY), HOY)[0].cuotas;
+const porMes = ["2026-07", "2026-08", "2026-09", "2026-10"].reduce((acc, m) => acc + proyectar([atrasado], m).cuotas, 0);
+chequear("las cuotas se reparten entre los meses sin perderse", porMes, delAtrasado.length);
+
+console.log("--- Desglose capital / interes ---");
+
+// 200.000 prestados, 292.800 a devolver. Las primeras 10 cuotas de 18.300
+// (183.000) son capital; la 11 parte 17.000 de capital y 1.300 de ganancia.
+const nuevo = planDe({ fecha_vencimiento: "2026-10-02" });
+const oct = proyectar([nuevo], "2026-10");
+chequear("prestamo nuevo: octubre es todo capital", oct.interes, 0);
+chequear("prestamo nuevo: capital = el total del mes", oct.capital, oct.monto);
+const cuotas16 = cronogramaPendiente(resolver([nuevo], HOY), HOY)[0].cuotas;
+chequear("la cuota 11 es la que parte capital e interes", [cuotas16[10].capital, cuotas16[10].interes], [17000, 1300]);
+chequear("de la 12 en adelante es toda ganancia", cuotas16[11].interes, 18300);
+chequear("capital repartido = lo que se presto", cuotas16.reduce((a, c) => a + c.capital, 0), 200000);
+chequear("capital + interes = lo que queda por cobrar", cuotas16.reduce((a, c) => a + c.monto, 0), 292800);
+
+// Con 12 cuotas ya cobradas el capital volvio: lo que entra es ganancia pura.
+const casiTerminado = planDe({
+  fecha_vencimiento: "2026-10-02",
+  pagos: Array.from({ length: 12 }, (_, i) => ({
+    id: `g${i}`, prestamo_id: "p1", fecha: "2026-08-08", monto: 18300,
+    tipo: "cuota", nota: null, created_at: "2026-08-08T00:00:00Z",
+  })),
+} as Partial<PrestamoConCliente>);
+const finOct = proyectar([casiTerminado], "2026-10");
+chequear("ya recupero el capital: octubre es toda ganancia", finOct.capital, 0);
+chequear("le quedan 4 cuotas, no 16", cronogramaPendiente(resolver([casiTerminado], HOY), HOY)[0].cuotas.length, 4);
+
+// La modalidad de interes mensual: la cuota es el interes, el capital no vuelve
+// hasta que salden, pero igual cuenta contra lo que se puso.
+const mensual = planDe({
+  id: "p2", modalidad: "mensual", capital_inicial: 100000, capital_actual: 100000,
+  tasa_mensual: 30, fecha_vencimiento: "2026-10-07", cuotas_total: null,
+  cuota_monto: null, total_a_devolver: null, frecuencia: null,
+});
+const octMensual = proyectar([mensual], "2026-10");
+chequear("mensual: una sola cuota en el mes", octMensual.cuotas, 1);
+chequear("mensual: la cuota es el interes del mes", octMensual.monto, 30000);
+chequear("mensual: cuenta contra el capital hasta estar a mano", octMensual.capital, 30000);
+
+// Varios prestamos juntos: el total es la suma y el desglose tambien.
+const juntos = proyectar([alDia, mensual], "2026-10");
+chequear("dos prestamos suman sus cuotas", juntos.cuotas, 6);
+chequear("dos prestamos suman su monto", juntos.monto, 5 * 18300 + 30000);
+chequear("capital + interes = el total del mes", juntos.capital + juntos.interes, juntos.monto);
+chequear("el detalle trae una linea por prestamo", juntos.lineas.length, 2);
+chequear("las lineas van de mayor a menor", juntos.lineas.map((l) => l.monto), [91500, 30000]);
+
+// Un prestamo ya pagado no proyecta nada.
+chequear("un prestamo cerrado no aparece", proyectar([planDe({ estado: "pagado" })], "2026-10").cuotas, 0);
+
+
+{
+console.log("--- Borrar un cobro deshace lo que le hizo al prestamo ---");
+
+chequear("el vencimiento anterior es el inverso del siguiente", vencimientoAnterior(siguienteVencimiento("2026-09-11", "semanal"), "semanal"), "2026-09-11");
+chequear("idem quincenal", vencimientoAnterior(siguienteVencimiento("2026-09-11", "quincenal"), "quincenal"), "2026-09-11");
+chequear("idem mensual", vencimientoAnterior(siguienteVencimiento("2026-01-15", "mensual"), "mensual"), "2026-01-15");
+
+type Kobro = { id: string; prestamo_id: string; fecha: string; monto: number; tipo: "interes" | "capital" | "cuota" | "total"; nota: null; created_at: string };
+const kobro = (n: number, tipo: Kobro["tipo"], monto: number): Kobro =>
+  ({ id: `k${n}`, prestamo_id: "p1", fecha: "2026-08-08", monto, tipo, nota: null, created_at: "" });
+
+const plantilla: Prestamo = {
+  id: "p1", cliente_id: "c1", modalidad: "semanal", capital_inicial: 200000,
+  capital_actual: 200000, tasa_mensual: 46.4, fecha_inicio: "2026-08-01",
+  fecha_vencimiento: "2026-08-08", cuotas_total: 16, cuota_monto: 18300,
+  total_a_devolver: 292800, frecuencia: "semanal", estado: "vigente",
+  observacion: null, created_at: "",
+};
+
+/** Registra los cobros uno por uno, como hace la app. */
+function registrar(inicial: Prestamo, cobros: Kobro[]) {
+  let p = { ...inicial };
+  const previos: Kobro[] = [];
+  for (const c of cobros) {
+    p = { ...p, ...aplicarPago(p, c, previos as never) };
+    previos.push(c);
+  }
+  return p;
+}
+
+/**
+ * La prueba que importa: registrar N cobros y borrar el ultimo tiene que dejar
+ * el prestamo igual que si ese cobro nunca se hubiera registrado.
+ */
+function idaYVuelta(nombre: string, inicial: Prestamo, cobros: Kobro[]) {
+  const conTodos = registrar(inicial, cobros);
+  const ultimo = cobros[cobros.length - 1];
+  const restantes = cobros.slice(0, -1);
+  const revertido = { ...conTodos, ...revertirPago(conTodos, ultimo, restantes as never) };
+  const sinEl = registrar(inicial, restantes);
+  chequear(nombre, [revertido.fecha_vencimiento, revertido.capital_actual, revertido.estado],
+                   [sinEl.fecha_vencimiento, sinEl.capital_actual, sinEl.estado]);
+}
+
+const unaCuota = kobro(1, "cuota", 18300);
+idaYVuelta("plan semanal: borrar la 1a cuota", plantilla, [unaCuota]);
+idaYVuelta("plan semanal: borrar la 4a de 4", plantilla, [unaCuota, kobro(2, "cuota", 18300), kobro(3, "cuota", 18300), kobro(4, "cuota", 18300)]);
+idaYVuelta("plan semanal: borrar la 16a, la que lo cerro", plantilla, Array.from({ length: 16 }, (_, i) => kobro(i, "cuota", 18300)));
+idaYVuelta("plan semanal: borrar una entrega a cuenta", plantilla, [unaCuota, kobro(9, "capital", 50000)]);
+idaYVuelta("plan semanal: borrar un saldo total", plantilla, [unaCuota, kobro(9, "total", 274500)]);
+
+const mensual: Prestamo = { ...plantilla, modalidad: "mensual", capital_inicial: 100000, capital_actual: 100000, tasa_mensual: 30, cuotas_total: null, cuota_monto: null, total_a_devolver: null, frecuencia: null, fecha_vencimiento: "2026-09-07" };
+idaYVuelta("interes mensual: borrar un interes", mensual, [kobro(1, "interes", 30000)]);
+idaYVuelta("interes mensual: borrar el 3er interes de 3", mensual, [kobro(1, "interes", 30000), kobro(2, "interes", 30000), kobro(3, "interes", 30000)]);
+idaYVuelta("interes mensual: borrar una entrega a cuenta", mensual, [kobro(1, "interes", 30000), kobro(2, "capital", 40000)]);
+idaYVuelta("interes mensual: borrar el que lo salda", mensual, [kobro(1, "interes", 30000), kobro(2, "total", 130000)]);
+
+const quincenal: Prestamo = { ...plantilla, modalidad: "personalizado", frecuencia: "quincenal", cuotas_total: 6, cuota_monto: 40000, total_a_devolver: 240000 };
+idaYVuelta("plan quincenal: borrar la 3a de 3", quincenal, [kobro(1, "cuota", 40000), kobro(2, "cuota", 40000), kobro(3, "cuota", 40000)]);
+
+// El caso de Marcelo: cargo la cuota 3 y la 4 juntas y quiere borrar la 4.
+const conCuatro = registrar(plantilla, [kobro(1, "cuota", 18300), kobro(2, "cuota", 18300), kobro(3, "cuota", 18300), kobro(4, "cuota", 18300)]);
+chequear("con 4 cuotas el vencimiento esta en la 5a semana", conCuatro.fecha_vencimiento, "2026-09-05");
+const sinLaCuarta = { ...conCuatro, ...revertirPago(conCuatro, kobro(4, "cuota", 18300), [kobro(1, "cuota", 18300), kobro(2, "cuota", 18300), kobro(3, "cuota", 18300)] as never) };
+chequear("al borrar la 4a el vencimiento vuelve a la 4a semana", sinLaCuarta.fecha_vencimiento, "2026-08-29");
+chequear("y el prestamo sigue vigente", sinLaCuarta.estado, "vigente");
+}
+
+
+{
+console.log("--- Que todo cierre: identidades contables sobre una cartera mezclada ---");
+
+type P = PrestamoConCliente;
+type Mov = { id: string; prestamo_id: string; fecha: string; monto: number; tipo: "interes"|"capital"|"cuota"|"total"; nota: null; created_at: string };
+
+const HOY_A = "2026-09-11";
+let n = 0;
+const pref = (pid: string, fecha: string, monto: number, tipo: Mov["tipo"]): Mov =>
+  ({ id: `${pid}-${++n}`, prestamo_id: pid, fecha, monto, tipo, nota: null, created_at: `${fecha}T0${n % 9}:00:00Z` });
+
+function arma(o: Partial<P>): P {
+  return { id: "x", cliente_id: "cx", modalidad: "semanal", capital_inicial: 200000,
+    capital_actual: 200000, tasa_mensual: 46.4, fecha_inicio: "2026-05-01",
+    fecha_vencimiento: "2026-09-18", cuotas_total: 16, cuota_monto: 18300,
+    total_a_devolver: 292800, frecuencia: "semanal", estado: "vigente",
+    observacion: null, created_at: "", cliente: { id: "cx", nombre: "X", telefono: null },
+    pagos: [], ...o } as P;
+}
+
+// Seis prestamos que cubren las cuatro modalidades y los estados que importan.
+const cartera: P[] = [
+  // 1. Plan semanal recien arrancado: 3 de 16 cobradas.
+  // Atrasado a proposito: sin un caso vencido, el chequeo de atrasadas no prueba nada.
+  arma({ id: "s1", cliente_id: "c1", cliente: { id: "c1", nombre: "Ana", telefono: null },
+    fecha_vencimiento: "2026-08-07",
+    pagos: ["2026-08-28","2026-09-04","2026-09-11"].map((f) => pref("s1", f, 18300, "cuota")) }),
+  // 2. Plan semanal pasado el punto de equilibrio: 12 de 16.
+  arma({ id: "s2", cliente_id: "c2", cliente: { id: "c2", nombre: "Beto", telefono: null },
+    fecha_vencimiento: "2026-09-19",
+    pagos: Array.from({ length: 12 }, (_, i) => pref("s2", `2026-0${6 + Math.floor(i/5)}-${String(1 + (i % 5) * 5).padStart(2,"0")}`, 18300, "cuota")) }),
+  // 3. Plan semanal terminado.
+  arma({ id: "s3", cliente_id: "c3", cliente: { id: "c3", nombre: "Cris", telefono: null },
+    estado: "pagado", capital_actual: 0, fecha_vencimiento: "2026-08-30",
+    pagos: Array.from({ length: 16 }, (_, i) => pref("s3", `2026-07-${String(1 + i).padStart(2,"0")}`, 18300, "cuota")) }),
+  // 4. Mensual cobrando interes, todavia sin recuperar el capital.
+  arma({ id: "m1", cliente_id: "c4", cliente: { id: "c4", nombre: "Dani", telefono: null },
+    modalidad: "mensual", capital_inicial: 100000, capital_actual: 100000, tasa_mensual: 30,
+    cuotas_total: null, cuota_monto: null, total_a_devolver: null, frecuencia: null,
+    fecha_vencimiento: "2026-10-07",
+    pagos: ["2026-07-07","2026-08-07","2026-09-07"].map((f) => pref("m1", f, 30000, "interes")) }),
+  // 5. Plan en 3 cuotas mensuales donde el total no divide exacto: 130.000 / 3.
+  arma({ id: "q1", cliente_id: "c5", cliente: { id: "c5", nombre: "Eva", telefono: null },
+    modalidad: "cuotas", capital_inicial: 100000, capital_actual: 100000, tasa_mensual: 30,
+    cuotas_total: 3, cuota_monto: 43333, total_a_devolver: 130000, frecuencia: "mensual",
+    fecha_vencimiento: "2026-09-20", pagos: [] }),
+  // 6. Personalizado quincenal con una entrega a cuenta de por medio.
+  arma({ id: "k1", cliente_id: "c6", cliente: { id: "c6", nombre: "Fer", telefono: null },
+    modalidad: "personalizado", capital_inicial: 300000, capital_actual: 300000, tasa_mensual: 15,
+    cuotas_total: 6, cuota_monto: 65000, total_a_devolver: 390000, frecuencia: "quincenal",
+    fecha_vencimiento: "2026-09-15",
+    pagos: [pref("k1", "2026-08-15", 65000, "cuota"), pref("k1", "2026-08-30", 65000, "cuota")] }),
+];
+
+const res = resolver(cartera, HOY_A);
+
+// --- Identidades de cada prestamo ---
+for (const { prestamo, datos } of res) {
+  chequear(`${prestamo.id}: recuperado + ganancia = cobrado`, datos.capitalRecuperado + datos.ganancia, datos.cobrado);
+  chequear(`${prestamo.id}: recuperado + falta = capital prestado`, datos.capitalRecuperado + datos.faltaRecuperar, prestamo.capital_inicial);
+  if (prestamo.modalidad !== "mensual") {
+    chequear(`${prestamo.id}: cobrado + lo que falta = total del plan`, datos.cobrado + datos.aDevolver, prestamo.total_a_devolver);
+    chequear(`${prestamo.id}: total del plan = capital + interes`, prestamo.capital_inicial + datos.interes, prestamo.total_a_devolver);
+  }
+}
+
+// --- El cronograma cierra con lo que falta cobrar ---
+const pend = cronogramaPendiente(res, HOY_A);
+for (const linea of pend) {
+  const p = cartera.find((x) => x.id === linea.prestamoId)!;
+  const d = res.find((x) => x.prestamo.id === linea.prestamoId)!.datos;
+  const suma = linea.cuotas.reduce((a, c) => a + c.monto, 0);
+  if (p.modalidad !== "mensual") {
+    chequear(`${p.id}: el cronograma suma lo que falta cobrar`, suma, d.aDevolver);
+  }
+  chequear(`${p.id}: capital del cronograma = lo que falta recuperar`, linea.cuotas.reduce((a, c) => a + c.capital, 0), d.faltaRecuperar);
+  chequear(`${p.id}: capital + interes = monto, cuota por cuota`, linea.cuotas.every((c) => c.capital + c.interes === c.monto), true);
+}
+
+// --- Los meses reparten el cronograma sin perder ni duplicar un peso ---
+const mesesCron = mesesConVencimientos(pend);
+const porMeses = mesesCron.reduce((acc, m) => {
+  const pr = proyeccionDelMes(pend, m);
+  return { monto: acc.monto + pr.monto, capital: acc.capital + pr.capital, interes: acc.interes + pr.interes, cuotas: acc.cuotas + pr.cuotas };
+}, { monto: 0, capital: 0, interes: 0, cuotas: 0 });
+const todoElCron = pend.flatMap((l) => l.cuotas);
+chequear("los meses suman el cronograma entero", porMeses.monto, todoElCron.reduce((a, c) => a + c.monto, 0));
+chequear("y sus cuotas tambien", porMeses.cuotas, todoElCron.length);
+chequear("capital + interes = monto, en el total de los meses", porMeses.capital + porMeses.interes, porMeses.monto);
+chequear("el capital proyectado = lo que falta recuperar de toda la cartera", porMeses.capital, res.reduce((a, x) => a + x.datos.faltaRecuperar, 0));
+
+// --- La cartera ---
+const t = totalesDe(res);
+const cobradoTotal = res.reduce((a, x) => a + x.datos.cobrado, 0);
+const prestadoTotal = cartera.reduce((a, p) => a + p.capital_inicial, 0);
+const recuperadoTotal = res.reduce((a, x) => a + x.datos.capitalRecuperado, 0);
+chequear("cartera: recuperado + ganancia = cobrado", recuperadoTotal + t.gananciaCobrada, cobradoTotal);
+chequear("cartera: recuperado + falta recuperar = prestado", recuperadoTotal + res.reduce((a, x) => a + x.datos.faltaRecuperar, 0), prestadoTotal);
+chequear("cartera: en la calle = capital de cada prestamo", t.enLaCalle, res.filter((x) => x.prestamo.estado === "vigente").reduce((a, x) => a + x.datos.capital, 0));
+chequear("cartera: a cobrar - en la calle = interes pendiente", t.aCobrar - t.enLaCalle, t.interesPendiente);
+
+// --- Los meses del resumen cierran con los cobros reales ---
+const todosLosCobros = cartera.flatMap((p) => p.pagos);
+const desde = [...todosLosCobros.map((p) => p.fecha), ...cartera.map((p) => p.fecha_inicio)].sort()[0].slice(0, 7);
+const cuantos = (Number(HOY_A.slice(0,4)) * 12 + Number(HOY_A.slice(5,7))) - (Number(desde.slice(0,4)) * 12 + Number(desde.slice(5,7))) + 1;
+const porMes = resumenPorMes(cartera, HOY_A, cuantos);
+chequear("los meses suman todo lo que entro", porMes.reduce((a, m) => a + m.cobrado, 0), cobradoTotal);
+chequear("los meses suman toda la ganancia", porMes.reduce((a, m) => a + m.ganancia, 0), t.gananciaCobrada);
+chequear("los meses suman todo lo prestado", porMes.reduce((a, m) => a + m.prestado, 0), prestadoTotal);
+chequear("ningun mes tiene mas ganancia que lo que entro", porMes.every((m) => m.ganancia <= m.cobrado), true);
+
+// --- La serie historica cierra con la cartera ---
+const serieA = serieHistorica(cartera, HOY_A);
+chequear("la serie termina en todo lo prestado", serieA[serieA.length - 1].prestado, prestadoTotal);
+chequear("la serie termina en toda la ganancia cobrada", serieA[serieA.length - 1].ganado, t.gananciaCobrada);
+chequear("la serie nunca baja", serieA.every((p, i) => i === 0 || (p.prestado >= serieA[i-1].prestado && p.ganado >= serieA[i-1].ganado)), true);
+
+// --- Ningun numero puede ser negativo ---
+chequear("nada da negativo", res.every(({ datos: d }) =>
+  [d.capital, d.cobrado, d.ganancia, d.capitalRecuperado, d.faltaRecuperar, d.aDevolver].every((v) => v >= 0)), true);
+chequear("ningun tramo del cronograma da negativo", todoElCron.every((c) => c.monto >= 0 && c.capital >= 0 && c.interes >= 0), true);
+
+// --- Las cuotas atrasadas dan igual en la ficha que en el cronograma ---
+// Son dos codigos distintos contando lo mismo: si no coinciden, la pantalla de
+// inicio y la de resumen le dicen cosas distintas al mismo prestamo.
+for (const { prestamo, datos } of res) {
+  if (prestamo.modalidad === "mensual") continue;
+  const linea = pend.find((l) => l.prestamoId === prestamo.id);
+  chequear(`${prestamo.id}: atrasadas en la ficha = vencidas en el cronograma`,
+    datos.cuotasAtrasadas, (linea?.cuotas ?? []).filter((c) => c.vencida).length);
+}
+
+// El caso que rompia la cuenta vieja de 30 dias: tres vencimientos del dia 1.
+const tresDel1 = arma({ id: "z1", modalidad: "cuotas", frecuencia: "mensual",
+  cuotas_total: 6, cuota_monto: 50000, total_a_devolver: 300000, capital_inicial: 250000,
+  capital_actual: 250000, fecha_inicio: "2025-12-01", fecha_vencimiento: "2026-01-01", pagos: [] });
+const zRes = resolver([tresDel1], "2026-03-01");
+const zCron = cronogramaPendiente(zRes, "2026-03-01")[0];
+chequear("1/1, 1/2 y 1/3 al 1/3 son tres atrasadas, no dos", zRes[0].datos.cuotasAtrasadas, 3);
+chequear("y el cronograma marca las mismas tres", zCron.cuotas.filter((c) => c.vencida).length, 3);
+chequear("el monto atrasado son esas tres cuotas", zRes[0].datos.montoAtrasado, 150000);
+
+// Si se le pasaron TODAS las que le quedaban, debe el saldo exacto y no
+// cuotas redondas: aca la ultima carga el peso del resto de dividir 130.000/3.
+const todasVencidas = arma({ id: "z2", modalidad: "cuotas", frecuencia: "mensual",
+  cuotas_total: 3, cuota_monto: 43333, total_a_devolver: 130000, capital_inicial: 100000,
+  capital_actual: 100000, fecha_inicio: "2026-01-05", fecha_vencimiento: "2026-02-05", pagos: [] });
+const z2 = resolver([todasVencidas], "2026-06-01")[0].datos;
+chequear("con las tres vencidas debe el saldo exacto, no 3 x 43.333", z2.montoAtrasado, 130000);
+chequear("y no 129.999", z2.montoAtrasado === 43333 * 3, false);
+
+// --- Ningun numero puede ser infinito ni NaN ---
+// chequear() compara con JSON.stringify, que convierte Infinity en null: sin
+// esta prueba un infinito pasa como "OK  null".
+const finito = (v: number) => Number.isFinite(v);
+chequear("ningun numero de prestamo es infinito ni NaN", res.every(({ datos: d }) =>
+  [d.capital, d.interes, d.aDevolver, d.cobrado, d.ganancia, d.capitalRecuperado,
+   d.faltaRecuperar, d.montoAtrasado, d.cuotasAtrasadas].every(finito)), true);
+chequear("ninguna cuota proyectada es infinita ni NaN", todoElCron.every((c) =>
+  finito(c.monto) && finito(c.capital) && finito(c.interes)), true);
+chequear("ningun total de la cartera es infinito ni NaN",
+  [t.enLaCalle, t.aCobrar, t.interesPendiente, t.gananciaCobrada].every(finito), true);
+chequear("ningun mes es infinito ni NaN", porMes.every((m) =>
+  [m.prestado, m.cobrado, m.ganancia, m.montoRenovado].every(finito)), true);
+
+// --- El caso del total que no divide exacto ---
+const eva = pend.find((l) => l.prestamoId === "q1")!;
+chequear("Eva: 3 cuotas de 130.000 que no divide exacto", eva.cuotas.map((c) => c.monto), [43333, 43333, 43334]);
+chequear("Eva: y las tres suman los 130.000", eva.cuotas.reduce((a, c) => a + c.monto, 0), 130000);
+}
 
 console.log(fallos === 0 ? "\nTODO OK" : `\n${fallos} FALLAS`);
 process.exit(fallos === 0 ? 0 : 1);

@@ -36,7 +36,7 @@ export default function AvancePrestamo({
       <div
         className={`${datos.avance != null ? "mt-3 border-t border-slate-100 dark:border-slate-800 pt-3" : ""}`}
       >
-        {datos.capitalRecuperado ? (
+        {datos.recuperado ? (
           <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-400">
             <span aria-hidden="true">✓</span> Ya recuperaste lo que prestaste
             <span className="block text-xs font-normal text-slate-600 dark:text-slate-400">

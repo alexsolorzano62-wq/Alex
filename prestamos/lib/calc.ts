@@ -1,6 +1,11 @@
 import { diasEntre, sumarMeses } from "@/lib/fechas";
 import { cuotaSemanal } from "@/lib/planes";
-import { datosFrecuencia, frecuenciaDe } from "@/lib/periodos";
+import {
+  datosFrecuencia,
+  frecuenciaDe,
+  siguienteVencimiento,
+  vencimientoAnterior,
+} from "@/lib/periodos";
 import type { Frecuencia } from "@/lib/types";
 import type { Modalidad, Pago, Prestamo } from "@/lib/types";
 
@@ -28,7 +33,9 @@ export type ResumenPrestamo = {
   aDevolver: number;
   /** Cuanto cobraste de este prestamo hasta ahora. */
   cobrado: number;
-  /** Cuanto de lo cobrado fue ganancia (interes), no devolucion de capital. */
+  /** Cuanto de lo cobrado ya volvio a cubrir lo que pusiste. */
+  capitalRecuperado: number;
+  /** Cuanto de lo cobrado es ganancia: lo que entro por encima del capital. */
   ganancia: number;
   cuotaMonto: number | null;
   cuotasPagadas: number;
@@ -40,7 +47,8 @@ export type ResumenPrestamo = {
   /** Cuanto del plan lleva pagado, de 0 a 100. Null si no tiene cuotas. */
   avance: number | null;
   /** Ya cobraste al menos lo que prestaste: de aca en mas todo es ganancia. */
-  capitalRecuperado: boolean;
+  /** Ya cobraste al menos lo que prestaste. */
+  recuperado: boolean;
   /** Cuanto falta cobrar para recuperar lo prestado. Cero si ya se recupero. */
   faltaRecuperar: number;
   /** Lo que suman esas cuotas: el numero con el que se le reclama. */
@@ -142,7 +150,14 @@ export function resumen(
   hoy: string
 ): ResumenPrestamo {
   const cobrado = pesos(sumar(pagos, ["interes", "capital", "cuota", "total"]));
-  const ganancia = pesos(sumar(pagos, ["interes"]));
+
+  // Una sola regla para toda la app: cada peso que entra tapa primero la plata
+  // que pusiste, y recien lo que sobra es ganancia. Vale igual para un plan de
+  // cuotas que para el interes mensual, asi los numeros de las dos modalidades
+  // se pueden sumar sin mezclar criterios.
+  const capitalRecuperado = Math.min(cobrado, pesos(prestamo.capital_inicial));
+  const ganancia = pesos(cobrado - capitalRecuperado);
+  const faltaRecuperar = pesos(pesos(prestamo.capital_inicial) - capitalRecuperado);
   const diasParaVencer = diasEntre(hoy, prestamo.fecha_vencimiento);
   const cerrado = prestamo.estado !== "vigente";
   const vencido = !cerrado && diasParaVencer < 0;
@@ -158,10 +173,12 @@ export function resumen(
     aDevolver = capital + interes;
   } else {
     const total = pesos(prestamo.total_a_devolver ?? 0);
-    const pagadoDelPlan = pesos(sumar(pagos, ["cuota", "total"]));
-    capital = pesos(prestamo.capital_actual);
+    // En un plan el capital no queda congelado: baja a medida que cobras, con
+    // la misma regla de arriba. Asi "en la calle" refleja lo que de verdad
+    // tenes afuera y no el monto original hasta el ultimo dia.
+    capital = faltaRecuperar;
     interes = total - pesos(prestamo.capital_inicial);
-    aDevolver = Math.max(0, total - pagadoDelPlan);
+    aDevolver = Math.max(0, total - cobrado);
     cuotasPagadas = pagos.filter((pago) => pago.tipo === "cuota").length;
   }
 
@@ -180,23 +197,28 @@ export function resumen(
             ? "por_vencer"
             : "al_dia";
 
-  // Cuantas cuotas se le pasaron: la del vencimiento, mas una por cada periodo
-  // completo transcurrido desde entonces. Nunca mas de las que le quedan.
-  const DIAS_DEL_PERIODO = { semanal: 7, quincenal: 15, mensual: 30 } as const;
+  // Cuantas cuotas se le pasaron: se cuentan recorriendo las fechas reales del
+  // plan, una por una, y no dividiendo los dias por un mes de 30. Con meses de
+  // 28 y de 31 esa cuenta redonda se desfasa, y este numero tiene que dar igual
+  // que el cronograma que se proyecta en el resumen.
   let cuotasAtrasadas = 0;
+  let montoAtrasado = 0;
   if (prestamo.modalidad !== "mensual" && vencido) {
-    const periodo = DIAS_DEL_PERIODO[frecuenciaDe(prestamo)];
-    const restantes = (prestamo.cuotas_total ?? 0) - cuotasPagadas;
-    cuotasAtrasadas = Math.max(
-      0,
-      Math.min(restantes, 1 + Math.floor(Math.abs(diasParaVencer) / periodo))
-    );
+    const frecuencia = frecuenciaDe(prestamo);
+    const restantes = Math.max(0, (prestamo.cuotas_total ?? 0) - cuotasPagadas);
+    let fecha = prestamo.fecha_vencimiento;
+    while (cuotasAtrasadas < restantes && fecha <= hoy) {
+      cuotasAtrasadas++;
+      fecha = siguienteVencimiento(fecha, frecuencia);
+    }
+    // Si se le pasaron todas las que le quedaban, debe exactamente el saldo:
+    // la ultima cuota carga el resto de la division y no vale lo mismo que el
+    // resto. Si todavia le quedan por vencer, son cuotas enteras.
+    montoAtrasado =
+      cuotasAtrasadas === restantes
+        ? aDevolver
+        : pesos(cuotasAtrasadas * (prestamo.cuota_monto ?? 0));
   }
-
-  // El punto de equilibrio: cuando lo cobrado supera lo prestado, la plata que
-  // se puso ya volvio. Lo que siga entrando es ganancia, y el capital que queda
-  // afuera es todo a favor.
-  const faltaRecuperar = Math.max(0, pesos(prestamo.capital_inicial) - cobrado);
 
   return {
     capital,
@@ -206,10 +228,11 @@ export function resumen(
       prestamo.cuotas_total && prestamo.cuotas_total > 0
         ? Math.min(100, Math.round((cuotasPagadas / prestamo.cuotas_total) * 100))
         : null,
-    capitalRecuperado: faltaRecuperar === 0,
+    capitalRecuperado,
+    recuperado: faltaRecuperar === 0,
     faltaRecuperar,
     cuotasAtrasadas,
-    montoAtrasado: pesos(cuotasAtrasadas * (prestamo.cuota_monto ?? 0)),
+    montoAtrasado,
     cobrado,
     ganancia,
     cuotaMonto: prestamo.cuota_monto,
@@ -242,6 +265,122 @@ export function capitalizar(prestamo: Prestamo): {
     capital_actual: pesos(prestamo.capital_actual + interes),
     fecha_vencimiento: sumarMeses(prestamo.fecha_vencimiento, 1),
   };
+}
+
+/**
+ * Reparte cada cobro de un préstamo entre recupero de capital y ganancia.
+ *
+ * Se recorren en orden cronológico aplicando la misma regla que `resumen`:
+ * primero tapan la plata que pusiste, después son ganancia. Sirve para saber
+ * cuánto ganaste **en un mes**, que no se puede sacar del total.
+ */
+export function repartirCobros(
+  prestamo: Pick<Prestamo, "capital_inicial">,
+  pagos: Pago[]
+): Map<string, { capital: number; ganancia: number }> {
+  const orden = [...pagos].sort(
+    (a, b) => a.fecha.localeCompare(b.fecha) || a.created_at.localeCompare(b.created_at)
+  );
+
+  let falta = pesos(prestamo.capital_inicial);
+  const reparto = new Map<string, { capital: number; ganancia: number }>();
+
+  for (const pago of orden) {
+    const monto = pesos(pago.monto);
+    const capital = Math.min(falta, monto);
+    falta = pesos(falta - capital);
+    reparto.set(pago.id, { capital, ganancia: pesos(monto - capital) });
+  }
+
+  return reparto;
+}
+
+/**
+ * Lo que un cobro le cambia al préstamo.
+ *
+ * `pagosPrevios` son los cobros que ya tenía antes de este.
+ */
+export function aplicarPago(
+  prestamo: Prestamo,
+  pago: Pick<Pago, "tipo" | "monto">,
+  pagosPrevios: Pago[]
+): Partial<Prestamo> {
+  const cambios: Partial<Prestamo> = {};
+
+  if (pago.tipo === "interes") {
+    // Cobró el interés: el capital queda igual y corre otro mes.
+    cambios.fecha_vencimiento = sumarMeses(prestamo.fecha_vencimiento, 1);
+  } else if (pago.tipo === "capital") {
+    const capitalNuevo = Math.max(0, pesos(prestamo.capital_actual - pago.monto));
+    cambios.capital_actual = capitalNuevo;
+    if (capitalNuevo === 0) cambios.estado = "pagado";
+  } else if (pago.tipo === "cuota") {
+    const cuotasPagadas =
+      pagosPrevios.filter((otro) => otro.tipo === "cuota").length + 1;
+    if (cuotasPagadas >= (prestamo.cuotas_total ?? 1)) {
+      cambios.estado = "pagado";
+      cambios.capital_actual = 0;
+    } else {
+      cambios.fecha_vencimiento = siguienteVencimiento(
+        prestamo.fecha_vencimiento,
+        frecuenciaDe(prestamo)
+      );
+    }
+  } else if (pago.tipo === "total") {
+    cambios.estado = "pagado";
+    cambios.capital_actual = 0;
+  }
+
+  return cambios;
+}
+
+/**
+ * Deshace en el préstamo lo que un cobro le había hecho.
+ *
+ * Borrar la fila de `pagos` no alcanza: al registrarlo se corrió el
+ * vencimiento, o se bajó el capital, o se dio el préstamo por pagado. Si eso no
+ * se revierte, el cronograma queda corrido un período y todo lo que se proyecta
+ * a partir de ahí sale mal.
+ *
+ * `pagosRestantes` son los cobros que quedan **después** de borrar este.
+ */
+export function revertirPago(
+  prestamo: Prestamo,
+  pago: Pick<Pago, "tipo" | "monto">,
+  pagosRestantes: Pago[]
+): Partial<Prestamo> {
+  const cambios: Partial<Prestamo> = {};
+  const estabaCerrado = prestamo.estado === "pagado";
+
+  // El capital que correspondía antes de que este cobro lo pusiera en cero.
+  // Las entregas a cuenta que sigan vivas se descuentan igual.
+  const capitalSinEsteCobro = () =>
+    Math.max(0, pesos(prestamo.capital_inicial - sumar(pagosRestantes, ["capital"])));
+
+  if (pago.tipo === "interes") {
+    // Cobró el interés y el vencimiento se había corrido un mes: vuelve atrás.
+    cambios.fecha_vencimiento = sumarMeses(prestamo.fecha_vencimiento, -1);
+  } else if (pago.tipo === "capital") {
+    cambios.capital_actual = pesos(prestamo.capital_actual + pago.monto);
+    if (estabaCerrado) cambios.estado = "vigente";
+  } else if (pago.tipo === "cuota") {
+    if (estabaCerrado) {
+      // Esta cuota había cerrado el plan. Al registrarla no se corrió el
+      // vencimiento, así que solo hay que volver a abrirlo.
+      cambios.estado = "vigente";
+      cambios.capital_actual = capitalSinEsteCobro();
+    } else {
+      cambios.fecha_vencimiento = vencimientoAnterior(
+        prestamo.fecha_vencimiento,
+        frecuenciaDe(prestamo)
+      );
+    }
+  } else if (pago.tipo === "total") {
+    cambios.estado = "vigente";
+    cambios.capital_actual = capitalSinEsteCobro();
+  }
+
+  return cambios;
 }
 
 /**

@@ -4,39 +4,45 @@ import NavInferior from "@/components/NavInferior";
 import Metrica from "@/components/Metrica";
 import GraficoEvolucion from "@/components/GraficoEvolucion";
 import GraficoMeses from "@/components/GraficoMeses";
-import { traerPagos, traerPrestamos } from "@/lib/datos";
+import { traerPrestamos } from "@/lib/datos";
+import ProyeccionMes from "@/components/ProyeccionMes";
 import {
+  cronogramaPendiente,
   resolver,
   resumenPorMes,
   serieHistorica,
   totales,
-  vencimientosDelMes,
 } from "@/lib/agregados";
-import { hoyISO, mesDe, nombreMes, sumarMeses } from "@/lib/fechas";
+import { hoyISO, mesDe, nombreMes } from "@/lib/fechas";
 import { plata } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Resumen" };
 
 export default async function ResumenPage() {
-  const [prestamos, pagos] = await Promise.all([traerPrestamos(), traerPagos()]);
+  const prestamos = await traerPrestamos();
 
   const hoy = hoyISO();
   const resueltos = resolver(prestamos, hoy);
   const numeros = totales(resueltos);
-  const meses = resumenPorMes(prestamos, pagos, hoy);
-  const historia = serieHistorica(prestamos, pagos, hoy);
+  const meses = resumenPorMes(prestamos, hoy);
+  const historia = serieHistorica(prestamos, hoy);
   const esteMes = meses[meses.length - 1];
-  const proximo = mesDe(sumarMeses(hoy, 1));
-  const proyeccion = vencimientosDelMes(resueltos, proximo);
+  const pendiente = cronogramaPendiente(resueltos, hoy);
 
-  // Cuánto de todo lo que prestaste ya volvió a tu bolsillo.
+  // Cuánto de todo lo que prestaste ya volvió a tu bolsillo. Se suma préstamo
+  // por préstamo y no en bloque: lo que te sobró en uno no tapa lo que te falta
+  // en otro, igual que en la ficha de cada préstamo.
   const prestadoTotal = resueltos.reduce(
     (acc, { prestamo }) => acc + prestamo.capital_inicial,
     0
   );
+  const recuperadoTotal = resueltos.reduce(
+    (acc, { datos }) => acc + datos.capitalRecuperado,
+    0
+  );
   const cobradoTotal = resueltos.reduce((acc, { datos }) => acc + datos.cobrado, 0);
-  const faltaRecuperar = Math.max(0, prestadoTotal - cobradoTotal);
+  const faltaRecuperar = prestadoTotal - recuperadoTotal;
 
   return (
     <>
@@ -57,7 +63,7 @@ export default async function ResumenPage() {
           <Metrica
             etiqueta="Ganancia cobrada"
             monto={numeros.gananciaCobrada}
-            detalle="Intereses de todos los tiempos"
+            detalle="Lo que entró por encima de lo prestado"
           />
         </section>
 
@@ -77,19 +83,19 @@ export default async function ResumenPage() {
                   Recuperado de lo prestado
                 </p>
                 <p className="tabular text-lg font-bold text-brand-700 dark:text-brand-300">
-                  {Math.round((cobradoTotal / Math.max(1, prestadoTotal)) * 100)}%
+                  {Math.round((recuperadoTotal / Math.max(1, prestadoTotal)) * 100)}%
                 </p>
               </div>
               <div className="mt-1.5 h-2.5 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
                 <div
                   className="h-full rounded-full bg-brand-500"
                   style={{
-                    width: `${Math.min(100, Math.max(1.5, (cobradoTotal / Math.max(1, prestadoTotal)) * 100))}%`,
+                    width: `${Math.min(100, Math.max(1.5, (recuperadoTotal / Math.max(1, prestadoTotal)) * 100))}%`,
                   }}
                 />
               </div>
               <p className="mt-1.5 text-xs text-slate-600 dark:text-slate-400">
-                Cobraste {plata(cobradoTotal)} de {plata(prestadoTotal)}. Faltan{" "}
+                Recuperaste {plata(recuperadoTotal)} de {plata(prestadoTotal)}. Faltan{" "}
                 {plata(faltaRecuperar)} para estar a mano.
               </p>
             </>
@@ -149,22 +155,12 @@ export default async function ResumenPage() {
 
         <section className="mt-6">
           <h2 className="mb-2 text-sm font-bold text-slate-900 dark:text-slate-100">
-            {nombreMes(proximo)}
-            <span className="ml-2 font-normal text-slate-600 dark:text-slate-400">lo que viene</span>
+            Lo que viene
+            <span className="ml-2 font-normal text-slate-600 dark:text-slate-400">
+              cuota por cuota
+            </span>
           </h2>
-          <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4">
-            <p className="tabular text-xl font-bold text-slate-900 dark:text-slate-100">
-              {plata(proyeccion.monto)}
-            </p>
-            <p className="mt-0.5 text-sm text-slate-600 dark:text-slate-400">
-              {proyeccion.cuotas} vencimiento{proyeccion.cuotas === 1 ? "" : "s"} el mes
-              que viene
-            </p>
-            <p className="mt-2 text-xs text-slate-600 dark:text-slate-400">
-              Es lo que vence en {nombreMes(proximo)} si todos pagan al día. No incluye
-              lo que ya está atrasado.
-            </p>
-          </div>
+          <ProyeccionMes pendiente={pendiente} mesActual={mesDe(hoy)} />
         </section>
 
         <Link

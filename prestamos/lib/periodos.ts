@@ -39,6 +39,13 @@ export function siguienteVencimiento(iso: string, frecuencia: Frecuencia): strin
   return sumarMeses(iso, 1);
 }
 
+/** Vuelve una fecha al vencimiento anterior. El inverso exacto del de arriba. */
+export function vencimientoAnterior(iso: string, frecuencia: Frecuencia): string {
+  if (frecuencia === "semanal") return sumarDias(iso, -7);
+  if (frecuencia === "quincenal") return sumarDias(iso, -15);
+  return sumarMeses(iso, -1);
+}
+
 /** «4 cuotas semanales», «1 cuota mensual». */
 export function textoCuotas(cantidad: number, frecuencia: Frecuencia): string {
   const { adjetivo, singular } = datosFrecuencia(frecuencia);

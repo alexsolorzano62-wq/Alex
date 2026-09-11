@@ -82,7 +82,7 @@ export default async function DashboardPage() {
           <Metrica
             etiqueta="Ganancia cobrada"
             monto={numeros.gananciaCobrada}
-            detalle="Intereses ya en tu bolsillo"
+            detalle="Lo que entró por encima de lo prestado"
           />
         </section>
 

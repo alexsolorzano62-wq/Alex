@@ -3,7 +3,15 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { calcularPlan, capitalizar, pesos, resumen, tasaImplicita } from "@/lib/calc";
+import {
+  aplicarPago,
+  calcularPlan,
+  capitalizar,
+  pesos,
+  resumen,
+  revertirPago,
+  tasaImplicita,
+} from "@/lib/calc";
 import { hoyISO, sumarMeses } from "@/lib/fechas";
 import { datosFrecuencia, frecuenciaDe, siguienteVencimiento } from "@/lib/periodos";
 import type { Frecuencia } from "@/lib/types";
@@ -335,32 +343,11 @@ export async function registrarPago(
   });
   if (error) return { error: `No se pudo guardar el pago: ${error.message}` };
 
-  const cambios: Record<string, unknown> = {};
-
-  if (tipo === "interes") {
-    // Cobró el interés: el capital queda igual y corre otro mes.
-    cambios.fecha_vencimiento = sumarMeses(prestamo.fecha_vencimiento, 1);
-  } else if (tipo === "capital") {
-    const capitalNuevo = Math.max(0, pesos(prestamo.capital_actual - monto));
-    cambios.capital_actual = capitalNuevo;
-    if (capitalNuevo === 0) cambios.estado = "pagado";
-  } else if (tipo === "cuota") {
-    const cuotasPagadas = (prestamo.pagos ?? []).filter(
-      (pago: { tipo: string }) => pago.tipo === "cuota"
-    ).length + 1;
-    if (cuotasPagadas >= (prestamo.cuotas_total ?? 1)) {
-      cambios.estado = "pagado";
-      cambios.capital_actual = 0;
-    } else {
-      cambios.fecha_vencimiento = siguienteVencimiento(
-        prestamo.fecha_vencimiento,
-        frecuenciaDe(prestamo)
-      );
-    }
-  } else if (tipo === "total") {
-    cambios.estado = "pagado";
-    cambios.capital_actual = 0;
-  }
+  const cambios = aplicarPago(
+    prestamo,
+    { tipo, monto: pesos(monto) },
+    prestamo.pagos ?? []
+  );
 
   if (Object.keys(cambios).length > 0) {
     await supabase.from("prestamos").update(cambios).eq("id", prestamoId);
@@ -382,7 +369,36 @@ export async function cobrarRapido(datos: FormData) {
 export async function borrarPago(datos: FormData) {
   const id = String(datos.get("id") ?? "");
   const { supabase } = await sesion();
-  await supabase.from("pagos").delete().eq("id", id);
+
+  // Antes de borrarlo hay que saber qué era, porque el préstamo quedó tocado:
+  // el vencimiento corrido, el capital bajado o el plan dado por pagado. Borrar
+  // la fila sola deja el cronograma desfasado y la proyección da cualquier cosa.
+  const { data: pago } = await supabase
+    .from("pagos")
+    .select("id, prestamo_id, monto, tipo")
+    .eq("id", id)
+    .maybeSingle();
+  if (!pago) return;
+
+  const { data: prestamo } = await supabase
+    .from("prestamos")
+    .select("*, pagos(*)")
+    .eq("id", pago.prestamo_id)
+    .maybeSingle();
+
+  const { error } = await supabase.from("pagos").delete().eq("id", id);
+  if (error) return;
+
+  if (prestamo) {
+    const restantes = (prestamo.pagos ?? []).filter(
+      (otro: { id: string }) => otro.id !== id
+    );
+    const cambios = revertirPago(prestamo, pago, restantes);
+    if (Object.keys(cambios).length > 0) {
+      await supabase.from("prestamos").update(cambios).eq("id", pago.prestamo_id);
+    }
+  }
+
   refrescar();
 }
 

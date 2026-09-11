@@ -62,7 +62,7 @@ export async function GET(request: Request) {
     nombre = "prestamos";
     const prestamos = await traerPrestamos();
     filas = [
-      ["Cliente", "Modalidad", "Prestado", "Plan", "A devolver", "Cobrado", "Inicio", "Vence", "Estado", "Cuotas atrasadas", "Observación"],
+      ["Cliente", "Modalidad", "Prestado", "Plan", "A devolver", "Cobrado", "Capital recuperado", "Ganancia", "Falta recuperar", "Inicio", "Vence", "Estado", "Cuotas atrasadas", "Observación"],
       ...prestamos.map((prestamo) => {
         const datos = resumen(prestamo, prestamo.pagos ?? [], hoy);
         return [
@@ -72,6 +72,9 @@ export async function GET(request: Request) {
           descripcionPlan(prestamo, datos),
           datos.aDevolver,
           datos.cobrado,
+          datos.capitalRecuperado,
+          datos.ganancia,
+          datos.faltaRecuperar,
           prestamo.fecha_inicio,
           prestamo.fecha_vencimiento,
           prestamo.estado,

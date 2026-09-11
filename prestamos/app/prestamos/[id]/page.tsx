@@ -70,7 +70,7 @@ export default async function PrestamoPage({
       <Encabezado subtitulo={nombre} />
 
       <main className="mx-auto max-w-lg px-4 pb-16 pt-4">
-        <Link href="/prestamos" className="text-sm text-slate-500 dark:text-slate-400">
+        <Link href="/prestamos" className="text-sm text-slate-600 dark:text-slate-400">
           ← Volver
         </Link>
 
@@ -83,7 +83,7 @@ export default async function PrestamoPage({
         <div className="mt-3 flex items-start justify-between gap-3">
           <div className="min-w-0">
             <h1 className="truncate text-xl font-bold">{nombre}</h1>
-            <p className="text-sm text-slate-500 dark:text-slate-400">
+            <p className="text-sm text-slate-600 dark:text-slate-400">
               {descripcionPlan(prestamo, datos)}
             </p>
           </div>
@@ -145,7 +145,7 @@ export default async function PrestamoPage({
               >
                 {formatFecha(prestamo.fecha_vencimiento)}
                 {prestamo.estado === "vigente" && (
-                  <span className="ml-1 text-xs text-slate-400 dark:text-slate-500">
+                  <span className="ml-1 text-xs text-slate-600 dark:text-slate-400">
                     ({textoVencimiento(datos.diasParaVencer)})
                   </span>
                 )}
@@ -169,7 +169,7 @@ export default async function PrestamoPage({
             etiqueta={telefono ? "Enviar por WhatsApp" : "Elegir contacto"}
           />
           {!telefono && (
-            <p className="mt-2 text-xs text-slate-400 dark:text-slate-500">
+            <p className="mt-2 text-xs text-slate-600 dark:text-slate-400">
               Este cliente no tiene WhatsApp cargado.{" "}
               <Link
                 href={`/clientes/${prestamo.cliente_id}/editar`}
@@ -223,13 +223,13 @@ export default async function PrestamoPage({
           <h2 className="mb-2 text-sm font-bold text-slate-900 dark:text-slate-100">
             Historial
             {datos.cobrado > 0 && (
-              <span className="ml-2 font-normal text-slate-500 dark:text-slate-400">
+              <span className="ml-2 font-normal text-slate-600 dark:text-slate-400">
                 cobrado {plata(datos.cobrado)}
               </span>
             )}
           </h2>
           {prestamo.pagos.length === 0 ? (
-            <p className="rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 px-4 py-6 text-center text-sm text-slate-500 dark:text-slate-400">
+            <p className="rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 px-4 py-6 text-center text-sm text-slate-600 dark:text-slate-400">
               Todavía no registraste cobros.
             </p>
           ) : (
@@ -242,7 +242,7 @@ export default async function PrestamoPage({
                         ? `Cuota ${numeros.get(pago.id)}${prestamo.cuotas_total ? ` de ${prestamo.cuotas_total}` : ""}`
                         : (NOMBRE_TIPO[pago.tipo] ?? pago.tipo)}
                     </p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                    <p className="text-xs text-slate-600 dark:text-slate-400">
                       {formatFecha(pago.fecha)}
                       {pago.nota ? ` · ${pago.nota}` : ""}
                     </p>
@@ -268,7 +268,7 @@ export default async function PrestamoPage({
         </section>
 
         <details className="mt-8 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
-          <summary className="cursor-pointer px-4 py-3 text-sm font-medium text-slate-500 dark:text-slate-400">
+          <summary className="cursor-pointer px-4 py-3 text-sm font-medium text-slate-600 dark:text-slate-400">
             Borrar este préstamo
           </summary>
           <form action={borrarPrestamo} className="border-t border-slate-100 dark:border-slate-800 px-4 py-4">
@@ -285,7 +285,7 @@ export default async function PrestamoPage({
               )}
               . No se puede deshacer.
             </p>
-            <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+            <p className="mt-2 text-xs text-slate-600 dark:text-slate-400">
               Si lo que querés es corregir un cobro mal cargado, borralo desde el
               historial de acá arriba y el préstamo se acomoda solo.
             </p>

@@ -23,7 +23,7 @@ export default function BorrarCliente({
 
   return (
     <details className="mt-8 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
-      <summary className="cursor-pointer px-4 py-3 text-sm font-medium text-slate-500 dark:text-slate-400">
+      <summary className="cursor-pointer px-4 py-3 text-sm font-medium text-slate-600 dark:text-slate-400">
         Borrar este cliente
       </summary>
 

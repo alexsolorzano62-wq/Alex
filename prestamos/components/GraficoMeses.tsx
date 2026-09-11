@@ -15,7 +15,7 @@ export default function GraficoMeses({ meses }: { meses: MesResumen[] }) {
 
       <table className="w-full text-xs">
         <thead>
-          <tr className="text-left text-slate-500 dark:text-slate-400">
+          <tr className="text-left text-slate-600 dark:text-slate-400">
             <th className="py-1 font-medium">Mes</th>
             <th className="py-1 text-right font-medium">Prestado</th>
             <th className="py-1 text-right font-medium">Ganado</th>

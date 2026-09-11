@@ -39,7 +39,7 @@ export default function AvancePrestamo({
         {datos.capitalRecuperado ? (
           <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-400">
             <span aria-hidden="true">✓</span> Ya recuperaste lo que prestaste
-            <span className="block text-xs font-normal text-slate-500 dark:text-slate-400">
+            <span className="block text-xs font-normal text-slate-600 dark:text-slate-400">
               Todo lo que cobres de acá en más es ganancia
               {datos.capital > 0 && `, y te quedan ${plata(datos.capital)} en la calle`}
               .
@@ -49,7 +49,7 @@ export default function AvancePrestamo({
           <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">
             <span aria-hidden="true">○</span> Faltan {plata(datos.faltaRecuperar)} para
             recuperar lo prestado
-            <span className="block text-xs font-normal text-slate-500 dark:text-slate-400">
+            <span className="block text-xs font-normal text-slate-600 dark:text-slate-400">
               Llevás cobrado {plata(datos.cobrado)} de los{" "}
               {plata(datos.cobrado + datos.faltaRecuperar)} que pusiste.
             </span>

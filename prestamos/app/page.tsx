@@ -61,7 +61,7 @@ export default async function DashboardPage() {
       <Encabezado subtitulo={usuario?.email ?? undefined} />
 
       <main className="mx-auto max-w-2xl px-4 pb-28 pt-4">
-        <p className="text-xs text-slate-400 dark:text-slate-500">Al {formatFecha(hoy)}</p>
+        <p className="text-xs text-slate-600 dark:text-slate-400">Al {formatFecha(hoy)}</p>
 
         <section className="mt-3 grid grid-cols-2 gap-3">
           <Metrica
@@ -90,7 +90,7 @@ export default async function DashboardPage() {
           <section className="mt-6">
             <h2 className="mb-2 text-sm font-bold text-slate-900 dark:text-slate-100">
               Para cobrar
-              <span className="ml-2 font-normal text-slate-500 dark:text-slate-400">
+              <span className="ml-2 font-normal text-slate-600 dark:text-slate-400">
                 {numeros.vencidos > 0
                   ? `${numeros.vencidos} vencido${numeros.vencidos === 1 ? "" : "s"}`
                   : "vencen hoy"}
@@ -104,7 +104,7 @@ export default async function DashboardPage() {
           <section className="mt-6">
             <h2 className="mb-2 text-sm font-bold text-slate-900 dark:text-slate-100">
               Esta semana
-              <span className="ml-2 font-normal text-slate-500 dark:text-slate-400">
+              <span className="ml-2 font-normal text-slate-600 dark:text-slate-400">
                 {estaSemana.length} por vencer
               </span>
             </h2>
@@ -125,7 +125,7 @@ export default async function DashboardPage() {
               </Link>
             </div>
             {siguientes.length === 0 ? (
-              <p className="rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 px-4 py-8 text-center text-sm text-slate-500 dark:text-slate-400">
+              <p className="rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 px-4 py-8 text-center text-sm text-slate-600 dark:text-slate-400">
                 No tenés préstamos vigentes.
               </p>
             ) : (

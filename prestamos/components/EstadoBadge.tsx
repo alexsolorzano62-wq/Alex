@@ -28,7 +28,7 @@ const ESTILOS: Record<EstadoVisual, { texto: string; icono: string; clase: strin
   cancelado: {
     texto: "Cancelado",
     icono: "—",
-    clase: "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 ring-slate-200 dark:ring-slate-700",
+    clase: "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 ring-slate-200 dark:ring-slate-700",
   },
 };
 

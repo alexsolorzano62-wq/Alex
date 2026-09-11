@@ -44,7 +44,7 @@ export default async function ResumenPage() {
 
       <main className="mx-auto max-w-2xl px-4 pb-28 pt-4">
         <h1 className="text-lg font-bold">Resumen</h1>
-        <p className="mb-4 mt-1 text-sm text-slate-500 dark:text-slate-400">
+        <p className="mb-4 mt-1 text-sm text-slate-600 dark:text-slate-400">
           Cómo viene el negocio mes a mes.
         </p>
 
@@ -65,7 +65,7 @@ export default async function ResumenPage() {
           {faltaRecuperar === 0 ? (
             <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-400">
               <span aria-hidden="true">✓</span> Recuperaste todo lo que prestaste
-              <span className="block text-xs font-normal text-slate-500 dark:text-slate-400">
+              <span className="block text-xs font-normal text-slate-600 dark:text-slate-400">
                 Cobraste {plata(cobradoTotal)} sobre {plata(prestadoTotal)} prestados.
                 Lo que entre de acá en más es ganancia.
               </span>
@@ -88,7 +88,7 @@ export default async function ResumenPage() {
                   }}
                 />
               </div>
-              <p className="mt-1.5 text-xs text-slate-500 dark:text-slate-400">
+              <p className="mt-1.5 text-xs text-slate-600 dark:text-slate-400">
                 Cobraste {plata(cobradoTotal)} de {plata(prestadoTotal)}. Faltan{" "}
                 {plata(faltaRecuperar)} para estar a mano.
               </p>
@@ -109,13 +109,13 @@ export default async function ResumenPage() {
         <section className="mt-6">
           <h2 className="mb-2 text-sm font-bold text-slate-900 dark:text-slate-100">
             {nombreMes(esteMes.mes)}
-            <span className="ml-2 font-normal text-slate-500 dark:text-slate-400">el mes en curso</span>
+            <span className="ml-2 font-normal text-slate-600 dark:text-slate-400">el mes en curso</span>
           </h2>
           <ul className="divide-y divide-slate-100 dark:divide-slate-800 overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-sm">
             <li className="flex items-baseline justify-between gap-3 px-4 py-2.5">
               <span className="text-slate-600 dark:text-slate-400">
                 Prestaste
-                <span className="ml-1 text-xs text-slate-400 dark:text-slate-500">
+                <span className="ml-1 text-xs text-slate-600 dark:text-slate-400">
                   {esteMes.prestamosNuevos} préstamo
                   {esteMes.prestamosNuevos === 1 ? "" : "s"}
                 </span>
@@ -135,7 +135,7 @@ export default async function ResumenPage() {
             <li className="flex items-baseline justify-between gap-3 px-4 py-2.5">
               <span className="text-slate-600 dark:text-slate-400">
                 Se renovaron
-                <span className="ml-1 text-xs text-slate-400 dark:text-slate-500">
+                <span className="ml-1 text-xs text-slate-600 dark:text-slate-400">
                   {esteMes.renovaciones} préstamo
                   {esteMes.renovaciones === 1 ? "" : "s"}
                 </span>
@@ -150,7 +150,7 @@ export default async function ResumenPage() {
         <section className="mt-6">
           <h2 className="mb-2 text-sm font-bold text-slate-900 dark:text-slate-100">
             {nombreMes(proximo)}
-            <span className="ml-2 font-normal text-slate-500 dark:text-slate-400">lo que viene</span>
+            <span className="ml-2 font-normal text-slate-600 dark:text-slate-400">lo que viene</span>
           </h2>
           <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4">
             <p className="tabular text-xl font-bold text-slate-900 dark:text-slate-100">
@@ -160,7 +160,7 @@ export default async function ResumenPage() {
               {proyeccion.cuotas} vencimiento{proyeccion.cuotas === 1 ? "" : "s"} el mes
               que viene
             </p>
-            <p className="mt-2 text-xs text-slate-400 dark:text-slate-500">
+            <p className="mt-2 text-xs text-slate-600 dark:text-slate-400">
               Es lo que vence en {nombreMes(proximo)} si todos pagan al día. No incluye
               lo que ya está atrasado.
             </p>

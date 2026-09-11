@@ -15,12 +15,12 @@ export default function FilaPrestamo({ prestamo, datos }: PrestamoResuelto) {
         <p className="truncate text-sm font-semibold text-slate-900 dark:text-slate-100">
           {prestamo.cliente?.nombre}
         </p>
-        <p className="tabular truncate text-xs text-slate-500 dark:text-slate-400">
+        <p className="tabular truncate text-xs text-slate-600 dark:text-slate-400">
           {plata(datos.capital)} · vence {formatFecha(prestamo.fecha_vencimiento)}
         </p>
         <p
           className={`text-xs ${
-            datos.vencido ? "font-semibold text-red-600 dark:text-red-400" : "text-slate-400 dark:text-slate-500"
+            datos.vencido ? "font-semibold text-red-600 dark:text-red-400" : "text-slate-600 dark:text-slate-400"
           }`}
         >
           {prestamo.estado !== "vigente"
@@ -38,7 +38,7 @@ export default function FilaPrestamo({ prestamo, datos }: PrestamoResuelto) {
               style={{ width: `${Math.max(datos.avance, 2)}%` }}
             />
           </div>
-          <p className="tabular mt-1 text-right text-[11px] text-slate-400 dark:text-slate-500">
+          <p className="tabular mt-1 text-right text-[11px] text-slate-600 dark:text-slate-400">
             {datos.avance}%
           </p>
         </div>

@@ -10,7 +10,7 @@ export default function Encabezado({ subtitulo }: { subtitulo?: string }) {
         <div className="min-w-0">
           <p className="truncate text-sm font-bold leading-tight">Préstamos</p>
           {subtitulo && (
-            <p className="truncate text-xs text-slate-500 dark:text-slate-400">{subtitulo}</p>
+            <p className="truncate text-xs text-slate-600 dark:text-slate-400">{subtitulo}</p>
           )}
         </div>
       </Link>
@@ -19,7 +19,7 @@ export default function Encabezado({ subtitulo }: { subtitulo?: string }) {
           href="/ajustes"
           aria-label="Ajustes"
           title="Mensajes de WhatsApp"
-          className="rounded-lg p-2 text-slate-400 dark:text-slate-500 active:bg-slate-100 dark:active:bg-slate-800"
+          className="rounded-lg p-2 text-slate-600 dark:text-slate-400 active:bg-slate-100 dark:active:bg-slate-800"
         >
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-5 w-5">
             <circle cx="12" cy="12" r="3" />
@@ -31,7 +31,7 @@ export default function Encabezado({ subtitulo }: { subtitulo?: string }) {
           type="submit"
           aria-label="Salir"
           title="Salir"
-          className="rounded-lg p-2 text-slate-400 dark:text-slate-500 active:bg-slate-100 dark:active:bg-slate-800"
+          className="rounded-lg p-2 text-slate-600 dark:text-slate-400 active:bg-slate-100 dark:active:bg-slate-800"
         >
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-5 w-5">
             <path d="M15 17l5-5-5-5M20 12H9" strokeLinecap="round" strokeLinejoin="round" />

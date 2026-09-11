@@ -81,7 +81,7 @@ export default function ListaPrestamos({ items }: { items: PrestamoResuelto[] })
       />
 
       {visibles.length === 0 ? (
-        <p className="mt-4 rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 px-4 py-10 text-center text-sm text-slate-500 dark:text-slate-400">
+        <p className="mt-4 rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 px-4 py-10 text-center text-sm text-slate-600 dark:text-slate-400">
           No hay préstamos para mostrar.
         </p>
       ) : (
@@ -97,7 +97,7 @@ export default function ListaPrestamos({ items }: { items: PrestamoResuelto[] })
           <div className="mt-4 hidden overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 md:block">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-left text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                <tr className="border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-left text-xs uppercase tracking-wide text-slate-600 dark:text-slate-400">
                   <th className="px-3 py-2 font-semibold">Nombre</th>
                   <th className="px-3 py-2 text-right font-semibold">Monto</th>
                   <th className="px-3 py-2 font-semibold">Inicio</th>
@@ -126,7 +126,7 @@ export default function ListaPrestamos({ items }: { items: PrestamoResuelto[] })
                       <td className="tabular px-3 py-2 text-right">
                         {plata(datos.capital)}
                       </td>
-                      <td className="px-3 py-2 text-slate-500 dark:text-slate-400">
+                      <td className="px-3 py-2 text-slate-600 dark:text-slate-400">
                         {formatFechaCorta(prestamo.fecha_inicio)}
                       </td>
                       <td className="tabular px-3 py-2 text-right">
@@ -138,10 +138,10 @@ export default function ListaPrestamos({ items }: { items: PrestamoResuelto[] })
                       <td className="tabular px-3 py-2 text-right text-slate-600 dark:text-slate-400">
                         {plata(datos.interes)}
                       </td>
-                      <td className="px-3 py-2 text-slate-500 dark:text-slate-400">
+                      <td className="px-3 py-2 text-slate-600 dark:text-slate-400">
                         {formatFecha(prestamo.fecha_vencimiento)}
                       </td>
-                      <td className="px-3 py-2 text-slate-500 dark:text-slate-400">
+                      <td className="px-3 py-2 text-slate-600 dark:text-slate-400">
                         {prestamo.modalidad === "mensual"
                           ? (prestamo.observacion ?? "")
                           : descripcionPlan(prestamo, datos)}
@@ -170,15 +170,15 @@ export default function ListaPrestamos({ items }: { items: PrestamoResuelto[] })
           {/* En el celular los totales van aparte, porque no hay tabla. */}
           <dl className="mt-3 grid grid-cols-3 gap-2 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3 md:hidden">
             <div>
-              <dt className="text-[11px] uppercase text-slate-500 dark:text-slate-400">Capital</dt>
+              <dt className="text-[11px] uppercase text-slate-600 dark:text-slate-400">Capital</dt>
               <dd className="tabular text-sm font-bold">{plata(sumas.capital)}</dd>
             </div>
             <div>
-              <dt className="text-[11px] uppercase text-slate-500 dark:text-slate-400">A cobrar</dt>
+              <dt className="text-[11px] uppercase text-slate-600 dark:text-slate-400">A cobrar</dt>
               <dd className="tabular text-sm font-bold">{plata(sumas.aDevolver)}</dd>
             </div>
             <div>
-              <dt className="text-[11px] uppercase text-slate-500 dark:text-slate-400">Interés</dt>
+              <dt className="text-[11px] uppercase text-slate-600 dark:text-slate-400">Interés</dt>
               <dd className="tabular text-sm font-bold">{plata(sumas.interes)}</dd>
             </div>
           </dl>

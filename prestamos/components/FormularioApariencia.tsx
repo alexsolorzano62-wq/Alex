@@ -44,7 +44,7 @@ export default function FormularioApariencia({
               <span className="block text-sm font-semibold text-slate-800 dark:text-slate-200">
                 {opcion.nombre}
               </span>
-              <span className="block text-[11px] text-slate-500 dark:text-slate-400">
+              <span className="block text-[11px] text-slate-600 dark:text-slate-400">
                 {opcion.detalle}
               </span>
             </button>
@@ -72,7 +72,7 @@ export default function FormularioApariencia({
                 <span className="block text-sm font-semibold text-slate-900 dark:text-slate-100">
                   {opcion.nombre}
                 </span>
-                <span className="tabular block text-xs text-slate-500 dark:text-slate-400">
+                <span className="tabular block text-xs text-slate-600 dark:text-slate-400">
                   Miriam Marquez · $27.900 · vence 06/09
                 </span>
               </span>

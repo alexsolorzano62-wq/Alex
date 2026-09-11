@@ -59,7 +59,7 @@ export default function BotonesWhatsApp({
       </div>
 
       <details className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
-        <summary className="cursor-pointer px-3 py-2 text-xs font-medium text-slate-500 dark:text-slate-400">
+        <summary className="cursor-pointer px-3 py-2 text-xs font-medium text-slate-600 dark:text-slate-400">
           Ver el mensaje
         </summary>
         <pre className="whitespace-pre-wrap px-3 pb-3 text-xs leading-relaxed text-slate-700 dark:text-slate-300">

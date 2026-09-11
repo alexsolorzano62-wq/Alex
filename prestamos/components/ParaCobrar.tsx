@@ -25,7 +25,7 @@ export default function ParaCobrar({ filas }: { filas: FilaCobranza[] }) {
               </p>
               <p
                 className={`text-xs ${
-                  datos.vencido ? "font-semibold text-red-600 dark:text-red-400" : "text-slate-500 dark:text-slate-400"
+                  datos.vencido ? "font-semibold text-red-600 dark:text-red-400" : "text-slate-600 dark:text-slate-400"
                 }`}
               >
                 {datos.cuotasAtrasadas > 0

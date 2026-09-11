@@ -8,6 +8,8 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
+        // El fondo de la app: celeste apenas insinuado, casi blanco.
+        fondo: "#edf4fd",
         // Los azules de Facebook: el 500 es su azul de marca.
         brand: {
           50: "#e7f3ff",

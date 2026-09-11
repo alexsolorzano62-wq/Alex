@@ -75,7 +75,7 @@ export default function NavInferior() {
               href={item.href}
               aria-current={activo ? "page" : undefined}
               className={`flex flex-1 flex-col items-center gap-0.5 px-0.5 py-2.5 text-[10px] font-medium ${
-                activo ? "text-brand-600 dark:text-brand-400" : "text-slate-400 dark:text-slate-500"
+                activo ? "text-brand-600 dark:text-brand-400" : "text-slate-600 dark:text-slate-400"
               }`}
             >
               {item.icono}

@@ -73,7 +73,7 @@ export default function Simulador() {
       </div>
 
       {capitalNum <= 0 ? (
-        <p className="rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 px-4 py-10 text-center text-sm text-slate-500 dark:text-slate-400">
+        <p className="rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 px-4 py-10 text-center text-sm text-slate-600 dark:text-slate-400">
           Escribí un monto y te muestro cuánto paga en cada plan.
         </p>
       ) : (
@@ -100,12 +100,12 @@ export default function Simulador() {
                     </p>
                     <p className="tabular text-lg font-bold leading-none text-brand-700 dark:text-brand-300">
                       {plata(plan.cuota)}
-                      <span className="text-xs font-normal text-slate-500 dark:text-slate-400"> /semana</span>
+                      <span className="text-xs font-normal text-slate-600 dark:text-slate-400"> /semana</span>
                     </p>
                   </div>
 
                   <div className="mt-1.5 flex items-center justify-between gap-3">
-                    <p className="tabular min-w-0 truncate text-xs text-slate-500 dark:text-slate-400">
+                    <p className="tabular min-w-0 truncate text-xs text-slate-600 dark:text-slate-400">
                       devuelve {plata(plan.total)} · ganás{" "}
                       <span className="font-semibold text-emerald-700 dark:text-emerald-400">
                         {plata(plan.interes)}
@@ -138,7 +138,7 @@ export default function Simulador() {
                       inputMode="decimal"
                       className="w-20 rounded-lg border border-slate-300 dark:border-slate-700 px-2 py-1 text-right text-sm"
                     />
-                    <span className="text-sm text-slate-500 dark:text-slate-400">%</span>
+                    <span className="text-sm text-slate-600 dark:text-slate-400">%</span>
                   </span>
                 </label>
 

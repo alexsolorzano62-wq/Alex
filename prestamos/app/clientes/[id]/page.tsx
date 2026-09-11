@@ -47,7 +47,7 @@ export default async function ClientePage({
       <Encabezado subtitulo={cliente.nombre} />
 
       <main className="mx-auto max-w-lg px-4 pb-16 pt-4">
-        <Link href="/clientes" className="text-sm text-slate-500 dark:text-slate-400">
+        <Link href="/clientes" className="text-sm text-slate-600 dark:text-slate-400">
           ← Volver
         </Link>
 
@@ -55,9 +55,9 @@ export default async function ClientePage({
           <div className="min-w-0">
             <h1 className="truncate text-xl font-bold">{cliente.nombre}</h1>
             {cliente.telefono && (
-              <p className="text-sm text-slate-500 dark:text-slate-400">{cliente.telefono}</p>
+              <p className="text-sm text-slate-600 dark:text-slate-400">{cliente.telefono}</p>
             )}
-            <p className="text-xs text-slate-400 dark:text-slate-500">
+            <p className="text-xs text-slate-600 dark:text-slate-400">
               Cliente desde {formatFecha(cliente.created_at.slice(0, 10))}
             </p>
           </div>
@@ -77,15 +77,15 @@ export default async function ClientePage({
 
         <dl className="mt-4 grid grid-cols-3 gap-2 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3">
           <div>
-            <dt className="text-[11px] uppercase text-slate-500 dark:text-slate-400">En la calle</dt>
+            <dt className="text-[11px] uppercase text-slate-600 dark:text-slate-400">En la calle</dt>
             <dd className="tabular text-sm font-bold">{plata(enLaCalle)}</dd>
           </div>
           <div>
-            <dt className="text-[11px] uppercase text-slate-500 dark:text-slate-400">A cobrar</dt>
+            <dt className="text-[11px] uppercase text-slate-600 dark:text-slate-400">A cobrar</dt>
             <dd className="tabular text-sm font-bold">{plata(aCobrar)}</dd>
           </div>
           <div>
-            <dt className="text-[11px] uppercase text-slate-500 dark:text-slate-400">Te dejó</dt>
+            <dt className="text-[11px] uppercase text-slate-600 dark:text-slate-400">Te dejó</dt>
             <dd className="tabular text-sm font-bold">{plata(gananciaCobrada)}</dd>
           </div>
         </dl>
@@ -112,7 +112,7 @@ export default async function ClientePage({
             </Link>
           </div>
           {resueltos.length === 0 ? (
-            <p className="rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 px-4 py-8 text-center text-sm text-slate-500 dark:text-slate-400">
+            <p className="rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 px-4 py-8 text-center text-sm text-slate-600 dark:text-slate-400">
               Este cliente todavía no tiene préstamos.
             </p>
           ) : (

@@ -32,7 +32,7 @@ export default function ListaClientes({ clientes }: { clientes: ResumenCliente[]
       />
 
       {visibles.length === 0 ? (
-        <p className="mt-4 rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 px-4 py-10 text-center text-sm text-slate-500 dark:text-slate-400">
+        <p className="mt-4 rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 px-4 py-10 text-center text-sm text-slate-600 dark:text-slate-400">
           {clientes.length === 0
             ? "Todavía no cargaste clientes."
             : "Ningún cliente con ese nombre."}
@@ -49,7 +49,7 @@ export default function ListaClientes({ clientes }: { clientes: ResumenCliente[]
                   <p className="truncate text-sm font-semibold text-slate-900 dark:text-slate-100">
                     {cliente.nombre}
                   </p>
-                  <p className="truncate text-xs text-slate-500 dark:text-slate-400">
+                  <p className="truncate text-xs text-slate-600 dark:text-slate-400">
                     {cliente.prestamosVigentes === 0
                       ? "Sin préstamos vigentes"
                       : `${cliente.prestamosVigentes} vigente${cliente.prestamosVigentes === 1 ? "" : "s"}`}

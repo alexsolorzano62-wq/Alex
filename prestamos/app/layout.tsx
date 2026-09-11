@@ -65,7 +65,7 @@ export default async function RootLayout({
       className={`${VARIABLES} ${tema === "oscuro" ? "dark" : ""}`}
       style={{ fontFamily: familiaDe(fuente) }}
     >
-      <body className="bg-slate-50 text-slate-900 antialiased dark:bg-slate-950 dark:text-slate-100">
+      <body className="bg-fondo text-slate-900 antialiased dark:bg-slate-950 dark:text-slate-100">
         <AvisoSinConexion />
         {children}
         <RegistrarServiceWorker />

@@ -11,7 +11,7 @@ export default function CampoTexto({
     <label className="block">
       <span className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">{etiqueta}</span>
       {children}
-      {ayuda && <span className="mt-1 block text-xs text-slate-400 dark:text-slate-500">{ayuda}</span>}
+      {ayuda && <span className="mt-1 block text-xs text-slate-600 dark:text-slate-400">{ayuda}</span>}
     </label>
   );
 }

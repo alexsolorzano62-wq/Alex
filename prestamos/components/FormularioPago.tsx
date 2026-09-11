@@ -78,7 +78,7 @@ export default function FormularioPago({
               <span className="block text-sm font-semibold text-slate-800 dark:text-slate-200">
                 {opcion.titulo}
               </span>
-              <span className="block text-xs text-slate-500 dark:text-slate-400">{opcion.detalle}</span>
+              <span className="block text-xs text-slate-600 dark:text-slate-400">{opcion.detalle}</span>
             </span>
             {opcion.monto > 0 && (
               <span className="tabular shrink-0 text-sm font-bold text-brand-700 dark:text-brand-300">
@@ -101,7 +101,7 @@ export default function FormularioPago({
         <button
           type="button"
           onClick={() => setElegida(null)}
-          className="text-xs font-medium text-slate-500 dark:text-slate-400 underline"
+          className="text-xs font-medium text-slate-600 dark:text-slate-400 underline"
         >
           Cambiar
         </button>

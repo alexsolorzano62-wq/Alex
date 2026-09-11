@@ -35,7 +35,7 @@ export default function GraficoEvolucion({ puntos }: { puntos: PuntoHistorico[] 
 
   if (!ultimo) {
     return (
-      <p className="rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 px-4 py-10 text-center text-sm text-slate-500 dark:text-slate-400">
+      <p className="rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 px-4 py-10 text-center text-sm text-slate-600 dark:text-slate-400">
         Todavía no hay movimientos para graficar.
       </p>
     );
@@ -55,7 +55,7 @@ export default function GraficoEvolucion({ puntos }: { puntos: PuntoHistorico[] 
         <p className="tabular text-3xl font-bold leading-none text-slate-900 dark:text-slate-100">
           {plata(ultimo.ganado)}
         </p>
-        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+        <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
           ganado sobre {plata(ultimo.prestado)} prestados
         </p>
       </figcaption>
@@ -79,7 +79,7 @@ export default function GraficoEvolucion({ puntos }: { puntos: PuntoHistorico[] 
             <text
               x={util + 8}
               y={y(valor) + 4}
-              className="fill-slate-400 dark:fill-slate-500"
+              className="fill-slate-500 dark:fill-slate-400"
               style={{ fontSize: 10 }}
             >
               {plataCorta(valor)}
@@ -106,14 +106,14 @@ export default function GraficoEvolucion({ puntos }: { puntos: PuntoHistorico[] 
           </g>
         ))}
 
-        <text x="0" y={ALTO + 14} className="fill-slate-400 dark:fill-slate-500" style={{ fontSize: 10 }}>
+        <text x="0" y={ALTO + 14} className="fill-slate-500 dark:fill-slate-400" style={{ fontSize: 10 }}>
           {nombreMes(visibles[0].mes)}
         </text>
         <text
           x={util}
           y={ALTO + 14}
           textAnchor="end"
-          className="fill-slate-400 dark:fill-slate-500"
+          className="fill-slate-500 dark:fill-slate-400"
           style={{ fontSize: 10 }}
         >
           {nombreMes(ultimo.mes)}
@@ -144,7 +144,7 @@ export default function GraficoEvolucion({ puntos }: { puntos: PuntoHistorico[] 
               onClick={() => setRango(opcion.meses)}
               aria-pressed={rango === opcion.meses}
               className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                rango === opcion.meses ? "bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm" : "text-slate-500 dark:text-slate-400"
+                rango === opcion.meses ? "bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm" : "text-slate-600 dark:text-slate-400"
               }`}
             >
               {opcion.texto}
